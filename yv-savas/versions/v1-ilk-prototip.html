@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YV Su Savaşı</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;height:100%;background:#0f2d44;overflow:hidden;font-family:"Baloo 2",system-ui,"Segoe UI",sans-serif;color:#fff}
+  body{display:flex;align-items:center;justify-content:center}
+  canvas{display:block}
+  .overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,40,70,.35)}
+  .hidden{display:none}
+  .card{background:rgba(255,255,255,.96);color:#17324d;border-radius:28px;padding:26px 34px;max-width:760px;width:calc(100% - 40px);box-shadow:0 20px 60px rgba(0,0,0,.35);text-align:center}
+  h1{margin:0;font-size:56px;line-height:1;color:#1e7be0;letter-spacing:1px}
+  h1 span{color:#ff8a1f}
+  .sub{font-size:19px;margin:10px 0 16px;color:#35506b}
+  .row{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:10px 0}
+  .team{flex:1;min-width:250px;border-radius:18px;padding:12px 16px;text-align:left}
+  .team.blue{background:#e3efff;border:3px solid #2d7ff9}
+  .team.orange{background:#fff0e0;border:3px solid #ff8a1f}
+  .team b{font-size:20px}
+  .team input{font:inherit;font-size:20px;width:100%;box-sizing:border-box;border-radius:10px;border:2px solid #b9c9da;padding:4px 10px;margin:4px 0 6px}
+  .keys{font-size:15px;line-height:1.5}
+  kbd{background:#17324d;color:#fff;border-radius:6px;padding:0 6px;font-family:inherit;font-size:14px}
+  button{font:inherit;font-weight:800;font-size:22px;border:0;border-radius:16px;padding:10px 22px;cursor:pointer;color:#fff;box-shadow:0 5px 0 rgba(0,0,0,.2)}
+  button:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.2)}
+  .b1{background:#2d7ff9}.b2{background:#ff8a1f}.b3{background:#27b36a}
+  select{font:inherit;font-size:18px;border-radius:10px;padding:2px 8px}
+  .small{font-size:15px;color:#5a7690}
+  #winText{font-size:48px;margin:0}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="menu" class="overlay">
+  <div class="card">
+    <h1>YV <span>Su Savaşı</span> 💦</h1>
+    <div class="sub">Kimse ölmez, herkes <b>sırılsıklam</b> olur!<br>Sırılsıklam olan karşı takıma geçmek zorunda. Tüm takımı kendi tarafına geçiren kazanır.</div>
+    <div class="row">
+      <div class="team blue">
+        <b>🔵 Mavi Takım</b>
+        <input id="n1" value="Yağmur" maxlength="12">
+        <div class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> yürü<br><kbd>F</kbd> / <kbd>Space</kbd> su fışkırt<br><kbd>G</kbd> su balonu at</div>
+      </div>
+      <div class="team orange">
+        <b>🟠 Turuncu Takım</b>
+        <input id="n2" value="Baba" maxlength="12">
+        <div class="keys"><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> yürü<br><kbd>Enter</kbd> su fışkırt<br><kbd>Sağ Shift</kbd> su balonu at</div>
+      </div>
+    </div>
+    <div class="row small">Suyun bitince arkandaki <b>havuza</b> git, tabancan dolsun. &nbsp;·&nbsp; Takımda kaç kişi:
+      <select id="size"><option>2</option><option selected>3</option><option>4</option><option>5</option></select>
+    </div>
+    <div class="row">
+      <button class="b1" id="play2">👧👨 İki Kişi</button>
+      <button class="b2" id="play1">👧 Bilgisayara Karşı</button>
+    </div>
+    <div class="small"><kbd>P</kbd> duraklat · <kbd>Esc</kbd> menü · v1</div>
+  </div>
+</div>
+
+<div id="over" class="overlay hidden">
+  <div class="card">
+    <p id="winText"></p>
+    <div class="sub" id="winSub"></div>
+    <div class="row">
+      <button class="b3" id="again">🔁 Tekrar Oyna</button>
+      <button class="b1" id="toMenu">🏠 Menü</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- setup ----------
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const W = 1280, H = 720, MID = W / 2, TOP = 140, BOT = H - 18;
+let scale = 1, dpr = 1;
+function resize() {
+  dpr = window.devicePixelRatio || 1;
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  cv.width = Math.round(W * scale * dpr); cv.height = Math.round(H * scale * dpr);
+  cv.style.width = W * scale + 'px'; cv.style.height = H * scale + 'px';
+}
+addEventListener('resize', resize); resize();
+
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
+
+const TEAMS = [
+  { name: 'Mavi', col: '#2d7ff9', gun: '#ff4fa3' },
+  { name: 'Turuncu', col: '#ff8a1f', gun: '#2fd27a' },
+];
+const POOLS = [{ x: 6, y: 335, w: 66, h: 190 }, { x: W - 72, y: 335, w: 66, h: 190 }];
+const NAMES = ['Deniz', 'Can', 'Ela', 'Mert', 'Zeynep', 'Ali', 'Duru', 'Efe', 'Nil', 'Kaan', 'Ada', 'Ege', 'Lina', 'Arda', 'Mira', 'Toprak', 'Defne', 'Kuzey'];
+const HAIR = ['#3b2314', '#6b3e1f', '#1c1c1c', '#c98b3a', '#e0b04a', '#8a2d1a'];
+const SKIN = ['#f6d2b0', '#eec39a', '#d9a37a', '#f3c9a5'];
+const BALLOON_COLS = ['#ff5fa2', '#ffd23f', '#7cf29a', '#b18cff', '#5fd0ff'];
+const WATER = ['#8fd3ff', '#4fb3ff', '#c8ecff', '#ffffff'];
+
+function bounds(t) { return t === 0 ? { x0: 20, x1: MID - 34 } : { x0: MID + 34, x1: W - 20 }; }
+
+function mix(a, b, t) {
+  const pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
+  const r = (pa >> 16) + (((pb >> 16) - (pa >> 16)) * t);
+  const g = ((pa >> 8) & 255) + ((((pb >> 8) & 255) - ((pa >> 8) & 255)) * t);
+  const bl = (pa & 255) + (((pb & 255) - (pa & 255)) * t);
+  return `rgb(${r | 0},${g | 0},${bl | 0})`;
+}
+
+// ---------- sound ----------
+let ac = null, lastSq = 0;
+function audio() { try { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); } catch (e) { } }
+function noise(dur, vol, freq) {
+  if (!ac || demo()) return;
+  const len = Math.floor(ac.sampleRate * dur), buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len) ** 2;
+  const s = ac.createBufferSource(); s.buffer = buf;
+  const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = 0.8;
+  const g = ac.createGain(); g.gain.value = vol;
+  s.connect(f).connect(g).connect(ac.destination); s.start();
+}
+function tone(f0, f1, dur, vol, type = 'sine', delay = 0) {
+  if (!ac || demo()) return;
+  const t = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+
+// ---------- input ----------
+const down = new Set(), pressed = new Set();
+const KEYS = [
+  { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], fire: ['KeyF', 'Space'], ball: ['KeyG', 'KeyE'] },
+  { up: ['ArrowUp'], down: ['ArrowDown'], left: ['ArrowLeft'], right: ['ArrowRight'], fire: ['Enter', 'NumpadEnter', 'Numpad0'], ball: ['ShiftRight', 'ControlRight', 'NumpadDecimal'] },
+];
+const BOTH = Object.fromEntries(Object.keys(KEYS[0]).map(k => [k, [...KEYS[0][k], ...KEYS[1][k]]]));
+addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (state === 'play' && /^(Arrow|Space|Enter|Numpad)/.test(e.code)) e.preventDefault();
+  if (!e.repeat) pressed.add(e.code);
+  down.add(e.code);
+  if (e.code === 'KeyP' && state === 'play') paused = !paused;
+  if (e.code === 'Escape' && state !== 'menu') showMenu();
+});
+addEventListener('keyup', e => down.delete(e.code));
+addEventListener('blur', () => down.clear());
+const any = (list, set = down) => list.some(k => set.has(k));
+
+// ---------- state ----------
+let state = 'menu', paused = false, cfg = null, T = 0, shake = 0;
+let chars = [], drops = [], balloons = [], parts = [], puddles = [], texts = [], players = [];
+let over = null, overT = 0, nextId = 1, stats = { drops: 0, balloons: 0, soaks: 0 };
+const demo = () => !cfg || cfg.demo;
+
+function makeChar(team, name, look) {
+  const b = bounds(team);
+  return {
+    id: nextId++, team, name, x: rand(b.x0 + 60, b.x1 - 60), y: rand(TOP + 60, BOT - 20),
+    wet: 0, tank: 100, aim: 0, face: team ? -1 : 1, cool: 0, bcool: 0, lastHit: -9, inv: 0, hitFlash: 0,
+    transit: false, tx: 0, ty: 0, ai: true, pid: 0, walk: 0, moving: false,
+    hair: look?.hair || pick(HAIR), skin: look?.skin || pick(SKIN), style: look?.style ?? Math.floor(Math.random() * 3),
+    aiT: 0, homeX: 0, tgt: null, yOff: 0, burst: 0, burstWait: rand(0.4, 1.6), aimErr: 0,
+    skill: rand(0.35, 0.85), refilling: false, dripT: 0,
+  };
+}
+
+function startGame(c) {
+  cfg = c; T = 0; paused = false; over = null; overT = 0; shake = 0;
+  chars = []; drops = []; balloons = []; parts = []; puddles = []; texts = []; players = [];
+  stats = { drops: 0, balloons: 0, soaks: 0 };
+  const used = new Set([c.n1, c.n2]);
+  const freshName = () => { const free = NAMES.filter(n => !used.has(n)); const n = pick(free.length ? free : NAMES); used.add(n); return n; };
+  for (let t = 0; t < 2; t++) {
+    for (let i = 0; i < c.size; i++) {
+      let name, look = null;
+      if (i === 0 && !c.demo && (t === 0 || c.mode === 2)) {
+        name = t ? c.n2 : c.n1;
+        look = t === 0 ? { style: 1, hair: '#3b2314', skin: '#f6d2b0' } : { style: 0, hair: '#1c1c1c', skin: '#eec39a' };
+      } else name = freshName();
+      const ch = makeChar(t, name, look);
+      ch.y = TOP + 60 + (i + 0.5) * (BOT - TOP - 70) / c.size;
+      chars.push(ch);
+    }
+  }
+  if (!c.demo) {
+    players.push({ id: 1, team: 0, keys: c.mode === 1 ? BOTH : KEYS[0], char: null, lx: 0, ly: 0 });
+    if (c.mode === 2) players.push({ id: 2, team: 1, keys: KEYS[1], char: null, lx: 0, ly: 0 });
+    for (const p of players) { const ch = chars.find(x => x.team === p.team); ch.ai = false; ch.pid = p.id; p.char = ch; }
+  }
+}
+
+// ---------- actions ----------
+function squirt(c) {
+  if (c.cool > 0 || c.tank < 1 || c.transit) return;
+  c.cool = 0.065; c.tank -= 1; stats.drops++;
+  const a = c.aim + rand(-0.05, 0.05), sp = rand(680, 760);
+  drops.push({ x: c.x + c.face * 28, y: c.y - 1, z: 34, vx: Math.cos(a) * sp * c.face, vy: Math.sin(a) * sp, vz: rand(70, 110), team: c.team });
+  if (T - lastSq > 0.09) { lastSq = T; noise(0.05, 0.035, 3500); }
+}
+
+function throwBalloon(c, tx, ty) {
+  if (c.bcool > 0 || c.tank < 15 || c.transit) return;
+  c.bcool = 0.55; c.tank -= 15; stats.balloons++;
+  tx = clamp(tx, 10, W - 10); ty = clamp(ty, TOP + 30, BOT);
+  const sx = c.x + c.face * 20, sy = c.y, d = dist(sx, sy, tx, ty);
+  balloons.push({ sx, sy, tx, ty, t: 0, dur: 0.45 + d / 900, h: 90 + d * 0.15, team: c.team, col: pick(BALLOON_COLS), id: nextId++ });
+  noise(0.15, 0.05, 600);
+}
+
+function burst(x, y, n, spd, z = 5) {
+  for (let i = 0; i < n; i++) {
+    const a = rand(0, Math.PI * 2), s = rand(spd * 0.25, spd);
+    parts.push({ x, y, z, vx: Math.cos(a) * s, vy: Math.sin(a) * s * 0.6, vz: rand(80, 260), life: rand(0.4, 0.9), col: pick(WATER), size: rand(2, 4.5) });
+  }
+}
+
+function splashAt(x, y, team) {
+  burst(x, y, 40, 260);
+  puddles.push({ x, y, r: rand(50, 70), a: 1 });
+  noise(0.35, 0.35, 700); tone(700, 180, 0.25, 0.12);
+  shake = Math.max(shake, 6);
+  for (const o of chars) {
+    if (o.team === team || o.transit) continue;
+    const d = dist(o.x, o.y, x, y);
+    if (d < 95) wetten(o, 38 * (1 - d / 130));
+  }
+}
+
+function wetten(o, amt) {
+  if (o.inv > 0 || o.transit) return;
+  o.wet = Math.min(100, o.wet + amt); o.lastHit = T; o.hitFlash = 0.15;
+  if (o.wet >= 100) soak(o);
+}
+
+function soak(o) {
+  stats.soaks++;
+  o.transit = true; o.team = 1 - o.team; o.ai = true; o.pid = 0; o.refilling = false; o.tgt = null;
+  const b = bounds(o.team);
+  o.tx = rand(b.x0 + 80, b.x1 - 80); o.ty = rand(TOP + 60, BOT - 20);
+  texts.push({ x: o.x, y: o.y - 110, text: 'Sırılsıklam! 💦', life: 1.8, col: '#ffffff', size: 28 });
+  burst(o.x, o.y, 60, 300, 40);
+  puddles.push({ x: o.x, y: o.y, r: 60, a: 1 });
+  noise(0.5, 0.3, 500); tone(900, 140, 0.6, 0.15, 'triangle');
+  shake = Math.max(shake, 10);
+}
+
+// ---------- update ----------
+function move(c, dx, dy, dt, mul) {
+  const l = Math.hypot(dx, dy);
+  c.moving = l > 0;
+  if (!l) return;
+  const sp = 240 * mul * (1 - 0.35 * c.wet / 100);
+  c.x += dx / l * sp * dt; c.y += dy / l * sp * dt; c.walk += dt * 14;
+}
+
+function playerUpdate(p, dt) {
+  let c = p.char;
+  if (!c || c.pid !== p.id) {
+    const cand = chars.filter(x => x.team === p.team && !x.transit && !x.pid);
+    cand.sort((a, b) => dist(a.x, a.y, p.lx, p.ly) - dist(b.x, b.y, p.lx, p.ly));
+    c = p.char = cand[0] || null;
+    if (!c) return;
+    c.ai = false; c.pid = p.id;
+    texts.push({ x: c.x, y: c.y - 120, text: `${p.id}. oyuncu artık ${c.name}!`, life: 1.6, col: TEAMS[p.team].col, size: 20 });
+  }
+  const k = p.keys;
+  const dx = (any(k.right) ? 1 : 0) - (any(k.left) ? 1 : 0), dy = (any(k.down) ? 1 : 0) - (any(k.up) ? 1 : 0);
+  move(c, dx, dy, dt, 1);
+  c.aim = dy * 0.33;
+  if (any(k.fire)) squirt(c);
+  if (any(k.ball, pressed)) throwBalloon(c, c.x + c.face * 400, c.y + dy * 170);
+  p.lx = c.x; p.ly = c.y;
+}
+
+function aiUpdate(c, dt) {
+  const b = bounds(c.team);
+  if (!c.refilling && c.tank < 10 + c.skill * 12) c.refilling = true;
+  if (c.refilling && c.tank >= 98) c.refilling = false;
+  c.aiT -= dt;
+  if (c.aiT <= 0 || !c.tgt || c.tgt.team === c.team || c.tgt.transit) {
+    const en = chars.filter(o => o.team !== c.team && !o.transit).sort((a, b2) => dist(a.x, a.y, c.x, c.y) - dist(b2.x, b2.y, c.x, c.y));
+    c.tgt = en.length ? en[Math.floor(Math.random() * Math.min(2, en.length))] : null;
+    c.aiT = rand(1.2, 3);
+    c.homeX = c.team === 0 ? rand(b.x0 + 70, b.x1 - 10) : rand(b.x0 + 10, b.x1 - 70);
+    c.yOff = rand(-70, 70);
+  }
+  let tx = c.homeX, ty = c.tgt ? c.tgt.y + c.yOff * (1 - c.skill) : c.y;
+  if (c.refilling) { const P = POOLS[c.team]; tx = P.x + P.w / 2; ty = P.y + P.h / 2; }
+  for (const bl of balloons) {
+    if (bl.team === c.team) continue;
+    if (dist(bl.tx, bl.ty, c.x, c.y) < 115 && ((bl.id * 7 + c.id * 3) % 10) / 10 < c.skill) {
+      tx = c.x + (c.x >= bl.tx ? 1 : -1) * 120; ty = c.y + (c.y >= bl.ty ? 1 : -1) * 140;
+    }
+  }
+  const dx = tx - c.x, dy = ty - c.y;
+  if (Math.hypot(dx, dy) > 8) move(c, dx, dy, dt, 0.8); else c.moving = false;
+
+  if (c.tgt && !c.refilling) {
+    const ex = c.tgt.x - c.x, ey = c.tgt.y - c.y, ed = Math.hypot(ex, ey);
+    c.aim = clamp(Math.atan2(ey, Math.abs(ex)) + c.aimErr, -0.5, 0.5);
+    if (c.burst > 0) { c.burst -= dt; if (ed < 560) squirt(c); }
+    else {
+      c.burstWait -= dt;
+      if (c.burstWait <= 0) { c.burst = rand(0.25, 0.7); c.burstWait = rand(0.5, 1.6) * (1.3 - c.skill); c.aimErr = rand(-0.12, 0.12) * (1.2 - c.skill); }
+    }
+    if (ed > 230 && ed < 520 && c.tank > 35 && Math.random() < dt * 0.18) throwBalloon(c, c.tgt.x + rand(-40, 40), c.tgt.y + rand(-40, 40));
+  }
+}
+
+function update(dt) {
+  T += dt;
+  for (const p of players) playerUpdate(p, dt);
+
+  for (const c of chars) {
+    c.cool -= dt; c.bcool -= dt; c.inv -= dt; c.hitFlash -= dt;
+    if (c.transit) {
+      const dx = c.tx - c.x, dy = c.ty - c.y, d = Math.hypot(dx, dy);
+      if (d < 6) {
+        c.transit = false; c.wet = 30; c.inv = 1.6; c.tank = 100; c.lastHit = T;
+        texts.push({ x: c.x, y: c.y - 110, text: `${c.name} artık ${TEAMS[c.team].name}!`, life: 1.6, col: TEAMS[c.team].col, size: 22 });
+        tone(500, 900, 0.15, 0.08, 'square');
+      } else {
+        c.x += dx / d * 190 * dt; c.y += dy / d * 190 * dt; c.moving = true; c.walk += dt * 16; c.face = dx > 0 ? 1 : -1;
+      }
+    } else {
+      c.face = c.team ? -1 : 1;
+      if (c.ai) aiUpdate(c, dt);
+      const b = bounds(c.team);
+      c.x = clamp(c.x, b.x0, b.x1); c.y = clamp(c.y, TOP + 40, BOT - 4);
+      if (T - c.lastHit > 2.5) c.wet = Math.max(0, c.wet - 4 * dt);
+      const P = POOLS[c.team];
+      if (c.x > P.x - 4 && c.x < P.x + P.w + 4 && c.y > P.y && c.y < P.y + P.h + 10) {
+        if (c.tank < 100 && Math.random() < dt * 8) parts.push({ x: c.x + rand(-10, 10), y: c.y, z: 2, vx: 0, vy: 0, vz: rand(60, 120), life: 0.5, col: '#ffffff', size: 2.5 });
+        c.tank = Math.min(100, c.tank + 70 * dt);
+      }
+    }
+    c.dripT -= dt;
+    const wetness = c.transit ? 100 : c.wet;
+    if (wetness > 15 && c.dripT <= 0) {
+      c.dripT = 0.9 / (wetness / 100 * 7);
+      parts.push({ x: c.x + rand(-14, 14), y: c.y + rand(-2, 2), z: rand(20, 60), vx: 0, vy: 0, vz: 0, life: 1, col: '#7cc8ff', size: 2.5 });
+    }
+  }
+
+  for (let i = drops.length - 1; i >= 0; i--) {
+    const d = drops[i];
+    d.x += d.vx * dt; d.y += d.vy * dt; d.vz -= 380 * dt; d.z += d.vz * dt;
+    let dead = false;
+    for (const o of chars) {
+      if (o.team === d.team || o.transit) continue;
+      if (Math.abs(d.x - o.x) < 18 && Math.abs(d.y - o.y) < 18 && d.z < 75) {
+        wetten(o, o.inv > 0 ? 0 : 3.6);
+        burst(d.x, d.y, 4, 90, d.z);
+        if (Math.random() < 0.3) noise(0.07, 0.07, 1500);
+        dead = true; break;
+      }
+    }
+    if (!dead && d.z <= 0) {
+      dead = true; burst(d.x, d.y, 3, 60, 1);
+      if (Math.random() < 0.25) puddles.push({ x: d.x, y: d.y, r: rand(8, 14), a: 1 });
+    }
+    if (dead || d.x < -20 || d.x > W + 20) drops.splice(i, 1);
+  }
+
+  for (let i = balloons.length - 1; i >= 0; i--) {
+    const b = balloons[i];
+    b.t += dt / b.dur;
+    if (b.t >= 1) { splashAt(b.tx, b.ty, b.team); balloons.splice(i, 1); }
+  }
+
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i];
+    p.vz -= 500 * dt; p.z += p.vz * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+    if (p.z <= 0 || p.life <= 0) parts.splice(i, 1);
+  }
+  for (let i = puddles.length - 1; i >= 0; i--) { puddles[i].a -= dt * 0.08; if (puddles[i].a <= 0) puddles.splice(i, 1); }
+  if (puddles.length > 140) puddles.splice(0, puddles.length - 140);
+  for (let i = texts.length - 1; i >= 0; i--) { texts[i].life -= dt; texts[i].y -= 25 * dt; if (texts[i].life <= 0) texts.splice(i, 1); }
+  shake = Math.max(0, shake - dt * 30);
+
+  const cnt = [0, 0];
+  for (const c of chars) cnt[c.team]++;
+  if (!over && (cnt[0] === 0 || cnt[1] === 0)) { over = { winner: cnt[0] ? 0 : 1 }; overT = 2.4; }
+  if (over) {
+    overT -= dt;
+    if (overT <= 0) {
+      if (cfg.demo) startGame(cfg);
+      else if (state === 'play') showOver();
+    }
+  }
+  pressed.clear();
+}
+
+// ---------- drawing ----------
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function circle(x, y, r) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); }
+function ell(x, y, rx, ry) { ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); }
+function line(a, b, c, d) { ctx.beginPath(); ctx.moveTo(a, b); ctx.lineTo(c, d); ctx.stroke(); }
+
+function cloud(x, y, s) {
+  ctx.fillStyle = 'rgba(255,255,255,.9)';
+  circle(x, y, 22 * s); circle(x + 26 * s, y - 10 * s, 28 * s); circle(x + 56 * s, y, 22 * s); ell(x + 28 * s, y + 8 * s, 50 * s, 14 * s);
+}
+
+function drawBackground() {
+  let g = ctx.createLinearGradient(0, 0, 0, TOP);
+  g.addColorStop(0, '#5ec4ff'); g.addColorStop(1, '#c4ecff');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, TOP + 10);
+  // sun
+  ctx.save(); ctx.translate(1180, 50); ctx.rotate(T * 0.3);
+  ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+  for (let i = 0; i < 10; i++) { ctx.rotate(Math.PI / 5); line(0, 38, 0, 50); }
+  ctx.restore();
+  ctx.fillStyle = '#ffd23f'; circle(1180, 50, 30);
+  for (let i = 0; i < 4; i++) cloud(((T * (12 + i * 5) + i * 360) % (W + 300)) - 150, 32 + (i % 2) * 34, 0.7 + (i % 3) * 0.15);
+  // hills
+  ctx.fillStyle = '#8fd87a'; ctx.beginPath(); ctx.moveTo(0, TOP);
+  for (let x = 0; x <= W; x += 40) ctx.lineTo(x, TOP - 18 - Math.sin(x * 0.01) * 14 - Math.sin(x * 0.023) * 8);
+  ctx.lineTo(W, TOP + 10); ctx.lineTo(0, TOP + 10); ctx.fill();
+  // grass
+  ctx.fillStyle = '#6cc75a'; ctx.fillRect(0, TOP, W, H - TOP);
+  ctx.fillStyle = '#64bd53';
+  for (let x = 0; x < W; x += 160) ctx.fillRect(x, TOP, 80, H - TOP);
+  ctx.fillStyle = 'rgba(45,127,249,.08)'; ctx.fillRect(0, TOP, MID, H - TOP);
+  ctx.fillStyle = 'rgba(255,138,31,.08)'; ctx.fillRect(MID, TOP, MID, H - TOP);
+  // midline
+  ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 5; ctx.setLineDash([18, 14]);
+  line(MID, TOP + 4, MID, H); ctx.setLineDash([]);
+  for (let y = TOP + 30; y < H; y += 110) {
+    ctx.fillStyle = '#ff7a2f'; ctx.beginPath(); ctx.moveTo(MID, y - 16); ctx.lineTo(MID - 9, y + 6); ctx.lineTo(MID + 9, y + 6); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.fillRect(MID - 6, y - 5, 12, 3);
+  }
+  // pools
+  POOLS.forEach((P, i) => {
+    ctx.fillStyle = '#e9f7ff'; rr(P.x - 5, P.y - 5, P.w + 10, P.h + 10, 18); ctx.fill();
+    ctx.fillStyle = '#3fb2f0'; rr(P.x, P.y, P.w, P.h, 14); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,.6)'; ctx.lineWidth = 2;
+    for (let k = 0; k < 6; k++) {
+      const yy = P.y + 18 + k * 30 + Math.sin(T * 2 + k) * 4;
+      ctx.beginPath();
+      for (let xx = 6; xx <= P.w - 6; xx += 4) ctx.lineTo(P.x + xx, yy + Math.sin(xx * 0.3 + T * 3 + k) * 2);
+      ctx.stroke();
+    }
+    ctx.fillStyle = TEAMS[i].col; ctx.font = '800 14px "Baloo 2", sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('HAVUZ', P.x + P.w / 2, P.y + P.h + 24);
+  });
+}
+
+function drawChar(c) {
+  const f = c.face, x = c.x;
+  const step = c.moving ? Math.sin(c.walk) : 0, bob = c.moving ? Math.abs(Math.sin(c.walk)) * 2 : 0;
+  const y = c.y, by = y - bob, hy = by - 60;
+  ctx.save();
+  if (c.inv > 0 && Math.floor(T * 14) % 2) ctx.globalAlpha = 0.45;
+  ctx.fillStyle = 'rgba(0,0,0,.18)'; ell(x, y, 20, 6);
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#2b3a55'; ctx.lineWidth = 6;
+  line(x - 6, by - 20, x - 6 + step * 6, y - 3); line(x + 6, by - 20, x + 6 - step * 6, y - 3);
+  const wet = c.transit ? 100 : c.wet;
+  // long hair behind head
+  if (c.style === 2) { ctx.fillStyle = c.hair; rr(x - f * 17 - 6, hy - 8, 12, 30, 6); ctx.fill(); }
+  // body
+  ctx.fillStyle = mix(TEAMS[c.team].col, '#123a7a', wet / 100 * 0.55);
+  rr(x - 15, by - 46, 30, 30, 9); ctx.fill();
+  if (wet > 40) { ctx.fillStyle = 'rgba(160,220,255,.5)'; circle(x - 6, by - 30, 4); circle(x + 5, by - 24, 3); }
+  // gun + arm
+  if (!c.transit) {
+    ctx.fillStyle = TEAMS[c.team].gun; rr(f > 0 ? x + 8 : x - 30, by - 38, 22, 9, 4); ctx.fill();
+    ctx.fillStyle = '#bfe9ff'; circle(x + f * 12, by - 42, 5.5);
+    ctx.fillStyle = '#3aa7ff'; ctx.beginPath(); ctx.arc(x + f * 12, by - 42, 5.5, Math.PI * (0.5 - c.tank / 100), Math.PI * (0.5 + c.tank / 100)); ctx.fill();
+    ctx.strokeStyle = c.skin; ctx.lineWidth = 5; line(x + f * 3, by - 36, x + f * 13, by - 33);
+  } else {
+    ctx.strokeStyle = c.skin; ctx.lineWidth = 5;
+    const wave = Math.sin(T * 12) * 4;
+    line(x - 12, by - 40, x - 20, by - 60 + wave); line(x + 12, by - 40, x + 20, by - 60 - wave);
+  }
+  // head
+  ctx.fillStyle = c.skin; circle(x, hy, 16);
+  ctx.fillStyle = c.hair;
+  ctx.beginPath(); ctx.arc(x, hy - 2, 16.5, Math.PI, 0); ctx.closePath(); ctx.fill();
+  ell(x - f * 4, hy - 8, 13, 6);
+  if (c.style === 1) { circle(x - 18, hy + 1, 6.5); circle(x + 18, hy + 1, 6.5); }
+  // face
+  ctx.fillStyle = '#222'; circle(x + f * 3, hy + 1, 2.3); circle(x + f * 10, hy + 1, 2.3);
+  ctx.fillStyle = 'rgba(255,120,140,.35)'; circle(x + f * 12, hy + 7, 3.5);
+  ctx.strokeStyle = '#6b2a2a'; ctx.lineWidth = 2; ctx.fillStyle = '#6b2a2a';
+  if (c.transit) { ell(x + f * 7, hy + 9, 3.5, 4.5); }
+  else if (wet > 60) { circle(x + f * 7, hy + 9, 2.5); }
+  else { ctx.beginPath(); ctx.arc(x + f * 6, hy + 5, 5, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke(); }
+  // water on head
+  if (wet > 30) {
+    ctx.fillStyle = '#9fdcff';
+    const n = wet > 70 ? 3 : 1;
+    for (let i = 0; i < n; i++) {
+      const dx = (i - 1) * 9, yy = hy - 14 + ((T * 30 + i * 11) % 18);
+      ctx.beginPath(); ctx.moveTo(x + dx, yy - 5); ctx.quadraticCurveTo(x + dx + 4, yy + 2, x + dx, yy + 3); ctx.quadraticCurveTo(x + dx - 4, yy + 2, x + dx, yy - 5); ctx.fill();
+    }
+  }
+  if (c.hitFlash > 0) { ctx.strokeStyle = 'rgba(200,240,255,.9)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, by - 40, 30 + (0.15 - c.hitFlash) * 80, 0, Math.PI * 2); ctx.stroke(); }
+  ctx.restore();
+}
+
+function drawLabel(c) {
+  const x = c.x, y = c.y;
+  const p = players.find(p => p.char === c);
+  ctx.textAlign = 'center';
+  ctx.font = `800 ${p ? 17 : 14}px "Baloo 2", sans-serif`;
+  ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.fillStyle = TEAMS[c.team].col;
+  const ny = y - 104;
+  ctx.strokeText(c.name, x, ny); ctx.fillText(c.name, x, ny);
+  if (p) {
+    const ay = ny - 26 + Math.sin(T * 6) * 3;
+    ctx.fillStyle = TEAMS[p.team].col; ctx.beginPath(); ctx.moveTo(x - 10, ay); ctx.lineTo(x + 10, ay); ctx.lineTo(x, ay + 11); ctx.fill();
+    ctx.font = '800 13px "Baloo 2", sans-serif'; ctx.fillStyle = '#fff'; ctx.strokeStyle = TEAMS[p.team].col; ctx.lineWidth = 3;
+    ctx.strokeText(p.id + '. oyuncu', x, ay - 4); ctx.fillText(p.id + '. oyuncu', x, ay - 4);
+  }
+  if (c.transit) return;
+  ctx.fillStyle = 'rgba(0,0,0,.3)'; rr(x - 23, y - 96, 46, 8, 4); ctx.fill();
+  const blink = c.wet > 75 && Math.floor(T * 8) % 2;
+  ctx.fillStyle = blink ? '#ffffff' : '#2aa3ff'; rr(x - 23, y - 96, Math.max(8, 46 * c.wet / 100), 8, 4); ctx.fill();
+}
+
+function drawHUD() {
+  const cnt = [0, 0];
+  for (const c of chars) cnt[c.team]++;
+  const total = chars.length;
+  [0, 1].forEach(t => {
+    const x = t ? W - 330 : 20;
+    ctx.fillStyle = 'rgba(255,255,255,.88)'; rr(x, 12, 310, 54, 18); ctx.fill();
+    ctx.fillStyle = TEAMS[t].col; ctx.font = '800 22px "Baloo 2", sans-serif'; ctx.textAlign = t ? 'right' : 'left';
+    ctx.fillText(`${TEAMS[t].name.toUpperCase()} TAKIM`, t ? x + 296 : x + 14, 47);
+    for (let i = 0; i < total; i++) {
+      const cx = t ? x + 20 + i * 22 : x + 296 - i * 22;
+      ctx.fillStyle = i < cnt[t] ? TEAMS[t].col : 'rgba(0,0,0,.12)';
+      circle(cx, 39, 9);
+    }
+  });
+  ctx.textAlign = 'center'; ctx.font = '800 34px "Baloo 2", sans-serif';
+  ctx.lineWidth = 6; ctx.strokeStyle = '#fff';
+  ctx.strokeText('YV SU SAVAŞI', MID, 50); ctx.fillStyle = '#1e7be0'; ctx.fillText('YV SU SAVAŞI', MID, 50);
+  if (!demo()) {
+    ctx.font = '600 14px "Baloo 2", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.85)';
+    if (cfg.mode === 2) {
+      ctx.textAlign = 'left'; ctx.fillText('WASD yürü · F fışkırt · G balon', 20, H - 6);
+      ctx.textAlign = 'right'; ctx.fillText('Oklar yürü · Enter fışkırt · Sağ Shift balon', W - 20, H - 6);
+    } else {
+      ctx.textAlign = 'left'; ctx.fillText('WASD / Oklar yürü · F / Enter fışkırt · G / Sağ Shift balon', 20, H - 6);
+    }
+  }
+  if (paused) {
+    ctx.fillStyle = 'rgba(0,30,60,.5)'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '800 64px "Baloo 2", sans-serif';
+    ctx.fillText('Mola ☀️', MID, H / 2); ctx.font = '600 22px "Baloo 2", sans-serif'; ctx.fillText('Devam etmek için P', MID, H / 2 + 40);
+  }
+}
+
+function draw() {
+  const k = scale * dpr, sx = rand(-shake, shake), sy = rand(-shake, shake);
+  ctx.setTransform(k, 0, 0, k, sx * k, sy * k);
+  drawBackground();
+  for (const p of puddles) { ctx.fillStyle = `rgba(70,160,255,${p.a * 0.35})`; ell(p.x, p.y, p.r, p.r * 0.35); }
+  // shadows of flying things
+  ctx.fillStyle = 'rgba(0,0,0,.15)';
+  for (const d of drops) ell(d.x, d.y, 3, 1.2);
+  for (const b of balloons) ell(b.sx + (b.tx - b.sx) * b.t, b.sy + (b.ty - b.sy) * b.t, 6 + 8 * b.t, (6 + 8 * b.t) * 0.35);
+
+  const sorted = [...chars].sort((a, b) => a.y - b.y);
+  for (const c of sorted) drawChar(c);
+
+  for (const d of drops) {
+    ctx.fillStyle = '#bfe9ff';
+    ctx.save(); ctx.translate(d.x, d.y - d.z); ctx.rotate(Math.atan2(d.vy - d.vz * 0.6, d.vx));
+    ctx.beginPath(); ctx.ellipse(0, 0, 6, 2.6, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#4fb3ff'; ctx.beginPath(); ctx.ellipse(-2, 0, 3, 1.6, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  }
+  for (const b of balloons) {
+    const x = b.sx + (b.tx - b.sx) * b.t, y = b.sy + (b.ty - b.sy) * b.t;
+    const z = 4 * b.h * b.t * (1 - b.t) + 30 * (1 - b.t);
+    ctx.save(); ctx.translate(x, y - z); ctx.rotate(b.t * 8);
+    ctx.fillStyle = b.col; ctx.beginPath(); ctx.ellipse(0, 0, 11, 13, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-3, 13); ctx.lineTo(3, 13); ctx.lineTo(0, 17); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.6)'; ell(-4, -5, 3, 4.5);
+    ctx.restore();
+  }
+  for (const p of parts) { ctx.globalAlpha = clamp(p.life * 2, 0, 1); ctx.fillStyle = p.col; circle(p.x, p.y - p.z, p.size); }
+  ctx.globalAlpha = 1;
+
+  for (const c of sorted) drawLabel(c);
+  ctx.textAlign = 'center';
+  for (const t of texts) {
+    ctx.globalAlpha = clamp(t.life * 1.5, 0, 1);
+    ctx.font = `800 ${t.size}px "Baloo 2", sans-serif`;
+    ctx.lineWidth = 5; ctx.strokeStyle = t.col === '#ffffff' ? '#1e7be0' : '#fff';
+    ctx.strokeText(t.text, t.x, t.y); ctx.fillStyle = t.col; ctx.fillText(t.text, t.x, t.y);
+  }
+  ctx.globalAlpha = 1;
+  drawHUD();
+}
+
+// ---------- flow ----------
+const $ = id => document.getElementById(id);
+let lastCfg = null;
+function begin(mode) {
+  audio();
+  const n1 = $('n1').value.trim() || 'Yağmur', n2 = $('n2').value.trim() || 'Baba';
+  lastCfg = { mode, size: +$('size').value, n1, n2: mode === 2 ? n2 : 'Bilgisayar', demo: false };
+  $('menu').classList.add('hidden'); $('over').classList.add('hidden');
+  state = 'play'; startGame(lastCfg);
+  document.activeElement?.blur();
+  tone(400, 800, 0.15, 0.08, 'square'); tone(600, 1200, 0.2, 0.08, 'square', 0.15);
+}
+function showMenu() {
+  state = 'menu'; paused = false;
+  $('over').classList.add('hidden'); $('menu').classList.remove('hidden');
+  startGame({ mode: 0, size: 4, n1: '', n2: '', demo: true });
+}
+function showOver() {
+  state = 'over';
+  const w = over.winner, winners = chars.filter(c => c.team === w).map(c => c.name);
+  $('winText').textContent = `${TEAMS[w].name} takım kazandı! 🎉`;
+  $('winText').style.color = TEAMS[w].col;
+  $('winSub').innerHTML = `Artık herkes ${TEAMS[w].name} takımında: <b>${winners.join(', ')}</b><br>` +
+    `💧 ${stats.drops} damla fışkırtıldı · 🎈 ${stats.balloons} balon patladı · 💦 ${stats.soaks} kez sırılsıklam olundu`;
+  $('over').classList.remove('hidden');
+  tone(523, 523, 0.15, 0.1, 'square'); tone(659, 659, 0.15, 0.1, 'square', 0.15); tone(784, 784, 0.15, 0.1, 'square', 0.3); tone(1046, 1046, 0.4, 0.1, 'square', 0.45);
+}
+$('play2').onclick = () => begin(2);
+$('play1').onclick = () => begin(1);
+$('again').onclick = () => begin(lastCfg.mode);
+$('toMenu').onclick = showMenu;
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.033, (now - last) / 1000); last = now;
+  if (!paused && state !== 'over') update(dt); else pressed.clear();
+  draw();
+  requestAnimationFrame(frame);
+}
+showMenu();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

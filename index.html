@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yağmur'un Oyunları</title>
+<style>
+  :root { --bg: #fff0f7; --card: #ffffff; --ink: #3a2340; --soft: #6b5a70; --pink: #d6337f; --line: #f3c6de; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #24152a; --card: #33203b; --ink: #fbe9f3; --soft: #cdb6d6; --pink: #ff7ab8; --line: #4d3357; } }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: system-ui, sans-serif; }
+  main { max-width: 720px; margin: 0 auto; padding: 32px 16px; }
+  h1 { color: var(--pink); font-size: 2rem; margin: 0 0 8px; }
+  p { color: var(--soft); margin: 0 0 24px; }
+  a.game { display: flex; gap: 16px; align-items: center; background: var(--card); border: 3px solid var(--line); border-radius: 20px; padding: 16px; margin-bottom: 16px; color: inherit; text-decoration: none; }
+  a.game:hover { border-color: var(--pink); }
+  .ico { font-size: 2.6rem; }
+  b { display: block; font-size: 1.25rem; margin-bottom: 4px; }
+  span { color: var(--soft); }
+</style>
+</head>
+<body>
+<main>
+  <h1>🎮 Yağmur'un Oyunları</h1>
+  <p>Oynamak istediğin oyuna dokun.</p>
+  <a class="game" href="yv-salon/"><div class="ico">💅</div><div><b>YV Güzellik Salonu</b><span>Tırnak, makyaj, saç; 3D lobi, plaj, işler ve hayvanlar. Telefonda da oynanır.</span></div></a>
+  <a class="game" href="yv-savas/"><div class="ico">⚔️</div><div><b>YV Savaş</b><span>Kendi karakterini tasarla, 3D dünyada oyna.</span></div></a>
+</main>
+</body>
+</html>

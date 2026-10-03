@@ -1,0 +1,1580 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YV Güzellik Salonu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;height:100%;background:#3a1f3d;overflow:hidden}
+  body{display:flex;align-items:center;justify-content:center}
+  canvas{display:block;touch-action:none;user-select:none}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+// ---------- setup ----------
+const cv = document.getElementById('c');
+let ctx = cv.getContext('2d');
+const W = 1280, H = 720, PANEL = 1000; // scene 0..PANEL, tool panel on the right while working
+const FONT = '"Baloo 2", system-ui, "Segoe UI", sans-serif';
+let scale = 1, dpr = 1;
+function resize() {
+  dpr = window.devicePixelRatio || 1;
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  cv.style.width = W * scale + 'px'; cv.style.height = H * scale + 'px';
+  cv.width = Math.round(W * scale * dpr); cv.height = Math.round(H * scale * dpr);
+}
+addEventListener('resize', resize); resize();
+
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const dist = (a, b, c, d) => Math.hypot(a - c, b - d);
+function toRGB(c) {
+  if (c[0] === '#') { const n = parseInt(c.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+  const m = c.match(/[\d.]+/g); return [+m[0], +m[1], +m[2]];
+}
+function mix(a, b, t) { const A = toRGB(a), B = toRGB(b); return `rgb(${A.map((v, i) => Math.round(v + (B[i] - v) * t)).join(',')})`; }
+
+// ---------- drawing helpers ----------
+function rr(x, y, w, h, r) { r = Math.max(0, Math.min(r, w / 2, h / 2)); ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function circle(x, y, r) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); }
+function ell(x, y, rx, ry, rot = 0) { ctx.beginPath(); ctx.ellipse(x, y, rx, ry, rot, 0, Math.PI * 2); ctx.fill(); }
+function line(a, b, c, d) { ctx.beginPath(); ctx.moveTo(a, b); ctx.lineTo(c, d); ctx.stroke(); }
+function heart(x, y, s) { ctx.beginPath(); ctx.moveTo(x, y + s); ctx.bezierCurveTo(x - s * 1.6, y - s * 0.2, x - s * 0.7, y - s * 1.4, x, y - s * 0.5); ctx.bezierCurveTo(x + s * 0.7, y - s * 1.4, x + s * 1.6, y - s * 0.2, x, y + s); ctx.fill(); }
+function star4(x, y, r) { ctx.beginPath(); for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4, k = i % 2 ? r * 0.3 : r; ctx.lineTo(x + Math.cos(a) * k, y + Math.sin(a) * k); } ctx.closePath(); ctx.fill(); }
+function text(s, x, y, size, col, align = 'left', weight = 700) { ctx.font = `${weight} ${size}px ${FONT}`; ctx.fillStyle = col; ctx.textAlign = align; ctx.textBaseline = 'alphabetic'; ctx.fillText(s, x, y); }
+function fitText(s, x, y, size, maxW, col, weight = 700) { ctx.font = `${weight} ${size}px ${FONT}`; const w = ctx.measureText(s).width; text(s, x, y, w > maxW ? size * maxW / w : size, col, 'left', weight); }
+function emoji(e, x, y, s) { ctx.font = `${s}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#000'; ctx.fillText(e, x, y); ctx.textBaseline = 'alphabetic'; }
+
+// ---------- sound (all synthesized, no files) ----------
+let ac = null;
+function audio() { try { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); } catch (e) { } }
+function tone(f0, f1, dur, vol = 0.1, type = 'sine', delay = 0) {
+  if (!ac) return;
+  const t = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+function noise(dur, vol = 0.1, freq = 2000) {
+  if (!ac) return;
+  const n = Math.floor(ac.sampleRate * dur), b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+  const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+  s.buffer = b; f.type = 'bandpass'; f.frequency.value = freq; g.gain.value = vol;
+  s.connect(f).connect(g).connect(ac.destination); s.start();
+}
+const SFX = {
+  pop: () => tone(500, 900, 0.08, 0.08, 'triangle'),
+  fis: () => { noise(0.3, 0.35, 3500); tone(900, 400, 0.15, 0.04, 'triangle'); },
+  scrub: () => noise(0.07, 0.08, 1400),
+  snip: () => { noise(0.04, 0.2, 6000); setTimeout(() => noise(0.04, 0.2, 5000), 70); },
+  buzz: () => tone(120, 110, 0.07, 0.05, 'sawtooth'),
+  water: () => noise(0.14, 0.1, 800),
+  air: () => noise(0.12, 0.07, 450),
+  steam: () => noise(0.2, 0.06, 5500),
+  stick: () => tone(700, 1300, 0.07, 0.07, 'square'),
+  paint: () => tone(300, 700, 0.1, 0.06, 'sine'),
+  done: () => { tone(660, 660, 0.12, 0.1, 'triangle'); tone(880, 880, 0.12, 0.1, 'triangle', 0.12); tone(1320, 1320, 0.25, 0.1, 'triangle', 0.24); },
+  coin: () => { tone(1200, 1200, 0.08, 0.1, 'square'); tone(1800, 1800, 0.3, 0.1, 'square', 0.08); },
+  no: () => tone(300, 200, 0.18, 0.08, 'square'),
+};
+const sndT = {};
+function sfx(k, gap = 0) { const n = performance.now(); if (gap && n - (sndT[k] || 0) < gap) return; sndT[k] = n; SFX[k](); }
+
+// ---------- data ----------
+const NAIL_COLS = [['#1c1c1c', 'Siyah'], ['#e8434f', 'Kırmızı'], ['#ff6fb5', 'Pembe'], ['#8b5cf6', 'Mor'], ['#3b82f6', 'Mavi'],
+  ['#1fc7c7', 'Turkuaz'], ['#2fd27a', 'Yeşil'], ['#ffd23f', 'Sarı'], ['#ffffff', 'Beyaz'], ['#ff8a1f', 'Turuncu'],
+  ['#d4a72c', 'Simli altın'], ['#c9cfd8', 'Simli gümüş'],
+  ['#c9a4ff', 'Lila'], ['#7fe0b8', 'Nane yeşili'], ['#8a1c35', 'Bordo'], ['#1e2f6b', 'Lacivert'], ['#ffb38a', 'Şeftali'], ['#ff8fc8', 'Simli pembe']];
+const GLITTER = new Set(['#d4a72c', '#c9cfd8', '#ff8fc8']);
+const colName = c => (NAIL_COLS.find(e => e[0] === c) || [c, c])[1];
+const SHAPES = { square: 'Küt', round: 'Yuvarlak', pointy: 'Sivri' };
+const LENS = { long: 'Uzun', short: 'Kısa' };
+const STICKERS = { moon: ['🌙', 'Ay'], star: ['⭐', 'Yıldız'], heart: ['💖', 'Kalp'], flower: ['🌸', 'Çiçek'], butterfly: ['🦋', 'Kelebek'], rainbow: ['🌈', 'Gökkuşağı'], cherry: ['🍒', 'Kiraz'], diamond: ['💎', 'Elmas'] };
+// ---------- shop ----------
+// a polish bottle lasts 5 customers, a sticker pack 2 customers, a cream tube has 5 squeezes; tools/decor are bought once
+const POLISH_USES = 5, POLISH_PRICE = 25, CREAM_PRICE = 16, STICKER_USES = 2;
+const START_COLS = ['#ffd23f', '#e8434f', '#1c1c1c', '#ff6fb5', '#3b82f6'];
+const MAKEUP = {
+  lipstick: { name: 'Ruj', icon: '💄', price: 20, uses: 2, pay: 12, ask: 'kırmızı ruj' },
+  curler: { name: 'Kirpik kıvırıcı', icon: '👁️', price: 30, uses: 4, pay: 9, ask: 'kıvrık kirpikler' },
+  blush: { name: 'Allık', icon: '🌸', price: 15, uses: 3, pay: 6, ask: 'pembe allık' },
+  shadow: { name: 'Göz farı', icon: '✨', price: 25, uses: 3, pay: 8, ask: 'mor göz farı' },
+  glitter: { name: 'Yüz simi', icon: '🌟', price: 18, uses: 3, pay: 7, ask: 'yanaklarıma sim' },
+};
+const LIP_COL = '#e0245e', SHADOW_COL = '#9b6bff', BLUSH_COL = '#ff7fa8';
+const LIP_PTS = Array.from({ length: 10 }, (_, i) => [-16 + (i % 5) * 8, i < 5 ? 45 : 51]);
+// hair dye colours, face mask + dye kit (used up), jewellery (bought once)
+const DYES = [['#ff6fb5', 'Pembe'], ['#8b5cf6', 'Mor'], ['#3b82f6', 'Mavi'], ['#1fc7c7', 'Turkuaz'], ['#e8434f', 'Kırmızı'], ['#f3d36b', 'Sarı']];
+const dyeName = c => DYES.find(d => d[0] === c)[1];
+const SUPPLIES = { mask: { name: 'Yüz maskesi', price: 18, uses: 3 }, dye: { name: 'Saç boyası', price: 35, uses: 3 } };
+const JEWELS = {
+  earrings: { where: 'kulaklara', name: 'Küpe', icon: '💎', price: 20, pay: 5, spots: [[-94, 30], [94, 30]] },
+  crown: { where: 'başın tepesine', name: 'Taç', icon: '👑', price: 35, pay: 8, spots: [[0, -112]] },
+  bow: { where: 'saçın yanına', name: 'Kurdele', icon: '🎀', price: 12, pay: 4, spots: [[-66, -84]] },
+  necklace: { where: 'boynuna', name: 'Kolye', icon: '📿', price: 25, pay: 6, spots: [[0, 100]] },
+  glasses: { where: 'gözlerine', name: 'Kalp gözlük', icon: '🕶️', price: 18, pay: 4, spots: [[0, 6]] },
+  flowerCrown: { where: 'başın tepesine', name: 'Çiçek taç', icon: '🌼', price: 22, pay: 5, spots: [[0, -98]] },
+};
+// face-mask dots over the face, leaving the eyes and the mouth free
+const MASK_PTS = [];
+for (let y = -70; y <= 90; y += 18) for (let x = -80; x <= 80; x += 18)
+  if ((x / 84) ** 2 + (y / 94) ** 2 < 1 && dist(x, y, -34, 6) > 22 && dist(x, y, 34, 6) > 22 && !(Math.abs(x) < 26 && y > 34 && y < 62)) MASK_PTS.push([x, y]);
+const SHOP_TABS = [['polish', '💅 Ojeler'], ['makeup', '💄 Makyaj & Bakım'], ['care', '🧴 Krem & Sticker'], ['tools', '🧰 Aletler'], ['jewels', '💎 Takılar'], ['decor', '🪄 Salon süsleri']];
+const SHOP = [
+  ...NAIL_COLS.map(([id]) => ({ tab: 'polish', kind: 'polish', id, price: POLISH_PRICE })),
+  { tab: 'care', kind: 'cream', id: 'cream', name: 'El kremi', price: CREAM_PRICE, desc: 'Bir tüpte 5 fıs' },
+  ...Object.keys(STICKERS).map(id => ({ tab: 'care', kind: 'sticker', id, price: id === 'butterfly' || id === 'diamond' ? 20 : 15 })),
+  { tab: 'tools', kind: 'tools', id: 'straightener', name: 'Düzleştirici', price: 40, desc: 'Kıvırcık saç dümdüz olur' },
+  { tab: 'tools', kind: 'tools', id: 'turbo', name: 'Süper fön', price: 30, desc: '2 kat hızlı kurutur' },
+  { tab: 'tools', kind: 'tools', id: 'goldRazor', name: 'Altın jilet', price: 25, desc: 'Bir geçişte daha çok keser' },
+  { tab: 'tools', kind: 'tools', id: 'superShampoo', name: 'Süper şampuan', icon: '🧴', price: 25, desc: 'Kirleri çok hızlı temizler' },
+  { tab: 'tools', kind: 'tools', id: 'goldScissors', name: 'Altın makas', icon: '✂️', price: 30, desc: 'Birçok tutamı birden keser' },
+  { tab: 'tools', kind: 'tools', id: 'magicComb', name: 'Sihirli tarak', icon: '💇', price: 20, desc: 'Düğümleri 2 kat hızlı açar' },
+  ...Object.entries(MAKEUP).map(([id, m]) => ({ tab: 'makeup', kind: 'makeup', id, name: m.name, price: m.price, desc: `${m.uses} müşteride biter` })),
+  ...Object.entries(SUPPLIES).map(([id, m]) => ({ tab: 'makeup', kind: 'supply', id, name: m.name, price: m.price, desc: `${m.uses} müşteride biter` })),
+  ...Object.entries(JEWELS).map(([id, j]) => ({ tab: 'jewels', kind: 'jewel', id, name: j.name, price: j.price, desc: 'Bir kere al, hep senin' })),
+  { tab: 'decor', kind: 'decor', id: 'plant', name: 'Saksı çiçeği', price: 10, desc: 'Salona yeşillik' },
+  { tab: 'decor', kind: 'decor', id: 'sofa', name: 'Pembe koltuk', price: 20, desc: 'Bekleme koltuğu' },
+  { tab: 'decor', kind: 'decor', id: 'fish', name: 'Akvaryum', price: 25, desc: 'Yüzen balıklar' },
+  { tab: 'decor', kind: 'decor', id: 'disco', name: 'Disko topu', price: 30, desc: 'Işıklar dönsün!' },
+  { tab: 'decor', kind: 'decor', id: 'cat', name: 'Salon kedisi', price: 35, desc: 'Miyav! Kuyruğunu sallar' },
+  { tab: 'decor', kind: 'decor', id: 'balloons', name: 'Balonlar', price: 12, desc: 'Rengarenk balonlar' },
+  { tab: 'decor', kind: 'decor', id: 'chandelier', name: 'Avize', price: 40, desc: 'Işıl ışıl parlar' },
+  { tab: 'decor', kind: 'decor', id: 'radio', name: 'Müzik kutusu', price: 30, desc: 'Salonda müzik çalar 🎵' },
+  { tab: 'decor', kind: 'decor', id: 'tipjar', name: 'Bahşiş kavanozu', price: 45, desc: 'Müşteriler bahşiş bırakır!' },
+];
+const itemName = it => it.kind === 'polish' ? colName(it.id) + ' oje' : it.kind === 'sticker' ? STICKERS[it.id][1] + ' sticker' : it.name;
+const SKINS = ['#f6d2b0', '#eec39a', '#d9a37a', '#a8704a', '#7a4b2e'];
+const HAIRS = ['#1c1c1c', '#3b2314', '#6b3e1f', '#a87444', '#e0b04a', '#c0392b', '#ff6fb5', '#8b5cf6'];
+const GIRL_NAMES = ['Elif', 'Zeynep', 'Ada', 'Defne', 'Mira', 'Lina', 'Duru', 'Nehir', 'Ela', 'Nil', 'Asya', 'Azra', 'Beren', 'Ceren', 'Derin', 'Eylül', 'Ecrin', 'Gizem',
+  'Hira', 'İpek', 'Lara', 'Masal', 'Melis', 'Naz', 'Öykü', 'Pelin', 'Rüya', 'Selin', 'Su', 'Tuana', 'Yağmur', 'Zümra', 'Irmak', 'Nisa', 'Alya', 'Leyla', 'Ceylin', 'Damla'];
+const BOY_NAMES = ['Can', 'Efe', 'Mert', 'Arda', 'Kaan', 'Ege', 'Kuzey', 'Toprak', 'Emir', 'Yusuf', 'Aras', 'Deniz', 'Kerem', 'Alp', 'Batu', 'Onur'];
+const usedNames = new Set(['Buse']);
+function freshName(list) {
+  let free = list.filter(n => !usedNames.has(n));
+  if (!free.length) { for (const n of list) usedNames.delete(n); free = list; }
+  const n = pick(free); usedNames.add(n); return n;
+}
+// price per step; the first customer's full list adds up to 30 TL
+const STEP_INFO = {
+  nails: { title: '💅 Tırnak', price: 8 },
+  stickers: { title: '✨ Sticker', price: 4 },
+  cream: { title: '🧴 El kremi', price: 3 },
+  shave: { title: '🪒 Tıraş', price: 4 },
+  razor: { title: '🫧 Jilet temizliği', price: 0 },
+  wash: { title: '🚿 Saç yıkama', price: 4 },
+  comb: { title: '💇 Tarama', price: 2 },
+  dry: { title: '💨 Kurutma', price: 2 },
+  style: { title: '💫 Saç şekli', price: 3 },
+  cut: { title: '✂️ Saç kesimi', price: 4 },
+  makeup: { title: '💄 Makyaj', price: 0 },
+  brows: { title: '🤏 Kaş alma', price: 4 },
+  mask: { title: '🥒 Yüz maskesi', price: 8 },
+  dye: { title: '🎨 Saç boyama', price: 10 },
+  jewel: { title: '💎 Takı', price: 0 },
+};
+const HAND_STEPS = new Set(['nails', 'stickers', 'cream']);
+const DEFAULT_TOOL = { nails: 'clean', stickers: null, cream: 'cream', shave: 'razor', razor: 'razor', wash: 'shampoo', comb: 'comb', dry: 'dryer', style: 'iron', cut: 'scissors', brows: 'tweezers', mask: 'maskJar', dye: 'dyeBrush' };
+
+// work-view geometry
+const S = 1.3;                                              // hand scale
+const HANDS = [{ x: 280, y: 450, t: 1 }, { x: 720, y: 450, t: -1 }]; // t: thumb side (thumbs point inward)
+const FX = 420, FY = 290, FS = 1.4;                          // face view: head centre + scale
+const BOWL = { x: 810, y: 560, rx: 130, ry: 52 };
+
+// ---------- state ----------
+let T = 0, scene = 'title', cust = null, stepIdx = 0, stepDone = false, tool = null, polish = '#1c1c1c', held = null;
+let parts = [], toast = null, money = 0, served = 0, bill = null, leaveT = 0, razorHair = 0, bowlHair = 0, foamD = 0;
+let shopTab = 'polish', shopPage = 0, shopFrom = 'title', fade = 0, react = null, hop = 0;
+let musicOn = true, musicT = 0, musicI = 0;
+const TUNE = [523, 659, 784, 659, 587, 698, 880, 698, 523, 659, 784, 1047, 988, 784, 659, 587];
+const defaultInv = () => ({ polish: Object.fromEntries(START_COLS.map(c => [c, POLISH_USES])), tube: 5, creams: 0, stickers: { moon: STICKER_USES, star: STICKER_USES }, makeup: {}, supplies: {}, jewels: [], tools: [], decor: [] });
+let inv = defaultInv();
+try {
+  const s = JSON.parse(localStorage.getItem('yv-salon') || 'null');
+  if (s) { money = s.money || 0; served = s.served || 0; if (s.inv) inv = { ...inv, ...s.inv }; }
+  // v2 saves kept stickers as a list of owned kinds: give each a fresh pack
+  if (Array.isArray(inv.stickers)) inv.stickers = Object.fromEntries(inv.stickers.map(k => [k, STICKER_USES]));
+} catch (e) { }
+function save() { try { localStorage.setItem('yv-salon', JSON.stringify({ money, served, inv })); } catch (e) { } }
+const hasPolish = c => (inv.polish[c] || 0) > 0;
+const hasSticker = k => (inv.stickers[k] || 0) > 0;
+const hasMk = k => (inv.makeup[k] || 0) > 0;
+const hasSup = k => (inv.supplies[k] || 0) > 0;
+const has = (list, id) => inv[list].includes(id);
+function go(sc) { scene = sc; fade = 1; }
+
+// ---------- customers ----------
+function makeCustomer(isFirst) {
+  const girl = isFirst || Math.random() < 0.65;
+  const c = {
+    name: isFirst ? 'Buse' : freshName(girl ? GIRL_NAMES : BOY_NAMES), girl, first: isFirst,
+    skin: isFirst ? '#eec39a' : pick(SKINS), hairCol: isFirst ? '#4a2c17' : pick(HAIRS),
+    eyes: pick(['#5b3a1e', '#2d7ff9', '#2fa35a', '#1c1c1c']),
+    cloth: pick(['#8b5cf6', '#2fd27a', '#ff8a1f', '#3b82f6', '#e8434f', '#1fc7c7']), shoe: pick(['#1c1c1c', '#ffffff', '#e8434f', '#3b82f6']),
+    seed: Math.random() * 10, x: 1160, walk: 0,
+  };
+  // mostly things the salon has, but sometimes something new: buy it in the shop or turn the customer away
+  const myCols = Object.keys(inv.polish).filter(hasPolish), mySt = Object.keys(STICKERS).filter(hasSticker);
+  c.short = !girl && Math.random() < 0.8;
+  // every customer wants a hairstyle; long hair can also be cut short
+  const r = c.req = {
+    nailColor: isFirst ? '#1c1c1c' : myCols.length && Math.random() < 0.6 ? pick(myCols) : pick(NAIL_COLS)[0],
+    nailLen: isFirst ? 'long' : pick(['long', 'short']),
+    nailShape: isFirst ? 'square' : pick(Object.keys(SHAPES)),
+    sticker: isFirst ? 'moon' : Math.random() < 0.7 ? (mySt.length && Math.random() < 0.6 ? pick(mySt) : pick(Object.keys(STICKERS))) : null,
+    hairStyle: isFirst ? 'wave' : pick(c.short ? ['wave', 'straight'] : ['wave', 'straight', 'straight', 'short', 'short']),
+  };
+  // the hair she walks in with: never already what she asks for
+  c.look = isFirst ? 'messy' : r.hairStyle === 'straight' ? pick(['curly', 'wavy', 'frizzy']) : r.hairStyle === 'wave' ? pick(['straight', 'frizzy']) : pick(['straight', 'wavy', 'curly', 'frizzy']);
+  c.bangs = isFirst ? 'scallop' : pick(['scallop', 'straight', 'side', 'none']);
+  const myMk = Object.keys(MAKEUP).filter(hasMk);
+  r.makeup = [];
+  if (!isFirst && Math.random() < (girl ? 0.75 : 0.15)) {
+    const pool = myMk.length && Math.random() < 0.6 ? myMk : Object.keys(MAKEUP);
+    r.makeup = [...new Set(Array.from({ length: 1 + Math.floor(Math.random() * 3) }, () => pick(pool)))];
+  }
+  const JK = Object.keys(JEWELS);
+  r.brows = !isFirst && girl && Math.random() < 0.35;
+  r.mask = !isFirst && Math.random() < (girl ? 0.3 : 0.1);
+  r.dye = !isFirst && !c.short && Math.random() < 0.3 ? pick(DYES)[0] : null;
+  r.jewels = !isFirst && girl && Math.random() < 0.45 ? [...new Set([pick(JK), Math.random() < 0.4 ? pick(JK) : null].filter(Boolean))] : [];
+  const cream = isFirst || Math.random() < 0.6;
+  const beard = isFirst || (girl ? Math.random() < 0.15 : Math.random() < 0.7);
+  const wash = isFirst || Math.random() < 0.7, comb = wash || c.look === 'frizzy' || Math.random() < 0.3;
+  c.steps = ['nails', r.sticker && 'stickers', cream && 'cream', beard && 'shave', beard && 'razor', r.brows && 'brows', r.mask && 'mask', r.dye && 'dye',
+    wash && 'wash', comb && 'comb', wash && 'dry', r.hairStyle === 'short' ? 'cut' : 'style', r.makeup.length && 'makeup', r.jewels.length && 'jewel'].filter(Boolean);
+  // keep one visit short enough: drop random extras
+  const DROP = { stickers: () => { r.sticker = null; }, cream: () => { }, brows: () => { r.brows = false; }, mask: () => { r.mask = false; }, dye: () => { r.dye = null; }, makeup: () => { r.makeup = []; }, jewel: () => { r.jewels = []; } };
+  while (c.steps.length > 10) { const k = pick(c.steps.filter(s => DROP[s])); DROP[k](); c.steps = c.steps.filter(s => s !== k); }
+  c.price = c.steps.reduce((a, s) => a + STEP_INFO[s].price, 0) + (GLITTER.has(r.nailColor) ? 4 : 0) + (r.sticker === 'butterfly' ? 2 : 0) + (r.hairStyle === 'straight' ? 3 : 0) + r.makeup.reduce((a, k) => a + MAKEUP[k].pay, 0) + r.jewels.reduce((a, k) => a + JEWELS[k].pay, 0);
+  c.greet = `Merhaba, ben ${c.name}! ${isFirst ? '🙈' : '😊'}`;
+  // hands: dirty, broken nails and dry skin
+  c.hands = [0, 1].map(() => ({
+    nails: [0, 1, 2, 3, 4].map(() => ({ dirty: 3, len: 'short', shape: 'broken', color: null, sticker: null, scrub: 0, sp: [0, 1, 2].map(() => [rand(-7, 7), rand(-20, 0)]) })),
+    blobs: [], rub: 0, soft: !c.steps.includes('cream'), flakes: Array.from({ length: 14 }, () => [rand(-55, 55), rand(-50, 150), rand(0, 6)]),
+  }));
+  // beard stubble on the chin and jaw + a moustache
+  c.beard = [];
+  if (beard) {
+    for (let i = 0; i < 140; i++) {
+      const a = rand(0.08, 0.92) * Math.PI, k = rand(0.55, 0.96), x = Math.cos(a) * 88 * k, y = Math.sin(a) * 96 * k;
+      if (y < 34 || (Math.abs(x) < 26 && y < 64)) continue;
+      c.beard.push({ x, y, a: rand(-0.3, 0.3) - x / 200, l: rand(6, 11) });
+    }
+    for (let i = 0; i < 22; i++) { const s = i % 2 ? 1 : -1; c.beard.push({ x: s * rand(6, 28), y: rand(35, 41), a: s * rand(0.3, 0.8), l: rand(5, 9) }); }
+  }
+  // hair: strands framing the face (interactive) + strands behind (follow the average)
+  const len = c.short ? rand(70, 100) : isFirst ? 250 : r.hairStyle === 'short' ? rand(200, 270) : rand(150, 270);
+  const LOOKS = { messy: [0.1, 24], straight: [0.04, 24], wavy: [0.75, 24], curly: [1, 11], frizzy: [0.6, 16] }; // [waviness, wave length]
+  const [w0, freq] = LOOKS[c.look];
+  const front = [], back = [];
+  for (const side of [-1, 1]) for (let j = 0; j < 8; j++) front.push({ sx: side * (76 + j * 7), sy: -72 + j * 5, L: len - j * 6 + rand(-6, 6), front: true });
+  for (let i = 0; i < 14; i++) { const sx = -104 + i * 16; back.push({ sx, sy: -95 + (sx / 104) ** 2 * 25, L: len + rand(-6, 6), front: false }); }
+  front.sort((a, b) => Math.abs(b.sx) - Math.abs(a.sx));
+  c.strands = [...back, ...front].map(s => ({
+    ...s, ph: rand(0, 6), wet: 0, blow: 0, nz: Array.from({ length: 13 }, () => rand(-1, 1)),
+    tangle: comb ? rand(0.55, 1) : 0, freq, dye: 0, wave: clamp(w0 + rand(-0.05, 0.05), 0, 1),
+  }));
+  syncBack(c);
+  c.greasy = wash ? 1 : 0;
+  c.specks = [];
+  if (wash) {
+    const F = c.strands.filter(s => s.front);
+    for (let i = 0; i < 16; i++) {
+      if (i < 6) { const x = rand(-60, 60); c.specks.push({ x, y: rand(-90, -60) + Math.abs(x) * 0.2 }); }
+      else { const p = strandPts(pick(F))[Math.floor(rand(2, 12))]; c.specks.push({ x: p[0], y: p[1] }); }
+    }
+  }
+  c.specks0 = c.specks.length || 1;
+  c.foam = [];
+  c.mk = { lip: LIP_PTS.map(() => 0), lash: [0, 0], blush: [0, 0], shadow: [0, 0], glitter: [0, 0] };
+  c.capDye = 0; c.maskPh = 'apply'; c.maskPts = MASK_PTS.map(() => 0); c.cucumbers = [0, 0]; c.maskT = 0;
+  c.jewelOn = Object.fromEntries(JK.map(k => [k, JEWELS[k].spots.map(() => 0)]));
+  // messy brows: a unibrow + stray hairs around them
+  c.strays = [];
+  if (r.brows) {
+    for (let i = 0; i < 5; i++) c.strays.push({ x: rand(-14, 14), y: rand(-30, -20), a: rand(-0.5, 0.5), l: rand(6, 9) });
+    for (let i = 0; i < 10; i++) { const sd = i % 2 ? 1 : -1; c.strays.push({ x: sd * rand(22, 54), y: Math.random() < 0.5 ? rand(-46, -38) : rand(-16, -10), a: rand(-0.6, 0.6), l: rand(5, 9) }); }
+  }
+  c.strays0 = c.strays.length || 1;
+  return c;
+}
+function syncBack(c) {
+  const F = c.strands.filter(s => s.front), avg = k => F.reduce((a, s) => a + s[k], 0) / F.length;
+  const t = avg('tangle'), w = avg('wave'), wet = avg('wet'), dye = avg('dye'), end = F.reduce((a, s) => a + s.sy + s.L, 0) / F.length;
+  // back hair follows the visible strands (also when they get cut shorter)
+  for (const s of c.strands) if (!s.front) { s.tangle = t; s.wave = w; s.wet = wet; s.dye = dye; s.L = Math.min(s.L, end - s.sy + 10); }
+}
+function requestLines(c) {
+  const L = [c.first ? 'Çok bakımsız kaldım, yardım eder misin?' : 'Şunları istiyorum:'], r = c.req;
+  for (const s of c.steps) {
+    if (s === 'nails') L.push(`💅 Tırnaklarım: ${colName(r.nailColor).toLowerCase()}, ${LENS[r.nailLen].toLowerCase()}, ${SHAPES[r.nailShape].toLowerCase()}`);
+    else if (s === 'stickers') L.push(`${STICKERS[r.sticker][0]} 10 tırnağa ${STICKERS[r.sticker][1].toLowerCase()} stickerı`);
+    else if (s === 'cream') L.push('🧴 İki elime krem');
+    else if (s === 'shave') L.push('🪒 Sakallarımı kes');
+    else if (s === 'wash') L.push('🚿 Saçımı yıka, tara, kurut');
+    else if (s === 'comb' && !c.steps.includes('wash')) L.push('💇 Saçımı tara');
+    else if (s === 'style') L.push(r.hairStyle === 'wave' ? '〰️ Saçım dalga dalga olsun' : '📏 Saçım dümdüz olsun');
+    else if (s === 'cut') L.push('✂️ Saçımı kısacık kes');
+    else if (s === 'makeup') L.push('💄 Makyaj: ' + r.makeup.map(k => MAKEUP[k].ask).join(', '));
+    else if (s === 'brows') L.push('🤏 Kaşlarımı al, çok dağınık!');
+    else if (s === 'mask') L.push('🥒 Salatalıklı yüz maskesi');
+    else if (s === 'dye') L.push(`🎨 Saçımı ${dyeName(r.dye).toLowerCase()} boya`);
+    else if (s === 'jewel') L.push('💎 Takı: ' + r.jewels.map(k => JEWELS[k].name.toLowerCase()).join(', '));
+  }
+  return L;
+}
+
+// ---------- flow ----------
+const curStep = () => cust.steps[stepIdx];
+const frontStrands = () => cust.strands.filter(s => s.front);
+const allNails = f => cust.hands.every(h => h.nails.every(f));
+function newCustomer(isFirst) {
+  cust = makeCustomer(isFirst); go('enter'); stepIdx = 0; stepDone = false;
+  tool = null; held = null; razorHair = 0; bowlHair = 0; bill = null; leaveT = 0; react = null;
+}
+// what this customer wants that the salon doesn't have
+function missing(c) {
+  const m = [], r = c.req;
+  if (!hasPolish(r.nailColor)) m.push(`${colName(r.nailColor)} oje`);
+  if (r.sticker && !hasSticker(r.sticker)) m.push(`${STICKERS[r.sticker][1]} sticker`);
+  if (r.hairStyle === 'straight' && !has('tools', 'straightener')) m.push('Düzleştirici');
+  for (const k of r.makeup) if (!hasMk(k)) m.push(MAKEUP[k].name);
+  if (r.mask && !hasSup('mask')) m.push('Yüz maskesi');
+  if (r.dye && !hasSup('dye')) m.push('Saç boyası');
+  for (const k of r.jewels) if (!has('jewels', k)) m.push(JEWELS[k].name);
+  if (c.steps.includes('cream') && inv.tube + inv.creams * 5 < 2) m.push('El kremi');
+  return m;
+}
+function startWork() {
+  const m = missing(cust);
+  if (m.length) { sfx('no'); return say(`Önce mağazadan al: ${m.join(', ')} 🛍️`); }
+  go('work'); stepIdx = 0; startStep();
+}
+function reject() { cust.rejected = true; go('leave'); sfx('no'); }
+function startStep() { stepDone = false; held = null; tool = curStep() === 'makeup' ? cust.req.makeup[0] : curStep() === 'jewel' ? cust.req.jewels[0] : DEFAULT_TOOL[curStep()]; }
+function nextStep() {
+  stepIdx++; fade = 1; react = null;
+  if (stepIdx >= cust.steps.length) { go('pay'); cust.x = 520; tool = null; held = null; sparkle(520, 300, 20); return; }
+  startStep();
+}
+function openShop(tab) { shopFrom = scene; if (tab) shopTab = tab; go('shop'); }
+const ownsItem = it => it.kind === 'jewel' ? has('jewels', it.id) : it.kind === 'tools' || it.kind === 'decor' ? has(it.kind, it.id) : false;
+function buy(it) {
+  if (ownsItem(it)) return;
+  if (money < it.price) { sfx('no'); return say(`${it.price - money} TL daha lazım! 💸 Müşterilere bak, para kazan`); }
+  money -= it.price;
+  if (it.kind === 'polish') inv.polish[it.id] = (inv.polish[it.id] || 0) + POLISH_USES;
+  else if (it.kind === 'cream') inv.creams++;
+  else if (it.kind === 'supply') inv.supplies[it.id] = (inv.supplies[it.id] || 0) + SUPPLIES[it.id].uses;
+  else if (it.kind === 'jewel') inv.jewels.push(it.id);
+  else if (it.kind === 'makeup') inv.makeup[it.id] = (inv.makeup[it.id] || 0) + MAKEUP[it.id].uses;
+  else if (it.kind === 'sticker') inv.stickers[it.id] = (inv.stickers[it.id] || 0) + STICKER_USES;
+  else inv[it.kind].push(it.id);
+  save(); sfx('coin'); sparkle(ptr.x, ptr.y, 18); say(`${itemName(it)} alındı! 🎉`);
+}
+const REACTS = ['Ooo çok güzel! 😍', 'Bayıldım! 💖', 'Harikasın! ✨', 'Vay be! 🤩', 'Çok beğendim! 😊'];
+function mkDone(k) { const m = cust.mk; return k === 'lipstick' ? m.lip.every(v => v >= 1) : k === 'curler' ? m.lash.every(v => v >= 1) : m[k].every(v => v >= 1); }
+function isDone(s) {
+  const c = cust, r = c.req, F = frontStrands();
+  switch (s) {
+    case 'nails': return allNails(n => !n.dirty && n.len === r.nailLen && n.shape === r.nailShape && n.color === r.nailColor);
+    case 'stickers': return allNails(n => n.sticker);
+    case 'cream': return c.hands.every(h => h.soft);
+    case 'shave': return c.beard.length === 0;
+    case 'razor': return razorHair <= 0;
+    case 'wash': return c.specks.length === 0 && c.foam.length === 0;
+    case 'comb': return F.every(s => s.tangle < 0.05);
+    case 'dry': return F.every(s => s.wet <= 0.02);
+    case 'style': return F.every(s => r.hairStyle === 'wave' ? s.wave >= 0.9 : s.wave <= 0.1);
+    case 'cut': return F.every(s => s.sy + s.L <= CUT_Y + 14);
+    case 'makeup': return r.makeup.every(mkDone);
+    case 'brows': return c.strays.length === 0;
+    case 'mask': return c.maskPh === 'done';
+    case 'dye': return c.capDye >= 1 && F.every(s => s.dye >= 1);
+    case 'jewel': return r.jewels.every(k => c.jewelOn[k].every(v => v));
+  }
+  return true;
+}
+function finishStep(s) {
+  const c = cust;
+  if (s === 'wash') { c.greasy = 0; for (const st of c.strands) st.wet = 1; }
+  if (s === 'comb') for (const st of c.strands) st.tangle = 0;
+  if (s === 'dry') for (const st of c.strands) st.wet = 0;
+  if (s === 'style') for (const st of c.strands) st.wave = c.req.hairStyle === 'wave' ? 1 : 0;
+  if (s === 'razor') razorHair = 0;
+}
+function takeMoney() { bill = { t: 0, x0: cust.x + 80, y0: 470 }; }
+// paid: the polish bottle used on this customer loses one use
+function usePolish() {
+  const c = cust.req.nailColor;
+  inv.polish[c] = Math.max(0, (inv.polish[c] || 0) - 1);
+  if (!inv.polish[c]) setTimeout(() => say(`${colName(c)} oje bitti! 🛍️ Mağazadan yenisini al`), 1200);
+  for (const m of ['mask', 'dye']) if (cust.req[m]) { inv.supplies[m] = Math.max(0, (inv.supplies[m] || 0) - 1); if (!inv.supplies[m]) setTimeout(() => say(`${SUPPLIES[m].name} bitti! 🛍️`), 5000); }
+  for (const m of cust.req.makeup) { inv.makeup[m] = Math.max(0, (inv.makeup[m] || 0) - 1); if (!inv.makeup[m]) setTimeout(() => say(`${MAKEUP[m].name} bitti! 🛍️ Mağazadan yenisini al`), 4000); }
+  const k = cust.req.sticker;
+  if (k) { inv.stickers[k] = Math.max(0, (inv.stickers[k] || 0) - 1); if (!inv.stickers[k]) setTimeout(() => say(`${STICKERS[k][1]} stickerları bitti! 🛍️`), 2600); }
+}
+function say(t) { if (toast && toast.text === t) { toast.t = 1.6; return; } toast = { text: t, t: 1.6 }; }
+
+// ---------- particles ----------
+function part(o) { parts.push({ vx: 0, vy: 0, g: 0, r: 4, col: '#fff', kind: 'dot', rot: 0, ...o, max: o.life }); }
+function sparkle(x, y, n = 8) { for (let i = 0; i < n; i++) { const a = rand(0, 6.28), s = rand(60, 180); part({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rand(0.4, 0.8), kind: 'star', r: rand(5, 9), col: pick(['#ffd23f', '#ff6fb5', '#ffffff', '#b18cff']) }); } }
+function bubbles(x, y, n = 6) { for (let i = 0; i < n; i++) part({ x: x + rand(-15, 15), y: y + rand(-10, 10), vx: rand(-30, 30), vy: rand(-80, -30), life: rand(0.5, 1), r: rand(3, 7), kind: 'bub' }); }
+function confetti() { for (let i = 0; i < 60; i++) part({ x: rand(40, PANEL - 40), y: rand(-20, 40), vx: rand(-60, 60), vy: rand(50, 200), g: 200, life: rand(1.2, 2), kind: 'conf', r: rand(4, 7), rot: rand(0, 6), col: pick(['#ff6fb5', '#ffd23f', '#2fd27a', '#5aa9ff', '#b18cff']) }); }
+function drawParts() {
+  for (const p of parts) {
+    const a = clamp(p.life / p.max, 0, 1); ctx.globalAlpha = a;
+    if (p.kind === 'star') { ctx.fillStyle = p.col; star4(p.x, p.y, p.r); }
+    else if (p.kind === 'bub') { ctx.fillStyle = 'rgba(255,255,255,.85)'; circle(p.x, p.y, p.r); ctx.strokeStyle = '#9fd8ff'; ctx.lineWidth = 1.5; ctx.stroke(); }
+    else if (p.kind === 'drop') { ctx.fillStyle = '#6cc4ff'; ell(p.x, p.y, p.r * 0.7, p.r); }
+    else if (p.kind === 'hair') { ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 2.5; const r = p.rot + p.life * 8; line(p.x, p.y, p.x + Math.cos(r) * 8, p.y + Math.sin(r) * 8); }
+    else if (p.kind === 'wind') { ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 3; line(p.x, p.y, p.x - p.vx * 0.05, p.y - p.vy * 0.05); }
+    else if (p.kind === 'steam') { ctx.fillStyle = 'rgba(255,255,255,.7)'; circle(p.x, p.y, p.r * (2 - a)); }
+    else if (p.kind === 'conf') { ctx.fillStyle = p.col; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot + p.life * 6); ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); ctx.restore(); }
+    else if (p.kind === 'txt') text(p.t, p.x, p.y, 26, p.col, 'center', 800);
+    else if (p.kind === 'lock') { ctx.strokeStyle = p.col; ctx.lineWidth = 9; ctx.lineCap = 'round'; const r = p.rot + p.life * 2; line(p.x, p.y, p.x + Math.sin(r) * 18, p.y + Math.cos(r) * 18); }
+    else { ctx.fillStyle = p.col; circle(p.x, p.y, p.r); }
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ---------- input ----------
+const ptr = { x: 0, y: 0, px: 0, py: 0, down: false, inside: false };
+let buttons = [];
+function evPos(e) { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H]; }
+const inBtn = b => ptr.x >= b.x && ptr.x <= b.x + b.w && ptr.y >= b.y && ptr.y <= b.y + b.h;
+cv.addEventListener('pointerdown', e => {
+  audio(); e.preventDefault();
+  try { cv.setPointerCapture(e.pointerId); } catch (err) { }
+  [ptr.x, ptr.y] = evPos(e); ptr.px = ptr.x; ptr.py = ptr.y; ptr.inside = true;
+  for (let i = buttons.length - 1; i >= 0; i--) if (inBtn(buttons[i])) { sfx('pop'); buttons[i].onClick(); return; }
+  ptr.down = true; onDown();
+});
+cv.addEventListener('pointermove', e => { [ptr.x, ptr.y] = evPos(e); ptr.inside = true; onMove(); ptr.px = ptr.x; ptr.py = ptr.y; });
+cv.addEventListener('pointerup', () => { if (ptr.down) onUp(); ptr.down = false; });
+cv.addEventListener('pointercancel', () => { ptr.down = false; });
+cv.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') ptr.inside = false; });
+cv.addEventListener('contextmenu', e => e.preventDefault());
+
+const lp = () => [(ptr.x - FX) / FS, (ptr.y - FY) / FS]; // pointer in head-local units
+function nailAt(px, py) {
+  for (let h = 0; h < 2; h++) {
+    const H0 = HANDS[h], F = fingerDefs(H0.t);
+    for (let i = 0; i < 5; i++) {
+      const [bx, by, a, len, w] = F[i];
+      const dx = px - (H0.x + bx * S), dy = py - (H0.y + by * S);
+      const lx = (dx * Math.cos(a) + dy * Math.sin(a)) / S, ly = (-dx * Math.sin(a) + dy * Math.cos(a)) / S;
+      if (Math.abs(lx) < w * 0.6 + 4 && ly > -len - 48 && ly < -len + 34) return cust.hands[h].nails[i];
+    }
+  }
+  return null;
+}
+function handAt(px, py) {
+  for (let h = 0; h < 2; h++) { const dx = (px - HANDS[h].x) / S, dy = (py - HANDS[h].y) / S; if ((dx / 105) ** 2 + ((dy + 30) / 170) ** 2 < 1) return h; }
+  return -1;
+}
+function minDist(st, x, y) { let m = 1e9; for (const [px, py] of strandPts(st)) m = Math.min(m, dist(px, py, x, y)); return m; }
+function overHair(lx, ly) {
+  if (ly < -30 && (lx / 100) ** 2 + ((ly + 4) / 108) ** 2 < 1) return true;
+  return frontStrands().some(st => minDist(st, lx, ly) < 22);
+}
+const inBowl = () => ((ptr.x - BOWL.x) / BOWL.rx) ** 2 + ((ptr.y - BOWL.y) / BOWL.ry) ** 2 < 1.3;
+
+function onDown() {
+  if (scene !== 'work' || ptr.x >= PANEL) return;
+  const s = curStep();
+  if (s === 'nails') { const n = nailAt(ptr.x, ptr.y); if (n) nailTool(n); }
+  else if (s === 'stickers') { if (held) placeSticker(false); else say('Sağdaki kâğıttan bir sticker al! 👉'); }
+  else if (s === 'cream' && tool === 'cream') squeeze();
+  else work(0);
+}
+function onMove() { if (scene === 'work' && ptr.down && ptr.x < PANEL) work(Math.hypot(ptr.x - ptr.px, ptr.y - ptr.py)); }
+function onUp() { if (scene === 'work' && curStep() === 'stickers' && held && ptr.x < PANEL) placeSticker(true); }
+
+function nailTool(n) {
+  const t = tool;
+  if (!t) return say('Önce sağdan bir araç seç! 👉');
+  if (t === 'clean') { if (n.dirty > 0) { n.dirty--; n.scrub = 0; sfx('scrub'); bubbles(ptr.x, ptr.y); } return; }
+  if (n.dirty > 0) { sfx('no'); return say('Önce 🧽 ile temizle!'); }
+  if (t === 'long' || t === 'short') { n.len = t; if (n.shape === 'broken') n.shape = 'round'; sfx('pop'); }
+  else if (SHAPES[t]) { n.shape = t; sfx('scrub'); for (let i = 0; i < 5; i++) part({ x: ptr.x, y: ptr.y, vx: rand(-60, 60), vy: rand(-20, 60), g: 300, life: 0.6, r: 2, col: '#f3e3d0' }); }
+  else if (t === 'paint') { n.color = polish; sfx('paint'); }
+  sparkle(ptr.x, ptr.y, 3);
+}
+function placeSticker(quiet) {
+  const n = nailAt(ptr.x, ptr.y);
+  if (n && !n.sticker) { n.sticker = held; held = null; sfx('stick'); sparkle(ptr.x, ptr.y, 6); }
+  else if (!quiet) say(n ? 'Bu tırnakta zaten var! Başka tırnağa koy.' : 'Stickerı bir tırnağa koy!');
+}
+function squeeze() {
+  const h = handAt(ptr.x, ptr.y);
+  if (h < 0) return say('Kremi bir elin üstüne sık!');
+  const hand = cust.hands[h];
+  if (hand.soft) return say('Bu el zaten yumuşacık! 😊');
+  if (inv.tube <= 0) { sfx('no'); return say(inv.creams ? 'Tüp bitti! Yeni tüpü aç 🧴' : 'Krem bitti! Mağazadan krem al 🛍️'); }
+  inv.tube--; save();
+  hand.blobs.push({ x: clamp((ptr.x - HANDS[h].x) / S, -45, 45), y: clamp((ptr.y - HANDS[h].y) / S, -40, 120), r: rand(16, 22) });
+  sfx('fis'); part({ x: ptr.x + 30, y: ptr.y - 30, vy: -60, life: 0.8, kind: 'txt', t: 'fıs!', col: '#d6337f' });
+  for (let i = 0; i < 6; i++) part({ x: ptr.x, y: ptr.y, vx: rand(-80, 80), vy: rand(-80, 20), g: 300, life: 0.5, r: 3, col: '#fffaf2' });
+}
+function work(d) {
+  const s = curStep(), c = cust;
+  if (s === 'nails' && tool === 'clean' && d > 0) {
+    const n = nailAt(ptr.x, ptr.y);
+    if (n && n.dirty > 0 && (n.scrub += d) > 45) { n.scrub = 0; n.dirty--; bubbles(ptr.x, ptr.y); sfx('scrub', 60); }
+  } else if (s === 'cream' && tool === 'rub' && d > 0) {
+    const h = handAt(ptr.x, ptr.y); if (h < 0) return;
+    const hand = c.hands[h]; if (hand.soft) return;
+    if (!hand.blobs.length) return say('Önce krem sık! 🧴');
+    hand.rub += d * 0.25; sfx('scrub', 90);
+    if (hand.rub >= 100) { hand.soft = true; hand.blobs = []; sparkle(ptr.x, ptr.y, 14); sfx('stick'); }
+  } else if (s === 'shave') {
+    const [lx, ly] = lp(), before = c.beard.length;
+    c.beard = c.beard.filter(b => {
+      if (dist(b.x, b.y, lx, ly) > (has('tools', 'goldRazor') ? 26 : 16)) return true;
+      part({ x: FX + b.x * FS, y: FY + b.y * FS, vx: rand(-40, 40), vy: rand(-20, 40), g: 500, life: 1, kind: 'hair', rot: rand(0, 6) });
+      return false;
+    });
+    const cut = before - c.beard.length;
+    if (cut) { razorHair += cut; sfx('buzz', 70); }
+  } else if (s === 'razor' && d > 0) {
+    if (!inBowl() || razorHair <= 0) return;
+    razorHair = Math.max(0, razorHair - d * 0.1); bowlHair += d * 0.1;
+    sfx('water', 130);
+    if (Math.random() < 0.4) part({ x: ptr.x + rand(-20, 20), y: ptr.y, vx: rand(-80, 80), vy: rand(-220, -120), g: 700, life: 0.7, kind: 'drop', r: 5 });
+    if (razorHair <= 0) sparkle(ptr.x, ptr.y, 14);
+  } else if (s === 'wash' && tool === 'shampoo') {
+    const [lx, ly] = lp(); if (!overHair(lx, ly)) return;
+    foamD += d + (d ? 0 : 20);
+    if (foamD > 12) { foamD = 0; if (c.foam.length < 170) c.foam.push({ x: lx + rand(-10, 10), y: ly + rand(-10, 10), r: rand(7, 14) }); sfx('scrub', 90); }
+    const n0 = c.specks.length;
+    c.specks = c.specks.filter(p => dist(p.x, p.y, lx, ly) > (has('tools', 'superShampoo') ? 48 : 30));
+    if (c.specks.length < n0) bubbles(ptr.x, ptr.y, 4);
+    c.greasy = c.specks.length / c.specks0;
+  } else if (s === 'cut') {
+    const [lx, ly] = lp();
+    let cut = false;
+    for (const st of frontStrands()) {
+      if (minDist(st, lx, ly) > (has('tools', 'goldScissors') ? 42 : 26)) continue;
+      const nl = Math.max(CUT_Y - st.sy, ly - st.sy);
+      if (nl < st.L - 3) {
+        const end = strandPts(st).at(-1);
+        for (let i = 0; i < 3; i++) part({ x: FX + end[0] * FS + rand(-6, 6), y: FY + (st.sy + nl) * FS + i * 12, vx: rand(-30, 30), vy: rand(0, 40), g: 600, life: 1.1, kind: 'lock', col: mix(cust.hairCol, '#7a6a2a', 0.45 * cust.greasy), rot: rand(-0.5, 0.5) });
+        st.L = nl; cut = true;
+      }
+    }
+    if (cut) sfx('snip', 120);
+  } else if (s === 'brows') {
+    const [lx, ly] = lp(); let best = -1, bd = 12;
+    c.strays.forEach((h, i) => { const d2 = dist(h.x, h.y, lx, ly); if (d2 < bd) { bd = d2; best = i; } });
+    if (best >= 0) {
+      const h = c.strays.splice(best, 1)[0];
+      part({ x: FX + h.x * FS, y: FY + h.y * FS, vx: rand(-60, 60), vy: -rand(60, 140), g: 500, life: 0.9, kind: 'hair', rot: rand(0, 6) });
+      sfx('stick'); hop = 0.25;
+      if (Math.random() < 0.3) part({ x: ptr.x + 40, y: ptr.y - 30, vy: -50, life: 0.8, kind: 'txt', t: 'Ay! 😣', col: '#d6337f' });
+    }
+  } else if (s === 'mask') {
+    const [lx, ly] = lp(), ph = c.maskPh;
+    if (tool === 'maskJar') {
+      if (ph !== 'apply') { if (!d) say(ph === 'wipe' ? 'Maske kurudu, 🧻 havluyla sil!' : 'Maske sürüldü! 🥒 Salatalık koy'); return; }
+      let hit = false; MASK_PTS.forEach(([px, py], i) => { if (!c.maskPts[i] && dist(px, py, lx, ly) < 20) { c.maskPts[i] = 1; hit = true; } });
+      if (hit) sfx('scrub', 120);
+      if (c.maskPts.every(v => v)) { c.maskPh = 'cucumber'; tool = 'cucumber'; say('Şimdi 🥒 salatalıkları gözlerin üstüne koy!'); }
+    } else if (tool === 'cucumber' && !d) {
+      if (ph !== 'cucumber') return say(ph === 'apply' ? 'Önce maskeyi bütün yüze sür!' : 'Salatalıklar zaten yerinde 🥒');
+      [-1, 1].forEach((sd, i) => { if (!c.cucumbers[i] && dist(sd * 34, 6, lx, ly) < 28) { c.cucumbers[i] = 1; sfx('pop'); sparkle(ptr.x, ptr.y, 5); } });
+      if (c.cucumbers.every(v => v)) { c.maskPh = 'wait'; c.maskT = 5; say('⏳ Maske kuruyor, biraz bekle...'); }
+    } else if (tool === 'towel') {
+      if (ph !== 'wipe') { if (!d) say(ph === 'wait' ? '⏳ Maske daha kurumadı, bekle!' : 'Önce maskeyi sür ve salatalıkları koy!'); return; }
+      let hit = false; MASK_PTS.forEach(([px, py], i) => { if (c.maskPts[i] > 0 && dist(px, py, lx, ly) < 24) { c.maskPts[i] = Math.max(0, c.maskPts[i] - 0.34); hit = true; } });
+      if (hit) sfx('scrub', 110);
+      if (c.maskPts.every(v => v <= 0)) { c.maskPh = 'done'; c.cucumbers = [0, 0]; sparkle(ptr.x, ptr.y, 16); }
+    }
+  } else if (s === 'dye') {
+    const [lx, ly] = lp(), amt = d ? d * 0.02 : 0.15; let hit = false;
+    if (ly < -30 && (lx / 100) ** 2 + ((ly + 4) / 108) ** 2 < 1) { c.capDye = Math.min(1, c.capDye + amt * 0.5); hit = true; }
+    for (const st of frontStrands()) if (st.dye < 1 && minDist(st, lx, ly) < 24) { st.dye = Math.min(1, st.dye + amt); hit = true; }
+    if (hit) sfx('scrub', 130);
+  } else if (s === 'jewel') {
+    if (d || !JEWELS[tool]) return;
+    const [lx, ly] = lp(), J = JEWELS[tool];
+    const i = J.spots.findIndex(([px, py], i) => !c.jewelOn[tool][i] && dist(px, py, lx, ly) < 38);
+    if (i >= 0) { c.jewelOn[tool][i] = 1; sfx('stick'); sparkle(ptr.x, ptr.y, 12); }
+    else say(`${J.name}: ${J.where} koy!`);
+  } else if (s === 'makeup') {
+    const [lx, ly] = lp(), m = c.mk, amt = d ? d * 0.012 : 0.2;
+    if (tool === 'lipstick') { let hit = false; LIP_PTS.forEach(([px, py], i) => { if (dist(px, py, lx, ly) < 12 && !m.lip[i]) { m.lip[i] = 1; hit = true; } }); if (hit) sfx('paint', 120); }
+    else if (tool === 'blush' || tool === 'shadow' || tool === 'glitter') [-1, 1].forEach((sd, i) => {
+      const [cx, cy, r] = tool === 'blush' ? [sd * 54, 30, 28] : tool === 'glitter' ? [sd * 54, 22, 28] : [sd * 34, -10, 22];
+      if (dist(cx, cy, lx, ly) < r && m[tool][i] < 1) { m[tool][i] = Math.min(1, m[tool][i] + amt); sfx('scrub', 150); if (m[tool][i] >= 1) sparkle(ptr.x, ptr.y, 8); }
+    });
+  } else if (s === 'comb' && d > 0) {
+    const [lx, ly] = lp(), dy = (ptr.y - ptr.py) / FS;
+    if (dy <= 0) return;
+    let hit = false;
+    for (const st of frontStrands()) if (st.tangle > 0 && minDist(st, lx, ly) < 26) { st.tangle = Math.max(0, st.tangle - dy * (has('tools', 'magicComb') ? 0.014 : 0.006)); hit = true; }
+    if (hit) sfx('scrub', 120);
+  }
+}
+function update(dt) {
+  T += dt;
+  for (const p of parts) { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += p.g * dt; }
+  parts = parts.filter(p => p.life > 0);
+  if (toast && (toast.t -= dt) <= 0) toast = null;
+  if (musicOn && ac && scene !== 'title' && has('decor', 'radio') && (musicT -= dt) <= 0) { musicT = 0.32; const f = TUNE[musicI++ % TUNE.length]; tone(f, f, 0.25, 0.025, 'triangle'); }
+  fade = Math.max(0, fade - dt * 3); hop = Math.max(0, hop - dt * 2.5);
+  if (react && (react.t -= dt) <= 0) react = null;
+  if (!cust) return;
+  syncBack(cust);
+  for (const st of cust.strands) st.blow = Math.max(0, st.blow - dt * 2);
+  if (scene === 'enter') { cust.x -= 260 * dt; cust.walk += dt * 9; if (cust.x <= 520) { cust.x = 520; scene = 'talk'; } }
+  else if (scene === 'leave') { cust.x += 300 * dt; cust.walk += dt * 9; if (cust.x > 1420) newCustomer(false); }
+  else if (scene === 'pay') {
+    if (bill && (bill.t += dt * 1.2) >= 1 && !bill.done) {
+      const tip = has('decor', 'tipjar') ? 2 + Math.floor(Math.random() * 4) : 0;
+      if (tip) part({ x: 1040, y: 190, vy: -40, life: 1.8, kind: 'txt', t: `💝 Bahşiş +${tip} TL`, col: '#d6337f' });
+      bill.done = true; money += cust.price + tip; served++; usePolish(); save(); sfx('coin'); sparkle(1158, 36, 16); leaveT = 1;
+      part({ x: 1158, y: 110, vy: -40, life: 1.4, kind: 'txt', t: '+' + cust.price + ' TL', col: '#23884f' });
+    }
+    if (leaveT > 0 && (leaveT -= dt) <= 0) scene = 'leave';
+  } else if (scene === 'work') workUpdate(dt);
+}
+function workUpdate(dt) {
+  const s = curStep(), c = cust, F = frontStrands(), hold = ptr.down && ptr.x < PANEL;
+  if (!HAND_STEPS.has(s)) for (const st of F) if (st.wet > 0.3 && Math.random() < dt * 0.8 * st.wet) {
+    const p = strandPts(st).at(-1);
+    part({ x: FX + p[0] * FS, y: FY + p[1] * FS + 8, vy: 40, g: 900, life: 0.7, kind: 'drop', r: 5 });
+  }
+  if (hold && s === 'wash' && tool === 'shower') {
+    const [lx, ly] = lp();
+    for (let i = 0; i < 3; i++) part({ x: ptr.x + rand(-18, 18), y: ptr.y + 20, vx: rand(-40, 40), vy: rand(260, 420), life: 0.5, kind: 'drop', r: 4 });
+    c.foam = c.foam.filter(f => dist(f.x, f.y, lx, ly + 28) > 55);
+    for (const st of F) if (minDist(st, lx, ly + 20) < 55) st.wet = 1;
+    sfx('water', 110);
+  }
+  if (hold && s === 'dry') {
+    const [lx, ly] = lp();
+    for (const st of F) { const d = minDist(st, lx - 20, ly); if (d < 100) { st.wet = Math.max(0, st.wet - dt * (has('tools', 'turbo') ? 2.2 : 1.1) * (1 - d / 100)); st.blow = 1; } }
+    for (let i = 0; i < 2; i++) part({ x: ptr.x - 4, y: ptr.y + rand(-10, 10), vx: -rand(220, 360), vy: rand(-70, 70), life: 0.35, kind: 'wind' });
+    sfx('air', 100);
+  }
+  if (s === 'mask' && c.maskPh === 'wait' && (c.maskT -= dt) <= 0) { c.maskPh = 'wipe'; tool = 'towel'; say('Maske kurudu! 🧻 Havluyla sil'); sfx('done'); }
+  if (hold && s === 'makeup' && tool === 'curler') {
+    const [lx, ly] = lp();
+    [-1, 1].forEach((sd, i) => { if (dist(sd * 34, 0, lx, ly) < 26 && c.mk.lash[i] < 1) { c.mk.lash[i] = Math.min(1, c.mk.lash[i] + dt * 0.8); if (c.mk.lash[i] >= 1) { sparkle(ptr.x, ptr.y, 8); sfx('stick'); } } });
+  }
+  if (hold && s === 'style') {
+    const [lx, ly] = lp(), straight = c.req.hairStyle === 'straight';
+    let best = null, bd = 30;
+    for (const st of F) { const d = minDist(st, lx, ly); if (d < bd) { bd = d; best = st; } }
+    if (best) {
+      best.wave = clamp(best.wave + (straight ? -1 : 1) * dt * 0.8, 0, 1);
+      if (Math.random() < 0.5) part({ x: ptr.x + rand(-10, 10), y: ptr.y - 20, vx: rand(-20, 20), vy: -rand(40, 90), life: 0.8, kind: 'steam', r: rand(5, 9) });
+      sfx('steam', 260);
+    }
+  }
+  if (!stepDone && isDone(s)) { stepDone = true; finishStep(s); sfx('done'); confetti(); hop = 1; react = { text: pick(REACTS), t: 3.5 }; }
+}
+
+// ---------- stickers ----------
+function drawSticker(k, x, y, r) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(r / 24, r / 24);
+  ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(90,40,0,.55)'; ctx.lineJoin = 'round';
+  if (k === 'flower') {
+    ctx.fillStyle = '#ff9ccf';
+    for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2 - Math.PI / 2; ctx.beginPath(); ctx.arc(Math.cos(a) * 12, Math.sin(a) * 12, 10, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+    ctx.fillStyle = '#ffd23f'; circle(0, 0, 8); ctx.stroke();
+  } else if (k === 'rainbow') {
+    ['#e8434f', '#ff8a1f', '#ffd23f', '#2fd27a', '#3b82f6', '#8b5cf6'].forEach((c, i) => { ctx.strokeStyle = c; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(0, 10, 24 - i * 4, Math.PI, 0); ctx.stroke(); });
+    ctx.fillStyle = '#ffffff'; circle(-20, 12, 6); circle(-14, 14, 5); circle(20, 12, 6); circle(14, 14, 5);
+  } else if (k === 'cherry') {
+    ctx.strokeStyle = '#4f9a3c'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-10, 8); ctx.quadraticCurveTo(-4, -14, 6, -22); ctx.moveTo(12, 10); ctx.quadraticCurveTo(10, -10, 6, -22); ctx.stroke();
+    ctx.fillStyle = '#2fd27a'; ell(12, -20, 8, 4, -0.4);
+    ctx.fillStyle = '#e8434f'; ctx.strokeStyle = 'rgba(90,0,0,.55)'; circle(-10, 12, 10); ctx.stroke(); circle(12, 14, 10); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.7)'; circle(-13, 8, 3); circle(9, 10, 3);
+  } else if (k === 'diamond') {
+    ctx.fillStyle = '#9fe3ff'; ctx.beginPath(); ctx.moveTo(-22, -8); ctx.lineTo(-12, -20); ctx.lineTo(12, -20); ctx.lineTo(22, -8); ctx.lineTo(0, 22); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(40,120,170,.6)'; ctx.lineWidth = 2; line(-22, -8, 22, -8); line(-6, -20, -10, -8); line(6, -20, 10, -8); line(-10, -8, 0, 22); line(10, -8, 0, 22);
+  } else if (k === 'butterfly') {
+    for (const s of [-1, 1]) {
+      ctx.fillStyle = '#5aa9ff'; ctx.beginPath(); ctx.ellipse(s * 12, -8, 12, 14, s * 0.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#b18cff'; ctx.beginPath(); ctx.ellipse(s * 10, 12, 9, 10, -s * 0.4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#ffffff'; circle(s * 13, -9, 4);
+    }
+    ctx.fillStyle = '#2a1f2e'; rr(-3, -16, 6, 34, 3); ctx.fill();
+    ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 2; line(-1, -16, -8, -26); line(1, -16, 8, -26);
+  } else {
+    ctx.beginPath();
+    if (k === 'moon') {
+      const R = 24, q = 20, d = 12, xi = (R * R - q * q + d * d) / (2 * d), yi = Math.sqrt(R * R - xi * xi), t1 = Math.atan2(yi, xi);
+      ctx.arc(0, 0, R, t1, Math.PI * 2 - t1); ctx.arc(d, 0, q, Math.atan2(-yi, xi - d), Math.atan2(yi, xi - d), true);
+      ctx.fillStyle = '#ffd23f';
+    } else if (k === 'star') {
+      for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr2 = i % 2 ? 10 : 25; ctx.lineTo(Math.cos(a) * rr2, Math.sin(a) * rr2); }
+      ctx.fillStyle = '#ffe14d';
+    } else {
+      ctx.moveTo(0, 22); ctx.bezierCurveTo(-34, -2, -16, -28, 0, -10); ctx.bezierCurveTo(16, -28, 34, -2, 0, 22);
+      ctx.fillStyle = '#ff4f8b';
+    }
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+  }
+  ctx.fillStyle = 'rgba(255,255,255,.7)'; ell(-8, -8, 4, 2.5, -0.6);
+  ctx.restore();
+}
+
+// ---------- hands & nails ----------
+// [base x, base y, angle, length, width] per finger; thumb first
+function fingerDefs(t) {
+  return [
+    [t * 78, 30, t * 0.95, 70, 34],
+    [t * 50, -50, t * 0.12, 95, 29],
+    [t * 17, -58, t * 0.03, 105, 30],
+    [-t * 17, -54, -t * 0.06, 98, 29],
+    [-t * 50, -40, -t * 0.17, 78, 25],
+  ];
+}
+function nailPath(n, w, len) {
+  const hw = w * 0.37, y0 = -len + 24, long = n.len === 'long', yt = -len - (long ? 38 : 3);
+  ctx.beginPath();
+  ctx.moveTo(-hw, y0 - 4); ctx.quadraticCurveTo(0, y0 + 6, hw, y0 - 4); // cuticle
+  if (n.shape === 'broken') { ctx.lineTo(hw, -len + 4); ctx.lineTo(hw * 0.5, -len - 2); ctx.lineTo(hw * 0.1, -len + 5); ctx.lineTo(-hw * 0.4, -len - 3); ctx.lineTo(-hw, -len + 3); }
+  else if (n.shape === 'square') { ctx.lineTo(hw, yt + 3); ctx.quadraticCurveTo(hw, yt, hw - 3, yt); ctx.lineTo(-hw + 3, yt); ctx.quadraticCurveTo(-hw, yt, -hw, yt + 3); }
+  else if (n.shape === 'round') { ctx.lineTo(hw, yt + hw); ctx.arc(0, yt + hw, hw, 0, Math.PI, true); }
+  else { ctx.lineTo(hw, yt + hw * 1.6); ctx.quadraticCurveTo(hw * 0.5, yt + 2, 0, yt - 4); ctx.quadraticCurveTo(-hw * 0.5, yt + 2, -hw, yt + hw * 1.6); }
+  ctx.closePath();
+}
+function drawNail(n, w, len) {
+  const hw = w * 0.37, y0 = -len + 24, yt = -len - (n.len === 'long' ? 38 : 3);
+  nailPath(n, w, len); ctx.fillStyle = n.color || mix(cust.skin, '#ffffff', 0.55); ctx.fill();
+  ctx.save(); nailPath(n, w, len); ctx.clip();
+  if (n.dirty > 0) {
+    const k = n.dirty / 3;
+    ctx.fillStyle = `rgba(170,140,40,${0.5 * k})`; ctx.fillRect(-hw - 2, yt - 10, hw * 2 + 4, 80);
+    ctx.fillStyle = `rgba(50,35,20,${0.85 * k})`; ctx.fillRect(-hw - 2, -len - 8, hw * 2 + 4, 9);
+    ctx.fillStyle = `rgba(60,45,25,${0.9 * k})`; for (const [x, y] of n.sp) circle(x, -len + 14 + y * 0.6, 2.2);
+  }
+  if (n.color) {
+    // glitter polish twinkles
+    if (GLITTER.has(n.color)) for (let i = 0; i < 14; i++) {
+      const gx = ((i * 37) % 100 / 100 - 0.5) * hw * 1.8, gy = yt + ((i * 53) % 100) / 100 * (y0 - yt);
+      ctx.fillStyle = Math.sin(T * 5 + i * 1.7) > 0.3 ? '#ffffff' : 'rgba(255,255,255,.35)'; circle(gx, gy, 1.3);
+    }
+    // soft shade at the cuticle + two gloss highlights
+    ctx.fillStyle = 'rgba(0,0,0,.12)'; ctx.fillRect(-hw - 2, y0 - 8, hw * 2 + 4, 10);
+    ctx.fillStyle = 'rgba(255,255,255,.5)'; rr(-hw * 0.6, yt + 5, hw * 0.3, Math.max(8, (y0 - yt) * 0.55), 3); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.3)'; circle(hw * 0.35, yt + 9, 2);
+  }
+  ctx.restore();
+  nailPath(n, w, len); ctx.strokeStyle = 'rgba(60,30,30,.45)'; ctx.lineWidth = 1.6; ctx.stroke();
+  if (n.sticker) drawSticker(n.sticker, 0, (y0 + yt) / 2 + 2, n.len === 'long' ? 12 : 9);
+}
+function drawHand(h) {
+  const H0 = HANDS[h], hand = cust.hands[h], F = fingerDefs(H0.t), skin = cust.skin;
+  ctx.save(); ctx.translate(H0.x, H0.y); ctx.scale(S, S); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  const shapes = go => {
+    rr(-54, 40, 108, 300, 30); go();
+    rr(-74, -66, 148, 146, 46); go();
+    for (const [bx, by, a, len, w] of F) { ctx.save(); ctx.translate(bx, by); ctx.rotate(a); rr(-w / 2, -len, w, len + 30, w / 2); go(); ctx.restore(); }
+  };
+  // outline pass then fill pass: one clean silhouette
+  ctx.strokeStyle = mix(skin, '#000000', 0.3); ctx.lineWidth = 6; shapes(() => ctx.stroke());
+  ctx.fillStyle = skin; shapes(() => ctx.fill());
+  ctx.fillStyle = cust.cloth; rr(-66, 170, 132, 200, 20); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(-66, 176, 132, 8);
+  ctx.strokeStyle = mix(skin, '#000000', 0.22); ctx.lineWidth = 2;
+  for (const [bx, by, a, len, w] of F) { ctx.save(); ctx.translate(bx, by); ctx.rotate(a); for (const k of [0.42, 0.5]) { ctx.beginPath(); ctx.arc(0, -len * k + 8, w * 0.28, 1.15 * Math.PI, 1.85 * Math.PI); ctx.stroke(); } ctx.restore(); }
+  if (!hand.soft) {
+    ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 2;
+    for (const [fx, fy, r] of hand.flakes) { ctx.beginPath(); ctx.moveTo(fx - 5, fy); ctx.lineTo(fx, fy - 3 + r * 0.3); ctx.lineTo(fx + 5, fy + 1); ctx.stroke(); }
+  } else { ctx.fillStyle = 'rgba(255,255,255,.25)'; ell(-18, -10, 42, 22, -0.3); }
+  for (const b of hand.blobs) {
+    const r = b.r * (1 - hand.rub / 130);
+    ctx.fillStyle = '#fffaf2'; ell(b.x, b.y, r * 1.2, r);
+    ctx.strokeStyle = '#e6d5c0'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(b.x, b.y - r * 0.2, r * 0.5, 0, 4.5); ctx.stroke();
+  }
+  F.forEach(([bx, by, a, len, w], i) => { ctx.save(); ctx.translate(bx, by); ctx.rotate(a); drawNail(hand.nails[i], w, len); ctx.restore(); });
+  ctx.restore();
+}
+// salon decorations bought in the shop; (x, y) is the bottom centre (ball centre for the disco ball)
+function drawDecor(id, x, y, s = 1) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+  if (id === 'plant') {
+    ctx.fillStyle = '#2fa35a';
+    for (let i = 0; i < 7; i++) { const a = -Math.PI / 2 + (i - 3) * 0.32 + Math.sin(T * 1.5 + i) * 0.04; ctx.save(); ctx.translate(0, -60); ctx.rotate(a + Math.PI / 2); ell(0, -40, 13, 42); ctx.restore(); }
+    ctx.fillStyle = '#ff7eb6'; circle(-14, -118, 9); circle(18, -110, 8); ctx.fillStyle = '#ffd23f'; circle(-14, -118, 3.5); circle(18, -110, 3);
+    ctx.fillStyle = '#d9713f'; ctx.beginPath(); ctx.moveTo(-36, -64); ctx.lineTo(36, -64); ctx.lineTo(26, 0); ctx.lineTo(-26, 0); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#b85a2e'; rr(-40, -70, 80, 14, 5); ctx.fill();
+  } else if (id === 'sofa') {
+    ctx.fillStyle = '#e0609f'; rr(-95, -110, 190, 80, 30); ctx.fill();
+    ctx.fillStyle = '#ff8cc6'; rr(-90, -60, 180, 44, 16); ctx.fill();
+    ctx.fillStyle = '#e0609f'; rr(-110, -80, 36, 70, 16); ctx.fill(); rr(74, -80, 36, 70, 16); ctx.fill();
+    ctx.fillStyle = '#8a4b2e'; ctx.fillRect(-90, -14, 10, 14); ctx.fillRect(80, -14, 10, 14);
+    ctx.fillStyle = '#ffffff'; heart(0, -80, 10);
+  } else if (id === 'fish') {
+    ctx.fillStyle = '#8a4b2e'; ctx.fillRect(-85, -40, 170, 40);
+    ctx.fillStyle = 'rgba(120,200,255,.85)'; rr(-90, -150, 180, 110, 10); ctx.fill();
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 4; ctx.stroke();
+    ctx.fillStyle = '#e8d49a'; ctx.fillRect(-86, -56, 172, 14);
+    ctx.fillStyle = '#2fa35a'; for (const px of [-60, -48, 58]) ell(px, -80, 5, 24);
+    for (let i = 0; i < 3; i++) {
+      const fx = Math.sin(T * (0.6 + i * 0.25) + i * 2) * 60, fy = -120 + i * 22 + Math.sin(T * 2 + i) * 4, dir = Math.cos(T * (0.6 + i * 0.25) + i * 2) > 0 ? 1 : -1;
+      ctx.fillStyle = ['#ff8a1f', '#ffd23f', '#ff6fb5'][i]; ell(fx, fy, 12, 8);
+      ctx.beginPath(); ctx.moveTo(fx - dir * 10, fy); ctx.lineTo(fx - dir * 20, fy - 7); ctx.lineTo(fx - dir * 20, fy + 7); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#2a1f2e'; circle(fx + dir * 6, fy - 2, 1.8);
+    }
+    ctx.fillStyle = 'rgba(255,255,255,.7)'; for (let i = 0; i < 4; i++) circle(40 + (i % 2) * 6, -60 - ((T * 40 + i * 25) % 90), 3);
+  } else if (id === 'cat') {
+    const wag = Math.sin(T * 3) * 0.4;
+    ctx.strokeStyle = '#ff9f1c'; ctx.lineWidth = 9; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(28, -14); ctx.quadraticCurveTo(58, -20 + wag * 20, 50 + wag * 18, -58); ctx.stroke();
+    ctx.fillStyle = '#ff9f1c'; ell(0, -24, 34, 26); ell(-20, -64, 26, 23);
+    for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(-20 + sd * 20, -76); ctx.lineTo(-20 + sd * 22, -98); ctx.lineTo(-20 + sd * 6, -84); ctx.closePath(); ctx.fill(); }
+    ctx.fillStyle = '#ffffff'; ell(-20, -56, 12, 8); ell(-8, -6, 10, 6); ell(-32, -6, 10, 6);
+    const bl = (T % 4) < 0.15;
+    ctx.fillStyle = '#2a1f2e'; if (bl) { ctx.fillRect(-32, -68, 8, 2); ctx.fillRect(-16, -68, 8, 2); } else { ell(-28, -68, 3.5, 5); ell(-12, -68, 3.5, 5); }
+    ctx.fillStyle = '#ff6fb5'; circle(-20, -60, 3);
+    ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 1.5; for (const sd of [-1, 1]) { line(-20 + sd * 6, -58, -20 + sd * 22, -62); line(-20 + sd * 6, -56, -20 + sd * 22, -54); }
+  } else if (id === 'balloons') {
+    [['#ff6fb5', -30, -110], ['#ffd23f', 0, -134], ['#5aa9ff', 30, -106]].forEach(([c, bx, by], i) => {
+      const yy = by + Math.sin(T * 1.5 + i * 2) * 6;
+      ctx.strokeStyle = '#9aa7b5'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(bx * 0.4, yy * 0.4, bx, yy + 26); ctx.stroke();
+      ctx.fillStyle = c; ell(bx, yy, 22, 27); ctx.fillStyle = 'rgba(255,255,255,.5)'; ell(bx - 8, yy - 10, 5, 8, -0.4);
+    });
+  } else if (id === 'chandelier') {
+    ctx.strokeStyle = '#b8860b'; ctx.lineWidth = 3; line(0, 0, 0, 50);
+    for (let i = 0; i < 5; i++) { const cx = -60 + i * 30, glow = 0.5 + 0.2 * Math.sin(T * 3 + i); ctx.fillStyle = `rgba(255,230,120,${glow * 0.4})`; circle(cx, 72, 18); ctx.fillStyle = '#fff4c2'; ell(cx, 74, 6, 9); }
+    ctx.strokeStyle = '#d4a72c'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(-64, 84); ctx.quadraticCurveTo(0, 120, 64, 84); ctx.stroke();
+    ctx.fillStyle = '#d4a72c'; ell(0, 56, 14, 8);
+    ctx.fillStyle = '#bfe6ff'; for (let i = 0; i < 7; i++) { const cx = -54 + i * 18; ctx.beginPath(); ctx.moveTo(cx, 92 + Math.abs(i - 3) * -3); ctx.lineTo(cx - 4, 102); ctx.lineTo(cx, 110); ctx.lineTo(cx + 4, 102); ctx.closePath(); ctx.fill(); }
+  } else if (id === 'radio') {
+    ctx.fillStyle = '#ff6fb5'; rr(-38, -46, 76, 46, 10); ctx.fill();
+    ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 2; line(20, -46, 34, -72);
+    ctx.fillStyle = '#ffffff'; circle(-16, -23, 14); ctx.fillStyle = '#2a1f2e'; circle(-16, -23, 7); ctx.fillStyle = '#ffd23f'; rr(4, -36, 26, 10, 3); ctx.fill(); circle(10, -14, 4); circle(24, -14, 4);
+    if (musicOn) for (let i = 0; i < 3; i++) { const t = (T * 0.6 + i / 3) % 1; ctx.globalAlpha = 1 - t; emoji(i % 2 ? '🎵' : '🎶', 30 + t * 30 + i * 6, -60 - t * 70, 20); ctx.globalAlpha = 1; }
+  } else if (id === 'tipjar') {
+    ctx.fillStyle = 'rgba(200,240,255,.6)'; ctx.strokeStyle = '#7fbfe6'; ctx.lineWidth = 3; rr(-24, -56, 48, 56, 10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ffd23f'; for (let i = 0; i < 7; i++) ell(-12 + (i % 4) * 8, -8 - Math.floor(i / 4) * 7, 6, 3);
+    ctx.fillStyle = '#ffffff'; rr(-20, -44, 40, 16, 4); ctx.fill(); text('Bahşiş', 0, -32, 11, '#d6337f', 'center', 800);
+  } else if (id === 'disco') {
+    ctx.strokeStyle = '#9aa7b5'; ctx.lineWidth = 2; line(0, -30, 0, -200);
+    ctx.fillStyle = '#c9cfd8'; circle(0, 0, 30);
+    ctx.save(); ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI * 2); ctx.clip();
+    for (let i = -4; i <= 4; i++) for (let j = -4; j <= 4; j++) { const on = Math.sin(T * 6 + i * 1.3 + j * 2.1) > 0.4; ctx.fillStyle = on ? '#ffffff' : ['#b18cff', '#5aa9ff', '#ff9ccf'][(i + j + 12) % 3]; ctx.fillRect(i * 8 - 3, j * 8 - 3, 7, 7); }
+    ctx.restore();
+  }
+  ctx.restore();
+}
+function drawTable() {
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#f9d5e8'); g.addColorStop(1, '#e9b8d6');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, PANEL, H);
+  ctx.fillStyle = '#ffffff'; rr(40, 300, PANEL - 80, 480, 40); ctx.fill();
+  ctx.fillStyle = '#ffd6ea'; for (let i = 0; i < 7; i++) ctx.fillRect(40, 330 + i * 30, PANEL - 80, 10);
+}
+
+// ---------- head, hair, face ----------
+function strandPts(st) {
+  const pts = [], wv = st.wave * (1 - st.wet * 0.5), n = 12;
+  for (let k = 0; k <= n; k++) {
+    const t = k / n;
+    let x = st.sx * (1 + 0.1 * t) * (1 - st.wet * 0.05 * t), y = st.sy + t * st.L;
+    x += st.tangle * st.nz[k] * 16 * Math.sqrt(t);
+    y += st.tangle * st.nz[(k + 5) % 13] * 5 * t;
+    x += wv * 13 * Math.sin(t * st.L / (st.freq || 24) + st.ph) * Math.min(1, t * 3);
+    x += st.blow * Math.sin(T * 25 + st.ph + k) * 4 * t;
+    pts.push([x, y]);
+  }
+  return pts;
+}
+function strokePts(pts) {
+  ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length - 1; i++) ctx.quadraticCurveTo(pts[i][0], pts[i][1], (pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2);
+  const L = pts[pts.length - 1]; ctx.lineTo(L[0], L[1]); ctx.stroke();
+}
+function drawStrand(st, hc) {
+  const pts = strandPts(st), col = st.wet > 0 ? mix(hc, '#000000', 0.35 * st.wet) : hc;
+  ctx.strokeStyle = mix(col, '#000000', 0.35); ctx.lineWidth = 19; strokePts(pts);
+  ctx.strokeStyle = col; ctx.lineWidth = 14; strokePts(pts);
+  ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = 3; strokePts(pts);
+  if (st.tangle > 0.25 && st.front) {
+    const [kx, ky] = pts[7]; ctx.strokeStyle = mix(col, '#000000', 0.55); ctx.lineWidth = 2;
+    for (let j = 0; j < 3; j++) { ctx.beginPath(); ctx.arc(kx - 5 + j * 5, ky + (j % 2) * 4, 5 * st.tangle + 2, 0, Math.PI * 2); ctx.stroke(); }
+  }
+}
+const CUT_Y = 40; // a short cut ends at chin height (head-local units)
+function capPath(bangs) {
+  ctx.beginPath();
+  ctx.ellipse(0, -4, 99, 106, 0, Math.PI - 0.12, Math.PI * 2 + 0.12);
+  if (bangs === 'none') { ctx.lineTo(92, -40); ctx.quadraticCurveTo(0, -84, -92, -40); }
+  else if (bangs === 'straight') { ctx.lineTo(96, -36); ctx.lineTo(-96, -36); }
+  else if (bangs === 'side') { ctx.lineTo(96, -52); ctx.quadraticCurveTo(10, -62, -40, -36); ctx.quadraticCurveTo(-80, -34, -97, -12); }
+  else {
+    ctx.lineTo(96, -46);
+    const n = 6, w = 192 / n;
+    for (let i = 0; i < n; i++) { const x0 = 96 - i * w; ctx.quadraticCurveTo(x0 - w / 2, -30, x0 - w, -46); }
+  }
+  ctx.closePath();
+}
+function drawFace(c, mood) {
+  ctx.lineCap = 'round';
+  const mk = c.mk;
+  if (mk) [-1, 1].forEach((s, i) => { if (mk.shadow[i] > 0) { ctx.fillStyle = SHADOW_COL; ctx.globalAlpha = 0.65 * mk.shadow[i]; ell(s * 34, -6, 19, 14); ctx.globalAlpha = 1; } });
+  // brows
+  ctx.strokeStyle = mix(c.hairCol, '#000000', 0.35); ctx.lineWidth = c.girl ? 4 : 6;
+  for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(s * 18, -22); ctx.quadraticCurveTo(s * 34, mood < 0.34 ? -26 : -32, s * 50, -24); ctx.stroke(); }
+  if (c.strays && c.strays.length) { ctx.strokeStyle = mix(c.hairCol, '#000000', 0.35); ctx.lineWidth = 2.4; for (const h of c.strays) line(h.x, h.y, h.x + Math.sin(h.a) * h.l, h.y - Math.cos(h.a) * h.l); }
+  // eyes
+  const blink = ((T + c.seed) % 3.6) < 0.12;
+  for (const s of [-1, 1]) {
+    const ex = s * 34, ey = 6;
+    if (blink) { ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(ex, ey, 12, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke(); continue; }
+    ctx.fillStyle = '#ffffff'; ell(ex, ey, 15, 18);
+    ctx.fillStyle = c.eyes; ell(ex, ey + 2, 11, 13);
+    ctx.fillStyle = '#1a1020'; ell(ex, ey + 3, 6, 7);
+    ctx.fillStyle = '#ffffff'; circle(ex - 4, ey - 3, 4); circle(ex + 4, ey + 7, 2);
+    ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(ex, ey, 15, 18, 0, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
+    if (c.girl) { ctx.lineWidth = 2.5; for (let i = 0; i < 3; i++) line(ex + s * (9 + i * 3), ey - 14 + i * 3, ex + s * (15 + i * 4), ey - 19 + i * 3); }
+    // curled lashes after the eyelash curler
+    const lash = mk ? mk.lash[(s + 1) / 2] : 0;
+    if (lash > 0) {
+      ctx.strokeStyle = '#1a1020'; ctx.lineWidth = 2.2;
+      for (let j = 0; j < 6; j++) {
+        const a = Math.PI * (1.15 + j * 0.14), bx = ex + Math.cos(a) * 15, by = ey + Math.sin(a) * 18, L = 5 + 9 * lash;
+        ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo(bx + Math.cos(a) * L, by + Math.sin(a) * L * 0.6, bx + Math.cos(a) * L * 0.8, by - L * 0.9); ctx.stroke();
+      }
+    }
+  }
+  // nose
+  ctx.strokeStyle = mix(c.skin, '#000000', 0.35); ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 26, 5, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke();
+  if (mk && mk.lip.some(v => v)) {
+    ctx.save(); ctx.beginPath(); ctx.ellipse(0, 48, 20, 8, 0, 0, Math.PI * 2); ctx.clip();
+    ctx.fillStyle = LIP_COL; LIP_PTS.forEach(([px, py], i) => { if (mk.lip[i]) circle(px, py, 8); });
+    if (mk.lip.every(v => v)) { ctx.fillStyle = 'rgba(255,255,255,.45)'; ell(-6, 44, 6, 2); }
+    ctx.restore();
+  }
+  // mouth: grumpy → smile → big happy smile
+  ctx.strokeStyle = '#8b2a3a'; ctx.lineWidth = 4;
+  if (mood < 0.34) { ctx.beginPath(); ctx.arc(0, 66, 14, 1.2 * Math.PI, 1.8 * Math.PI); ctx.stroke(); }
+  else if (mood < 0.99) { ctx.beginPath(); ctx.arc(0, 42, 8 + mood * 8, 0.2 * Math.PI, 0.8 * Math.PI); ctx.stroke(); }
+  else { ctx.fillStyle = '#8b2a3a'; ctx.beginPath(); ctx.arc(0, 46, 16, 0, Math.PI); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#ff7b9c'; ell(0, 56, 8, 4); }
+  if (mood > 0.5) { ctx.fillStyle = 'rgba(255,110,140,.35)'; ell(-54, 30, 13, 8); ell(54, 30, 13, 8); }
+  if (mk) [-1, 1].forEach((s, i) => { if (mk.blush[i] > 0) { ctx.fillStyle = BLUSH_COL; ctx.globalAlpha = 0.55 * mk.blush[i]; ell(s * 54, 30, 17, 11); ctx.globalAlpha = 1; } });
+  if (mk && mk.glitter) [-1, 1].forEach((s, i) => {
+    if (!mk.glitter[i]) return;
+    for (let k = 0; k < 8; k++) { ctx.globalAlpha = mk.glitter[i] * (0.5 + 0.5 * Math.sin(T * 6 + k)); ctx.fillStyle = k % 2 ? '#ffd23f' : '#ffffff'; star4(s * 54 + Math.cos(k * 2.4) * 15, 22 + Math.sin(k * 2.4) * 9, 4); }
+    ctx.globalAlpha = 1;
+  });
+}
+// makeup tools (lipstick, blush brush, eyeshadow applicator, eyelash curler); (x, y) is the working tip
+function drawMk(k, x, y) {
+  ctx.save(); ctx.translate(x, y);
+  if (k === 'lipstick') {
+    ctx.rotate(0.5); ctx.fillStyle = LIP_COL; ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(-8, 26); ctx.lineTo(8, 26); ctx.lineTo(8, -8); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#d4a72c'; rr(-11, 26, 22, 14, 3); ctx.fill(); ctx.fillStyle = '#2a1f2e'; rr(-11, 40, 22, 40, 5); ctx.fill();
+  } else if (k === 'blush') {
+    ctx.rotate(0.6); ctx.fillStyle = '#8a4b2e'; rr(-4, 18, 8, 70, 4); ctx.fill(); ctx.fillStyle = '#c9cfd8'; rr(-7, 8, 14, 16, 3); ctx.fill();
+    ctx.fillStyle = BLUSH_COL; ell(0, -4, 16, 18); ctx.fillStyle = 'rgba(255,255,255,.4)'; ell(-5, -10, 5, 7);
+  } else if (k === 'shadow') {
+    ctx.rotate(0.6); ctx.fillStyle = '#2a1f2e'; rr(-3, 10, 6, 70, 3); ctx.fill(); ctx.fillStyle = SHADOW_COL; ell(0, 0, 7, 13);
+  } else if (k === 'glitter') {
+    ctx.rotate(0.6); ctx.fillStyle = '#8a4b2e'; rr(-3, 14, 6, 64, 3); ctx.fill(); ctx.fillStyle = '#ffd23f'; ell(0, 0, 10, 14);
+    ctx.fillStyle = '#ffffff'; for (let i = 0; i < 4; i++) star4(Math.cos(i * 1.6) * 6, Math.sin(i * 1.6) * 8, 3);
+  } else {
+    ctx.strokeStyle = '#9aa7b5'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(0, 0, 18, Math.PI, 2 * Math.PI); ctx.stroke();
+    line(-18, 0, -8, 50); line(18, 0, 8, 50);
+    ctx.beginPath(); ctx.arc(-12, 62, 10, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.arc(12, 62, 10, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = '#ff6fb5'; rr(-18, -3, 36, 6, 3); ctx.fill();
+  }
+  ctx.restore();
+}
+function drawCape() {
+  ctx.fillStyle = '#ff9ccf'; ctx.strokeStyle = '#e0609f'; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(-40, 118); ctx.quadraticCurveTo(-170, 128, -200, 260); ctx.lineTo(-215, 420); ctx.lineTo(215, 420); ctx.lineTo(200, 260); ctx.quadraticCurveTo(170, 128, 40, 118); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.45)'; for (let x = -160; x <= 160; x += 40) for (let y = 170; y < 420; y += 40) circle(x + (Math.floor(y / 40) % 2) * 20, y, 5);
+  ctx.fillStyle = '#ffffff'; rr(-46, 108, 92, 20, 10); ctx.fill();
+}
+function drawBody(c, walk, mood) {
+  const sw = Math.sin(walk) * 0.35, pants = '#3b5b8f';
+  for (const [s, a] of [[-1, sw], [1, -sw]]) {
+    ctx.save(); ctx.translate(s * 30, 400); ctx.rotate(a);
+    ctx.fillStyle = c.girl ? c.skin : pants; rr(-17, 0, 34, 200, 16); ctx.fill();
+    ctx.fillStyle = c.shoe; ell(s * 6, 205, 30, 16);
+    ctx.restore();
+  }
+  const done = c.hands[0].nails[0].color;
+  for (const s of [-1, 1]) {
+    ctx.save(); ctx.translate(s * 84, 160); ctx.rotate(-s * 0.12 + (s < 0 ? sw : -sw) * 0.5);
+    ctx.fillStyle = c.skin; rr(-16, 0, 32, 220, 16); ctx.fill();
+    circle(0, 232, 22);
+    if (done) { ctx.fillStyle = done; for (let k = 0; k < 4; k++) ell(-12 + k * 8, 250, 3, 4.5); }
+    ctx.fillStyle = c.cloth; rr(-21, -6, 42, 72, 18); ctx.fill();
+    ctx.restore();
+  }
+  ctx.fillStyle = c.cloth; ctx.strokeStyle = mix(c.cloth, '#000000', 0.25); ctx.lineWidth = 4;
+  const bx = c.girl ? 120 : 88, by = c.girl ? 420 : 380;
+  ctx.beginPath(); ctx.moveTo(-80, 150); ctx.quadraticCurveTo(0, 130, 80, 150); ctx.lineTo(bx, by); ctx.quadraticCurveTo(0, by + 18, -bx, by); ctx.closePath(); ctx.fill(); ctx.stroke();
+  if (!c.girl) { ctx.fillStyle = pants; rr(-86, 360, 172, 60, 14); ctx.fill(); }
+  ctx.fillStyle = 'rgba(255,255,255,.3)'; for (let i = 0; i < 3; i++) circle(0, 200 + i * 40, 6);
+}
+function drawHead(c, x, y, s, o = {}) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(s, s); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const mood = o.mood || 0, F = c.strands.filter(t => t.front);
+  const hc = mix(c.hairCol, '#7a6a2a', 0.45 * c.greasy);
+  const avgWet = F.reduce((a, t) => a + t.wet, 0) / F.length, avgTangle = F.reduce((a, t) => a + t.tangle, 0) / F.length;
+  const dyed = st => c.req.dye ? mix(hc, c.req.dye, 0.85 * st.dye) : hc;
+  for (const st of c.strands) if (!st.front) drawStrand(st, dyed(st));
+  ctx.fillStyle = c.skin; rr(-24, 60, 48, 92, 12); ctx.fill();
+  if (o.body) o.body();
+  if (o.cape) drawCape();
+  if (c.short) { ctx.fillStyle = c.skin; ctx.strokeStyle = mix(c.skin, '#000000', 0.25); ctx.lineWidth = 4; for (const sd of [-1, 1]) { ell(sd * 90, 12, 14, 20); ctx.stroke(); } }
+  // head + face
+  ctx.fillStyle = c.skin; ctx.strokeStyle = mix(c.skin, '#000000', 0.25); ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.ellipse(0, 0, 92, 100, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  drawFace(c, mood);
+  if (c.beard.length) {
+    ctx.save(); ctx.beginPath(); ctx.ellipse(0, 0, 92, 100, 0, 0, Math.PI * 2); ctx.clip();
+    ctx.fillStyle = `rgba(60,40,30,${0.14 * Math.min(1, c.beard.length / 60)})`; ell(0, 64, 72, 40);
+    ctx.restore();
+    ctx.strokeStyle = mix(c.hairCol, '#000000', 0.45); ctx.lineWidth = 2.6;
+    for (const b of c.beard) line(b.x, b.y, b.x + Math.sin(b.a) * b.l, b.y + Math.cos(b.a) * b.l);
+  }
+  // face mask + cucumber slices
+  if (c.maskPts && c.maskPts.some(v => v > 0)) {
+    ctx.save(); ctx.beginPath(); ctx.ellipse(0, 0, 92, 100, 0, 0, Math.PI * 2); ctx.clip();
+    MASK_PTS.forEach(([px, py], i) => { const v = c.maskPts[i]; if (v > 0) { ctx.globalAlpha = 0.92 * v; ctx.fillStyle = '#8fd18a'; circle(px, py, 15); } });
+    ctx.globalAlpha = 1; ctx.fillStyle = 'rgba(255,255,255,.35)'; MASK_PTS.forEach(([px, py], i) => { if (c.maskPts[i] > 0.5) circle(px + 4, py - 3, 2.5); });
+    ctx.restore();
+  }
+  if (c.cucumbers) [-1, 1].forEach((sd, i) => {
+    if (!c.cucumbers[i]) return;
+    ctx.fillStyle = '#4f9a3c'; circle(sd * 34, 6, 19); ctx.fillStyle = '#c9eeb0'; circle(sd * 34, 6, 15); ctx.fillStyle = '#e9f9dc'; circle(sd * 34, 6, 7);
+    ctx.fillStyle = '#8cc46e'; for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3; circle(sd * 34 + Math.cos(a) * 10, 6 + Math.sin(a) * 10, 1.6); }
+  });
+  for (const st of F) drawStrand(st, dyed(st));
+  const capCol = mix(c.req.dye ? mix(hc, c.req.dye, 0.85 * c.capDye) : hc, '#000000', 0.35 * avgWet);
+  ctx.fillStyle = capCol; ctx.strokeStyle = mix(capCol, '#000000', 0.35); ctx.lineWidth = 4; capPath(c.bangs); ctx.fill(); ctx.stroke();
+  if (!c.greasy && avgWet < 0.1) { ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 6; ctx.beginPath(); ctx.ellipse(0, -4, 80, 88, 0, 1.2 * Math.PI, 1.5 * Math.PI); ctx.stroke(); }
+  // messy flyaway hairs while tangled
+  if (avgTangle > 0.15) {
+    ctx.strokeStyle = capCol; ctx.lineWidth = 4; ctx.globalAlpha = Math.min(1, avgTangle * 1.3);
+    for (let i = 0; i < 9; i++) {
+      const a = -Math.PI / 2 + (i - 4) * 0.24, x0 = Math.cos(a) * 96, y0 = -4 + Math.sin(a) * 104;
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(x0 + Math.cos(a) * 22 + (i % 2 ? 12 : -12), y0 + Math.sin(a) * 22, x0 + Math.cos(a) * 30, y0 + Math.sin(a) * 34); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+  // stinky lines while the hair is greasy
+  if (c.greasy > 0.3) {
+    ctx.strokeStyle = `rgba(110,170,60,${0.7 * c.greasy})`; ctx.lineWidth = 4;
+    for (let i = -1; i <= 1; i++) { ctx.beginPath(); for (let k = 0; k <= 10; k++) { const yy = -135 - k * 5; ctx.lineTo(i * 40 + Math.sin(k * 0.9 + T * 4 + i) * 7, yy); } ctx.stroke(); }
+  }
+  for (const p of c.specks) { ctx.fillStyle = '#5a3d1e'; circle(p.x, p.y, 5); ctx.fillStyle = '#8a6a3a'; circle(p.x - 1.5, p.y - 1.5, 2); }
+  for (const f of c.foam) { ctx.fillStyle = 'rgba(255,255,255,.92)'; circle(f.x, f.y, f.r); ctx.strokeStyle = '#bfe6ff'; ctx.lineWidth = 2; ctx.stroke(); }
+  if (c.jewelOn) for (const k of Object.keys(JEWELS)) JEWELS[k].spots.forEach(([px, py], i) => { if (c.jewelOn[k][i]) drawJewel(k, px, py, 1); });
+  // where the selected jewel goes
+  if (o.cape && scene === 'work' && curStep() === 'jewel' && JEWELS[tool]) JEWELS[tool].spots.forEach(([px, py], i) => {
+    if (c.jewelOn[tool][i]) return;
+    ctx.strokeStyle = 'rgba(214,51,127,.8)'; ctx.lineWidth = 3; ctx.setLineDash([6, 6]); ctx.beginPath(); ctx.arc(px, py, 22 + Math.sin(T * 5) * 3, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+  });
+  ctx.restore();
+}
+function drawJewel(k, x, y, s = 1) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(s, s); ctx.lineJoin = 'round';
+  if (k === 'earrings') {
+    ctx.strokeStyle = '#d4a72c'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, -6, 6, Math.PI, 0); ctx.stroke(); line(6, -6, 0, 4);
+    ctx.fillStyle = '#5aa9ff'; ctx.beginPath(); ctx.moveTo(0, 2); ctx.lineTo(8, 12); ctx.lineTo(0, 24); ctx.lineTo(-8, 12); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.85)'; circle(-2, 10, 2.5);
+  } else if (k === 'crown') {
+    ctx.fillStyle = '#ffcc33'; ctx.strokeStyle = '#b8860b'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(-40, 14); ctx.lineTo(-44, -14); ctx.lineTo(-22, 2); ctx.lineTo(0, -24); ctx.lineTo(22, 2); ctx.lineTo(44, -14); ctx.lineTo(40, 14); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ff4f8b'; circle(0, 4, 6); ctx.fillStyle = '#5aa9ff'; circle(-24, 8, 4); circle(24, 8, 4);
+  } else if (k === 'necklace') {
+    ctx.strokeStyle = '#d4a72c'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, -22, 30, 0.2 * Math.PI, 0.8 * Math.PI); ctx.stroke();
+    ctx.fillStyle = '#ff4f8b'; heart(0, 12, 8); ctx.fillStyle = 'rgba(255,255,255,.7)'; circle(-3, 8, 2);
+  } else if (k === 'glasses') {
+    ctx.fillStyle = 'rgba(255,79,139,.85)'; ctx.strokeStyle = '#c2185b'; ctx.lineWidth = 3;
+    for (const sd of [-1, 1]) { heart(sd * 34, 2, 16); ctx.stroke(); }
+    line(-16, -2, 16, -2); line(-52, -6, -88, -14); line(52, -6, 88, -14);
+    ctx.fillStyle = 'rgba(255,255,255,.5)'; circle(-40, -4, 4); circle(28, -4, 4);
+  } else if (k === 'flowerCrown') {
+    ctx.strokeStyle = '#4f9a3c'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(0, 60, 80, 1.2 * Math.PI, 1.8 * Math.PI); ctx.stroke();
+    for (let i = 0; i < 5; i++) {
+      const a = Math.PI * (1.24 + i * 0.13), fx = Math.cos(a) * 80, fy = 60 + Math.sin(a) * 80;
+      ctx.fillStyle = ['#ff9ccf', '#ffd23f', '#b18cff', '#ff9ccf', '#ffffff'][i];
+      for (let k2 = 0; k2 < 5; k2++) { const b = k2 * 1.257; circle(fx + Math.cos(b) * 6, fy + Math.sin(b) * 6, 5); }
+      ctx.fillStyle = '#ff8a1f'; circle(fx, fy, 3.5);
+    }
+  } else {
+    ctx.fillStyle = '#ff4f8b'; ctx.strokeStyle = '#c2185b'; ctx.lineWidth = 2.5;
+    for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(sd * 32, -26, sd * 30, 0); ctx.quadraticCurveTo(sd * 30, 22, 0, 0); ctx.fill(); ctx.stroke(); }
+    ctx.beginPath(); ctx.moveTo(-4, 4); ctx.lineTo(-12, 26); ctx.moveTo(4, 4); ctx.lineTo(12, 26); ctx.stroke();
+    circle(0, 0, 7); ctx.stroke();
+  }
+  ctx.restore();
+}
+function drawTweezers(x, y) { ctx.save(); ctx.translate(x, y); ctx.rotate(0.6); ctx.strokeStyle = '#9aa7b5'; ctx.lineWidth = 5; ctx.lineCap = 'round'; line(-2, 0, -8, -70); line(2, 0, 8, -70); line(-8, -70, 8, -70); ctx.restore(); }
+function drawMaskJar(x, y) {
+  ctx.save(); ctx.translate(x, y);
+  ctx.fillStyle = '#8fd18a'; ell(0, 0, 12, 7);
+  ctx.save(); ctx.rotate(0.6); ctx.fillStyle = '#c9cfd8'; rr(-3, 4, 6, 50, 3); ctx.fill(); ctx.restore();
+  ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#4f9a3c'; ctx.lineWidth = 3; rr(22, 20, 50, 40, 10); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#8fd18a'; rr(26, 12, 42, 12, 5); ctx.fill(); emoji('🥒', 47, 42, 18);
+  ctx.restore();
+}
+function drawDyeBrush(x, y, col) { ctx.save(); ctx.translate(x, y); ctx.rotate(0.5); ctx.fillStyle = col; ell(0, -2, 9, 12); ctx.fillStyle = '#2a1f2e'; rr(-5, 8, 10, 12, 2); ctx.fill(); ctx.fillStyle = '#ff9ccf'; rr(-4, 20, 8, 60, 4); ctx.fill(); ctx.restore(); }
+function drawDyeKit(x, y) {
+  ctx.fillStyle = '#f1d6e4'; ctx.beginPath(); ctx.ellipse(x - 12, y + 6, 42, 26, 0, 0, Math.PI); ctx.fill();
+  ['#ff6fb5', '#8b5cf6', '#3b82f6'].forEach((c, i) => { ctx.fillStyle = c; ell(x - 30 + i * 18, y + 6, 10, 6); });
+  drawDyeBrush(x + 34, y - 18, '#8b5cf6');
+}
+function drawFaceBg() {
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#ffe7f2'); g.addColorStop(1, '#ffc9e1');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, PANEL, H);
+  ctx.fillStyle = 'rgba(255,255,255,.5)'; for (let x = 30; x < PANEL; x += 90) for (let y = 110; y < H; y += 90) heart(x + (Math.floor(y / 90) % 2) * 45, y, 8);
+  ctx.fillStyle = '#e0b04a'; ell(FX, FY + 20, 300, 330); ctx.fillStyle = '#d7f1ff'; ell(FX, FY + 20, 282, 312);
+}
+function drawBowl() {
+  ctx.fillStyle = '#e8f6ff'; ctx.strokeStyle = '#7fbfe6'; ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.ellipse(BOWL.x, BOWL.y, BOWL.rx, BOWL.ry, 0, 0, Math.PI); ctx.lineTo(BOWL.x - BOWL.rx * 0.7, BOWL.y + 90); ctx.lineTo(BOWL.x + BOWL.rx * 0.7, BOWL.y + 90); ctx.closePath();
+  ctx.beginPath(); ctx.moveTo(BOWL.x - BOWL.rx, BOWL.y); ctx.quadraticCurveTo(BOWL.x - BOWL.rx, BOWL.y + 100, BOWL.x, BOWL.y + 100); ctx.quadraticCurveTo(BOWL.x + BOWL.rx, BOWL.y + 100, BOWL.x + BOWL.rx, BOWL.y); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#8fd3ff'; ell(BOWL.x, BOWL.y, BOWL.rx - 6, BOWL.ry - 6);
+  ctx.fillStyle = 'rgba(255,255,255,.5)'; ell(BOWL.x - 40, BOWL.y - 12, 40, 8);
+  ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 2;
+  const n = Math.min(60, Math.floor(bowlHair));
+  for (let i = 0; i < n; i++) { const a = i * 2.4, r = (i * 37 % 100) / 100; const hx = BOWL.x + Math.cos(a) * r * (BOWL.rx - 20), hy = BOWL.y + Math.sin(a) * r * (BOWL.ry - 14); line(hx, hy, hx + Math.cos(i) * 6, hy + Math.sin(i) * 3); }
+  text('💧 Su', BOWL.x, BOWL.y + 80, 22, '#3a7fb0', 'center', 800);
+}
+
+// ---------- tools drawn at the pointer ----------
+function drawRazor(x, y, hair) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(-0.5);
+  ctx.fillStyle = '#ff6fb5'; rr(-7, 10, 14, 80, 7); ctx.fill();
+  ctx.fillStyle = '#9aa7b5'; rr(-32, -10, 64, 22, 6); ctx.fill();
+  ctx.fillStyle = '#e8eef5'; ctx.fillRect(-28, -6, 56, 4); ctx.fillRect(-28, 2, 56, 4);
+  ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 2;
+  const n = Math.min(40, Math.ceil(hair / 3));
+  for (let i = 0; i < n; i++) { const hx = -28 + (i * 37 % 56), hy = -8 + (i * 13 % 18); line(hx, hy, hx + 3, hy + 5); }
+  ctx.restore();
+}
+function drawComb(x, y) {
+  ctx.save(); ctx.translate(x, y);
+  ctx.fillStyle = '#8b5cf6'; rr(-50, -22, 100, 18, 8); ctx.fill();
+  for (let i = 0; i < 14; i++) ctx.fillRect(-46 + i * 7, -6, 4, 22);
+  ctx.restore();
+}
+function drawDryer(x, y) {
+  ctx.save(); ctx.translate(x, y);
+  ctx.fillStyle = '#ff6fb5'; rr(0, -15, 62, 30, 10); ctx.fill();
+  circle(78, 0, 32); rr(62, 20, 24, 76, 12); ctx.fill();
+  ctx.fillStyle = '#2a1f2e'; rr(-4, -17, 10, 34, 4); ctx.fill();
+  ctx.fillStyle = '#ffffff'; circle(78, 0, 12);
+  ctx.restore();
+}
+function drawIron(x, y, straight) {
+  ctx.save(); ctx.translate(x, y);
+  if (straight) { ctx.fillStyle = '#2a1f2e'; rr(-12, -60, 24, 130, 10); ctx.fill(); ctx.fillStyle = '#ffb347'; rr(-6, -46, 12, 70, 4); ctx.fill(); }
+  else { ctx.fillStyle = '#9aa7b5'; rr(-10, -55, 20, 82, 10); ctx.fill(); ctx.fillStyle = 'rgba(255,138,61,.6)'; rr(-5, -48, 10, 66, 5); ctx.fill(); ctx.fillStyle = '#8b5cf6'; rr(-12, 27, 24, 60, 10); ctx.fill(); }
+  ctx.restore();
+}
+function drawPolish(x, y, col, rot = 0.45) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
+  ctx.fillStyle = col; ell(0, -3, 4, 7);
+  ctx.fillStyle = '#2a1f2e'; ctx.fillRect(-2, -40, 4, 34);
+  ctx.fillStyle = col; ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 2; rr(-18, -96, 36, 42, 10); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.45)'; rr(-12, -90, 7, 28, 3); ctx.fill();
+  ctx.fillStyle = '#2a1f2e'; rr(-8, -120, 16, 26, 4); ctx.fill();
+  ctx.restore();
+}
+function drawFile(x, y) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(0.6);
+  ctx.fillStyle = '#f3c7d9'; rr(-6, -70, 12, 80, 6); ctx.fill();
+  ctx.fillStyle = 'rgba(120,70,90,.35)'; for (let i = 0; i < 8; i++) circle(rand(-3, 3), -64 + i * 9, 1.2);
+  ctx.restore();
+}
+function drawTube(x, y, s, n) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(s, s); ctx.rotate(0.35);
+  ctx.fillStyle = '#ff6fb5'; rr(-8, -18, 16, 18, 4); ctx.fill();
+  ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#d6337f'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(-14, -18); ctx.lineTo(14, -18); ctx.lineTo(24, -96); ctx.lineTo(-24, -96); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#d6337f'; ctx.fillRect(-26, -104, 52, 10);
+  ctx.fillStyle = '#ff9ccf'; rr(-15, -78, 30, 26, 6); ctx.fill();
+  text('KREM', 0, -60, 11, '#ffffff', 'center', 800);
+  for (let i = 0; i < 5; i++) { ctx.fillStyle = i < n ? '#ff5fa2' : '#f1d6e4'; circle(-16 + i * 8, -40, 3.2); }
+  ctx.restore();
+}
+function drawCursor() {
+  if (scene !== 'work' || !ptr.inside || ptr.x >= PANEL) return;
+  const x = ptr.x, y = ptr.y;
+  if (held) return drawSticker(held, x, y, 22);
+  switch (tool) {
+    case 'clean': emoji('🧽', x, y, 44); break;
+    case 'long': emoji('📏', x, y, 40); break;
+    case 'short': emoji('✂️', x, y, 40); break;
+    case 'square': case 'round': case 'pointy':
+      drawFile(x, y); ctx.fillStyle = '#ffffff'; rr(x + 14, y - 44, 76, 26, 13); ctx.fill(); text(SHAPES[tool], x + 52, y - 25, 16, '#d6337f', 'center', 800); break;
+    case 'paint': drawPolish(x, y, polish); break;
+    case 'cream': drawTube(x, y, 1, inv.tube); break;
+    case 'rub': emoji('✋', x, y, 46); break;
+    case 'razor': drawRazor(x, y, razorHair); break;
+    case 'shampoo': emoji('🧴', x, y, 46); break;
+    case 'shower': emoji('🚿', x, y, 50); break;
+    case 'comb': drawComb(x, y); break;
+    case 'dryer': drawDryer(x, y); break;
+    case 'iron': drawIron(x, y, cust.req.hairStyle === 'straight'); break;
+    case 'scissors': emoji('✂️', x, y, 52); break;
+    case 'lipstick': case 'blush': case 'shadow': case 'curler': case 'glitter': drawMk(tool, x, y); break;
+    case 'tweezers': drawTweezers(x, y); break;
+    case 'maskJar': drawMaskJar(x, y); break;
+    case 'cucumber': ctx.fillStyle = '#4f9a3c'; circle(x, y, 19); ctx.fillStyle = '#c9eeb0'; circle(x, y, 15); ctx.fillStyle = '#e9f9dc'; circle(x, y, 7); break;
+    case 'towel': emoji('🧻', x, y, 46); break;
+    case 'dyeBrush': drawDyeBrush(x, y, cust.req.dye || '#ff6fb5'); break;
+    case 'earrings': case 'crown': case 'bow': drawJewel(tool, x, y, 1.3); break;
+  }
+}
+
+// ---------- UI ----------
+function btn(x, y, w, h, label, onClick, o = {}) {
+  buttons.push({ x, y, w, h, onClick });
+  if (o.hidden) return;
+  const hov = ptr.inside && ptr.x >= x && ptr.x <= x + w && ptr.y >= y && ptr.y <= y + h, dy = hov ? -2 : 0;
+  const base = o.active ? '#ff5fa2' : o.col || '#fff0f7';
+  ctx.fillStyle = 'rgba(0,0,0,.15)'; rr(x, y + 4, w, h, 14); ctx.fill();
+  ctx.fillStyle = base; ctx.strokeStyle = o.active ? '#d6337f' : 'rgba(214,51,127,.35)'; ctx.lineWidth = 3;
+  rr(x, y + dy, w, h, 14); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.28)'; rr(x + 5, y + dy + 4, w - 10, h * 0.4, 10); ctx.fill();
+  const fg = o.active ? '#ffffff' : o.fg || '#3a2340';
+  if (o.icon) { emoji(o.icon, x + w / 2, y + h * 0.36 + dy, 22); text(label, x + w / 2, y + h - 7 + dy, 13, fg, 'center', 800); }
+  else text(label, x + w / 2, y + h / 2 + (o.size || 20) * 0.36 + dy, o.size || 20, fg, 'center', 800);
+}
+function pbar(x, y, w, v, label) {
+  text(label, x, y, 16, '#6b5a70', 'left', 700);
+  ctx.fillStyle = '#f1d6e4'; rr(x, y + 8, w, 18, 9); ctx.fill();
+  ctx.fillStyle = '#2fbf71'; rr(x, y + 8, Math.max(18, w * clamp(v, 0, 1)), 18, 9); ctx.fill();
+  text(Math.round(clamp(v, 0, 1) * 100) + '%', x + w / 2, y + 22, 14, '#ffffff', 'center', 800);
+}
+function bubble(x, y, w, lines, title) {
+  const h = 56 + lines.length * 34;
+  ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#ff9ccf'; ctx.lineWidth = 4;
+  rr(x, y, w, h, 24); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x + 2, y + h * 0.35); ctx.lineTo(x - 36, y + h * 0.35 + 30); ctx.lineTo(x + 2, y + h * 0.35 + 22); ctx.fill(); ctx.stroke();
+  ctx.fillRect(x + 1, y + h * 0.35 - 2, 8, 28);
+  text(title, x + 22, y + 40, 26, '#d6337f', 'left', 800);
+  lines.forEach((l, i) => fitText(l, x + 22, y + 78 + i * 34, 21, w - 40, '#3a2340'));
+  return y + h;
+}
+function moneyPill(x, y) {
+  ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#2fbf71'; ctx.lineWidth = 3; rr(x, y, 200, 48, 24); ctx.fill(); ctx.stroke();
+  text(`💰 ${money} TL`, x + 100, y + 33, 24, '#23884f', 'center', 800);
+}
+function instr(s) {
+  const r = cust.req, ok = f => allNails(f) ? '✅' : '⬜';
+  switch (s) {
+    case 'nails': return ['💅 Tırnaklar — temizle, uzat, şekil ver, boya!',
+      `İstek:  Temiz ${ok(n => !n.dirty)}    ${colName(r.nailColor)} ${ok(n => n.color === r.nailColor)}    ${LENS[r.nailLen]} ${ok(n => n.len === r.nailLen)}    ${SHAPES[r.nailShape]} ${ok(n => n.shape === r.nailShape)}`];
+    case 'stickers': return [`${STICKERS[r.sticker][0]} ${STICKERS[r.sticker][1]} stickerları`, 'Sağdaki kâğıttan bir sticker al, bir tırnağa yapıştır. 10 tırnak, 10 sticker!'];
+    case 'cream': return ['🧴 El kremi', 'Tüpü elin üstüne getir ve bas: fıs! Sonra ✋ ile ov ov ov. Bir tüpte 5 fıs var.'];
+    case 'shave': return ['🪒 Tıraş', 'Jileti basılı tutup sakalların üstünde gezdir, hepsini kes!'];
+    case 'razor': return ['🫧 Jilet temizliği', 'Jileti sudaki kaba sok ve sağa sola salla, kıllar gitsin!'];
+    case 'wash': return ['🚿 Saç yıkama', 'Önce 🧴 şampuanla köpürt, kirler gitsin. Sonra 🚿 duşla köpükleri durula.'];
+    case 'comb': return ['💇 Tarama', 'Tarağı saçın üstünden aşağı doğru çek, düğümleri aç!'];
+    case 'dry': return ['💨 Kurutma', 'Fön makinesini basılı tut, ıslak saçların üstünde gezdir.'];
+    case 'brows': return ['🤏 Kaş alma', 'Cımbızla kaşların arasındaki ve etrafındaki fazla kılları tek tek çek!'];
+    case 'mask': return ['🥒 Yüz maskesi', { apply: 'Yeşil maskeyi bütün yüze sür (gözlere ve ağza değil)!', cucumber: 'Salatalıkları gözlerin üstüne koy!', wait: '⏳ Bekle, maske kuruyor...', wipe: '🧻 Havluyla maskeyi sil!', done: 'Yüzü tertemiz oldu!' }[cust.maskPh]];
+    case 'dye': return [`🎨 ${dyeName(r.dye)} saç`, 'Boya fırçasını saçların her yerinde gezdir: tepede ve bütün tutamlarda!'];
+    case 'jewel': return ['💎 Takılar', 'Sağdan takıyı seç ve doğru yere koy: küpe kulaklara, taç tepeye, kurdele saçın yanına!'];
+    case 'makeup': return ['💄 Makyaj', 'Sağdan alet seç: 💄 dudaklara sür, 👁️ gözün üstünde basılı tut, 🌸 yanaklara, ✨ göz kapaklarına sür!'];
+    case 'cut': return ['✂️ Kısa saç', 'Makası kesikli çizginin üstünden saçların üzerinde gezdir, uzun saçları kes!'];
+    case 'style': return r.hairStyle === 'wave' ? ['〰️ Dalga dalga saç', 'Maşayı basılı tutup her saç tutamının üstünde beklet.'] : ['📏 Dümdüz saç', 'Düzleştiriciyi basılı tutup her kıvırcık tutamın üstünde beklet.'];
+  }
+  return ['', ''];
+}
+function drawInstr() {
+  const [t, s] = instr(curStep());
+  ctx.fillStyle = 'rgba(255,255,255,.95)'; ctx.strokeStyle = '#ff9ccf'; ctx.lineWidth = 3; rr(12, 10, PANEL - 24, 76, 20); ctx.fill(); ctx.stroke();
+  fitText(t, 32, 42, 26, PANEL - 70, '#d6337f', 800);
+  fitText(s, 32, 72, 19, PANEL - 70, '#3a2340', 700);
+}
+function drawTools(s, x0, y, pw) {
+  const tb = (i, n, row, icon, label, t, extra = {}) => {
+    const w = (pw - 24 - (n - 1) * 6) / n;
+    btn(x0 + 12 + i * (w + 6), y + row * 58, w, 50, label, () => { tool = t; held = null; }, { icon, active: tool === t, ...extra });
+  };
+  const c = cust, F = frontStrands(), avg = k => F.reduce((a, t) => a + t[k], 0) / F.length;
+  if (s === 'nails') {
+    tb(0, 3, 0, '🧽', 'Temizle', 'clean'); tb(1, 3, 0, '📏', 'Uzat', 'long'); tb(2, 3, 0, '✂️', 'Kısalt', 'short');
+    tb(0, 3, 1, '⬜', 'Küt', 'square'); tb(1, 3, 1, '⚪', 'Yuvarlak', 'round'); tb(2, 3, 1, '🔺', 'Sivri', 'pointy');
+    // only polishes the salon has; the small number = customers left in the bottle
+    text('💅 Ojelerim', x0 + 16, y + 136, 17, '#6b5a70', 'left', 800);
+    NAIL_COLS.filter(([col]) => hasPolish(col)).forEach(([col], i) => {
+      const cx = x0 + 32 + (i % 6) * 39, cy = y + 162 + Math.floor(i / 6) * 42, on = tool === 'paint' && polish === col;
+      btn(cx - 18, cy - 18, 36, 36, '', () => { tool = 'paint'; polish = col; held = null; }, { hidden: true });
+      ctx.fillStyle = col; ctx.strokeStyle = on ? '#ff5fa2' : '#d8c6d2'; ctx.lineWidth = on ? 5 : 2; ctx.beginPath(); ctx.arc(cx, cy, 16, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      if (GLITTER.has(col)) { ctx.fillStyle = '#ffffff'; star4(cx - 5, cy - 5, 4); }
+      ctx.fillStyle = '#3a2340'; circle(cx + 12, cy + 12, 8); text(inv.polish[col], cx + 12, cy + 16.5, 12, '#ffffff', 'center', 800);
+    });
+  } else if (s === 'stickers') {
+    const k = c.req.sticker, placed = c.hands.reduce((a, h) => a + h.nails.filter(n => n.sticker).length, 0), left = 10 - placed - (held ? 1 : 0);
+    text(`Sticker kâğıdı • Kalan: ${left}`, x0 + pw / 2, y + 10, 18, '#6b5a70', 'center', 800);
+    ctx.fillStyle = '#fffbe6'; ctx.strokeStyle = '#f0d98a'; ctx.lineWidth = 3; rr(x0 + 22, y + 22, pw - 44, 5 * 50 + 10, 16); ctx.fill(); ctx.stroke();
+    for (let i = 0; i < 10; i++) {
+      const sx = x0 + pw / 2 + (i % 2 ? 50 : -50), sy = y + 50 + Math.floor(i / 2) * 50;
+      if (i < left) { drawSticker(k, sx, sy, 20); btn(sx - 26, sy - 26, 52, 52, '', () => { if (!held) { held = k; sfx('pop'); } }, { hidden: true }); }
+      else { ctx.strokeStyle = '#e5d7a8'; ctx.lineWidth = 2; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.arc(sx, sy, 18, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); }
+    }
+  } else if (s === 'cream') {
+    tb(0, 2, 0, '🧴', 'Krem sık', 'cream'); tb(1, 2, 0, '✋', 'Ov', 'rub');
+    drawTube(x0 + pw / 2 - 10, y + 200, 1.2, inv.tube);
+    text(`Fıs: ${inv.tube} / 5   •   Yedek tüp: ${inv.creams}`, x0 + pw / 2, y + 228, 17, '#d6337f', 'center', 800);
+    if (inv.tube === 0 && !isDone('cream')) {
+      if (inv.creams > 0) btn(x0 + 30, y + 240, pw - 60, 44, '🆕 Yeni tüpü aç', () => { inv.creams--; inv.tube = 5; tool = 'cream'; save(); }, { col: '#ffe36e' });
+      else btn(x0 + 20, y + 240, pw - 40, 44, `🛍️ Krem al (${CREAM_PRICE} TL)`, () => openShop('care'), { col: '#ffe36e', size: 18 });
+    }
+  } else if (s === 'shave') {
+    tb(0, 1, 0, '🪒', 'Jilet', 'razor');
+    pbar(x0 + 16, y + 90, pw - 32, 1 - c.beard.length / Math.max(1, c.beard.length + razorHair), 'Sakal');
+  } else if (s === 'razor') {
+    tb(0, 1, 0, '🪒', 'Jilet', 'razor');
+    pbar(x0 + 16, y + 90, pw - 32, 1 - razorHair / Math.max(1, razorHair + bowlHair), 'Jilet temizliği');
+  } else if (s === 'wash') {
+    tb(0, 2, 0, '🧴', 'Şampuan', 'shampoo'); tb(1, 2, 0, '🚿', 'Duş', 'shower');
+    text(`🟤 Kir: ${c.specks.length}`, x0 + 20, y + 90, 19, '#6b5a70', 'left', 800);
+    text(`🫧 Köpük: ${c.foam.length}`, x0 + 20, y + 118, 19, '#6b5a70', 'left', 800);
+  } else if (s === 'comb') {
+    tb(0, 1, 0, '💇', 'Tarak', 'comb');
+    pbar(x0 + 16, y + 90, pw - 32, 1 - avg('tangle'), 'Düğümsüz');
+  } else if (s === 'dry') {
+    tb(0, 1, 0, '💨', 'Fön', 'dryer');
+    pbar(x0 + 16, y + 90, pw - 32, 1 - avg('wet'), 'Kuru');
+  } else if (s === 'brows') {
+    tb(0, 1, 0, '🤏', 'Cımbız', 'tweezers');
+    pbar(x0 + 16, y + 90, pw - 32, 1 - c.strays.length / c.strays0, 'Temiz kaş');
+  } else if (s === 'mask') {
+    tb(0, 3, 0, '💚', 'Maske', 'maskJar'); tb(1, 3, 0, '🥒', 'Salatalık', 'cucumber'); tb(2, 3, 0, '🧻', 'Havlu', 'towel');
+    const ph = c.maskPh, order = ['apply', 'cucumber', 'wait', 'wipe', 'done'];
+    [['apply', '1. Maskeyi sür'], ['cucumber', '2. Salatalık koy'], ['wait', '3. Bekle'], ['wipe', '4. Havluyla sil']].forEach(([k, t], i) =>
+      text(`${order.indexOf(ph) > i ? '✅' : ph === k ? '👉' : '▫️'} ${t}`, x0 + 20, y + 84 + i * 26, 17, '#3a2340', 'left', ph === k ? 800 : 600));
+    if (ph === 'wait') pbar(x0 + 16, y + 196, pw - 32, 1 - c.maskT / 5, '⏳ Kuruyor');
+  } else if (s === 'dye') {
+    tb(0, 1, 0, '🎨', 'Boya fırçası', 'dyeBrush');
+    ctx.fillStyle = c.req.dye; circle(x0 + 34, y + 84, 14); text(dyeName(c.req.dye) + ' boya', x0 + 56, y + 90, 18, '#3a2340', 'left', 800);
+    pbar(x0 + 16, y + 110, pw - 32, (avg('dye') + c.capDye) / 2, 'Boyandı');
+  } else if (s === 'jewel') {
+    const ks = c.req.jewels;
+    ks.forEach((k, i) => tb(i, ks.length, 0, JEWELS[k].icon, JEWELS[k].name, k));
+    ks.forEach((k, i) => text(`${c.jewelOn[k].every(v => v) ? '✅' : '⬜'} ${JEWELS[k].name}`, x0 + 20, y + 84 + i * 26, 17, '#3a2340', 'left', 700));
+  } else if (s === 'makeup') {
+    const ks = c.req.makeup, n = Math.min(2, ks.length);
+    ks.forEach((k, i) => tb(i % 2, n, Math.floor(i / 2), MAKEUP[k].icon, MAKEUP[k].name, k));
+    ks.forEach((k, i) => text(`${mkDone(k) ? '✅' : '⬜'} ${MAKEUP[k].name}`, x0 + 20, y + 140 + i * 26, 17, '#3a2340', 'left', 700));
+  } else if (s === 'cut') {
+    tb(0, 1, 0, '✂️', 'Makas', 'scissors');
+    pbar(x0 + 16, y + 90, pw - 32, F.filter(st => st.sy + st.L <= CUT_Y + 14).length / F.length, 'Kısa');
+  } else if (s === 'style') {
+    const wave = c.req.hairStyle === 'wave';
+    tb(0, 1, 0, wave ? '〰️' : '📏', wave ? 'Maşa' : 'Düzleştirici', 'iron');
+    pbar(x0 + 16, y + 90, pw - 32, wave ? avg('wave') : 1 - avg('wave'), wave ? 'Dalgalı' : 'Düz');
+  }
+}
+function drawPanel() {
+  const x0 = PANEL + 10, pw = W - PANEL - 20;
+  ctx.fillStyle = '#ffffff'; ctx.shadowColor = 'rgba(0,0,0,.25)'; ctx.shadowBlur = 16; rr(x0, 10, pw, H - 20, 22); ctx.fill(); ctx.shadowBlur = 0;
+  // customer avatar (mood follows the progress)
+  const ax = x0 + 46, ay = 62;
+  ctx.fillStyle = '#ffe0ef'; circle(ax, ay, 38);
+  ctx.save(); ctx.beginPath(); ctx.arc(ax, ay, 38, 0, Math.PI * 2); ctx.clip();
+  drawHead(cust, ax, ay + 14 - Math.sin(hop * Math.PI) * 6, 0.3, { mood: stepIdx / cust.steps.length + (stepDone ? 0.2 : 0) });
+  ctx.restore();
+  ctx.strokeStyle = '#ff9ccf'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(ax, ay, 38, 0, Math.PI * 2); ctx.stroke();
+  text(cust.name, x0 + 94, 50, 22, '#d6337f', 'left', 800);
+  text(`${cust.price} TL`, x0 + 94, 74, 17, '#6b5a70', 'left', 700);
+  text(`💰 ${money} TL`, x0 + 94, 96, 17, '#23884f', 'left', 800);
+  cust.steps.forEach((s, i) => {
+    const cur = i === stepIdx;
+    fitText((i < stepIdx ? '✅ ' : cur ? '👉 ' : '▫️ ') + STEP_INFO[s].title, x0 + 16, 124 + i * 21, cur ? 18 : 15, pw - 30, cur ? '#3a2340' : i < stepIdx ? '#8a9a8a' : '#6b5a70', cur ? 800 : 600);
+  });
+  drawTools(curStep(), x0, 126 + cust.steps.length * 21, pw);
+  if (stepDone) btn(x0 + 12, H - 90, pw - 24, 62, stepIdx === cust.steps.length - 1 ? 'Bitti! 💖' : 'Tamam ➜', nextStep, { col: '#27b36a', fg: '#ffffff', size: 26 });
+}
+function drawSalonBg() {
+  const g = ctx.createLinearGradient(0, 0, 0, 560); g.addColorStop(0, '#ffe0ef'); g.addColorStop(1, '#ffc6e0');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, 560);
+  ctx.fillStyle = 'rgba(255,255,255,.45)'; for (let x = 30; x < W; x += 80) for (let y = 30; y < 540; y += 80) heart(x + (Math.floor(y / 80) % 2) * 40, y, 7);
+  for (let x = 0; x < W; x += 60) for (let y = 560; y < H; y += 40) { ctx.fillStyle = (x / 60 + (y - 560) / 40) % 2 ? '#ffffff' : '#f7b5d3'; ctx.fillRect(x, y, 60, 40); }
+  ctx.fillStyle = 'rgba(0,0,0,.08)'; ctx.fillRect(0, 556, W, 6);
+  ctx.fillStyle = '#ff5fa2'; rr(420, 18, 440, 58, 29); ctx.fill(); text('💅 YV Güzellik Salonu', 640, 58, 30, '#ffffff', 'center', 800);
+  ctx.fillStyle = '#e0b04a'; ell(170, 300, 95, 135); ctx.fillStyle = '#cfefff'; ell(170, 300, 80, 120); ctx.fillStyle = 'rgba(255,255,255,.6)'; ell(140, 250, 20, 50, -0.3);
+  ctx.fillStyle = '#b77a4a'; ctx.fillRect(760, 250, 240, 12);
+  ['#ff6fb5', '#8b5cf6', '#1c1c1c', '#e8434f', '#2fd27a', '#ffd23f', '#3b82f6'].forEach((c, i) => { const x = 775 + i * 32; ctx.fillStyle = c; rr(x, 214, 20, 36, 6); ctx.fill(); ctx.fillStyle = '#2a1f2e'; ctx.fillRect(x + 6, 200, 8, 16); });
+  ctx.fillStyle = '#c98b5a'; ctx.fillRect(1090, 250, 150, 310); ctx.fillStyle = '#a86a3a'; ctx.fillRect(1104, 264, 122, 296); ctx.fillStyle = '#ffd23f'; circle(1210, 420, 8);
+  // window with drifting clouds
+  ctx.fillStyle = '#ffffff'; rr(320, 110, 170, 150, 12); ctx.fill();
+  ctx.save(); rr(330, 120, 150, 130, 8); ctx.clip();
+  const sky = ctx.createLinearGradient(0, 120, 0, 250); sky.addColorStop(0, '#7cc8ff'); sky.addColorStop(1, '#d4efff'); ctx.fillStyle = sky; ctx.fillRect(330, 120, 150, 130);
+  ctx.fillStyle = '#ffe36e'; circle(450, 150, 16);
+  ctx.fillStyle = '#ffffff'; for (let i = 0; i < 2; i++) { const cx = 330 + ((T * 12 + i * 90) % 220) - 30; ell(cx, 170 + i * 40, 26, 11); ell(cx + 16, 164 + i * 40, 16, 10); }
+  ctx.restore();
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(402, 120, 6, 130); ctx.fillRect(330, 182, 150, 6);
+  ctx.fillStyle = '#ff9ccf'; ctx.beginPath(); ctx.moveTo(314, 104); ctx.quadraticCurveTo(350, 170, 318, 270); ctx.lineTo(308, 270); ctx.lineTo(308, 104); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(496, 104); ctx.quadraticCurveTo(460, 170, 492, 270); ctx.lineTo(502, 270); ctx.lineTo(502, 104); ctx.fill();
+  // bought decorations
+  if (has('decor', 'disco')) {
+    for (let i = 0; i < 10; i++) { const a = T * 0.8 + i * 0.63; ctx.fillStyle = ['rgba(177,140,255,.25)', 'rgba(90,169,255,.25)', 'rgba(255,156,207,.3)'][i % 3]; circle(640 + Math.cos(a) * (200 + i * 40), 300 + Math.sin(a * 1.3) * 180, 14); }
+    drawDecor('disco', 980, 120);
+  }
+  if (has('decor', 'sofa')) drawDecor('sofa', 300, 590);
+  if (has('decor', 'fish')) drawDecor('fish', 930, 560);
+  if (has('decor', 'plant')) drawDecor('plant', 60, 580);
+  if (has('decor', 'balloons')) drawDecor('balloons', 250, 190);
+  if (has('decor', 'chandelier')) drawDecor('chandelier', 1165, 0);
+  if (has('decor', 'radio')) { ctx.fillStyle = '#b77a4a'; ctx.fillRect(540, 250, 110, 8); drawDecor('radio', 595, 250); }
+  if (has('decor', 'tipjar')) { ctx.fillStyle = '#b77a4a'; ctx.fillRect(1004, 250, 70, 8); drawDecor('tipjar', 1040, 250); }
+  if (has('decor', 'cat')) drawDecor('cat', 770, 660);
+}
+function drawSalon() {
+  drawSalonBg();
+  const c = cust, walking = scene === 'enter' || scene === 'leave', s = 0.55, bob = walking ? Math.abs(Math.sin(c.walk)) * 6 : 0;
+  const mood = (scene === 'pay' || scene === 'leave') && !c.rejected ? 1 : 0;
+  ctx.fillStyle = 'rgba(0,0,0,.12)'; ell(c.x, 652, 70, 12);
+  drawHead(c, c.x, 650 - 620 * s - bob, s, { body: () => drawBody(c, walking ? c.walk : 0, mood), mood });
+  if (scene === 'talk') {
+    const m = missing(c);
+    let bottom = bubble(650, 92, 440, requestLines(c), c.greet);
+    if (m.length) {
+      ctx.fillStyle = '#fff1f1'; ctx.strokeStyle = '#e8434f'; ctx.lineWidth = 3; rr(650, bottom + 8, 440, 40, 14); ctx.fill(); ctx.stroke();
+      fitText(`❗ Sende yok: ${m.join(', ')}`, 666, bottom + 36, 19, 410, '#c0392b', 800);
+      bottom += 48;
+    }
+    btn(650, bottom + 14, 170, 56, 'Başlayalım ✨', startWork, { col: m.length ? '#b9c4bd' : '#27b36a', fg: '#ffffff', size: 21 });
+    btn(830, bottom + 14, 130, 56, '🛍️ Mağaza', () => openShop(), { col: m.length ? '#ffe36e' : '#fff0f7', size: 19 });
+    btn(970, bottom + 14, 120, 56, '✋ Reddet', reject, { col: '#ffd6d6', size: 19 });
+  } else if (scene === 'pay') {
+    const bottom = bubble(650, 140, 400, ['Teşekkür ederim! 💖', `Al bakalım: ${c.price} TL 💵`], 'Çok güzel oldum!');
+    if (!bill) btn(740, bottom + 16, 220, 60, '💰 Parayı al', takeMoney, { col: '#ffe36e', size: 24 });
+  } else if (scene === 'leave' && c.x < 820) bubble(c.x + 90, 170, c.rejected ? 300 : 230, [], c.rejected ? 'Hıh! Başka yere giderim 😤' : 'Hoşça kal! 👋');
+  moneyPill(1058, 12);
+  if (has('decor', 'radio')) btn(1000, 12, 48, 48, musicOn ? '🎵' : '🔇', () => { musicOn = !musicOn; }, { size: 22 });
+  text(`👩 ${served} müşteri`, 1158, 84, 18, '#6b5a70', 'center', 700);
+  if (bill && !bill.done) {
+    const t = bill.t, e = t * t * (3 - 2 * t), bx = bill.x0 + (1110 - bill.x0) * e, by = bill.y0 + (36 - bill.y0) * e - Math.sin(t * Math.PI) * 120;
+    ctx.save(); ctx.translate(bx, by); ctx.rotate(Math.sin(t * 12) * 0.2);
+    ctx.fillStyle = '#7ed69a'; ctx.strokeStyle = '#2f9e5a'; ctx.lineWidth = 3; rr(-44, -22, 88, 44, 6); ctx.fill(); ctx.stroke();
+    text(`${c.price} TL`, 0, 9, 22, '#1d5e36', 'center', 800);
+    ctx.restore();
+  }
+}
+function drawShopPreview(it, x, y) {
+  if (it.kind === 'jewel') drawJewel(it.id, x, y, 1.6);
+  else if (it.kind === 'supply') { if (it.id === 'mask') drawMaskJar(x - 40, y - 30); else drawDyeKit(x, y + 10); }
+  else if (it.kind === 'makeup') { ctx.save(); ctx.translate(x, y - 14); ctx.scale(1.3, 1.3); drawMk(it.id, 0, 0); ctx.restore(); }
+  else if (it.kind === 'polish') drawPolish(x, y + 58, it.id, 0);
+  else if (it.kind === 'cream') drawTube(x + 4, y + 52, 1, 5);
+  else if (it.kind === 'sticker') drawSticker(it.id, x, y, 34);
+  else if (it.id === 'straightener') drawIron(x, y + 4, true);
+  else if (it.id === 'turbo') { drawDryer(x - 40, y - 20); ctx.fillStyle = '#ffd23f'; star4(x + 44, y - 50, 12); }
+  else if (it.id === 'goldRazor') { ctx.save(); ctx.translate(x, y - 10); ctx.scale(1.2, 1.2); drawRazor(0, 0, 0); ctx.restore(); ctx.fillStyle = 'rgba(255,210,63,.55)'; ell(x, y - 10, 42, 16, -0.5); }
+  else if (it.kind === 'tools') { emoji(it.icon, x, y, 58); ctx.fillStyle = '#ffd23f'; star4(x + 34, y - 30, 11); star4(x - 36, y + 22, 7); }
+  else {
+    const P = { disco: [-6, 1], chandelier: [-58, 0.8], balloons: [74, 0.62], cat: [58, 0.8], radio: [40, 1], tipjar: [44, 1] }[it.id] || [52, 0.62];
+    drawDecor(it.id, x, y + P[0], P[1]);
+  }
+}
+function drawShop() {
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#fff0f7'); g.addColorStop(1, '#f3d1ff');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(255,255,255,.6)'; for (let x = 40; x < W; x += 110) for (let y = 40; y < H; y += 110) star4(x + (Math.floor(y / 110) % 2) * 55, y, 6);
+  text('🛍️ Mağaza', 50, 66, 44, '#d6337f', 'left', 800);
+  moneyPill(1030, 22);
+  SHOP_TABS.forEach(([id, label], i) => btn(50 + i * 198, 92, 188, 50, label, () => { shopTab = id; shopPage = 0; }, { active: shopTab === id, size: 17 }));
+  const list = SHOP.filter(it => it.tab === shopTab), pages = Math.ceil(list.length / 12);
+  if (shopPage >= pages) shopPage = 0;
+  if (pages > 1) {
+    btn(810, 636, 60, 56, '◀', () => { shopPage = (shopPage + pages - 1) % pages; }, { size: 24 });
+    text(`${shopPage + 1} / ${pages}`, 910, 673, 22, '#3a2340', 'center', 800);
+    btn(950, 636, 60, 56, '▶', () => { shopPage = (shopPage + 1) % pages; }, { size: 24 });
+  }
+  list.slice(shopPage * 12, shopPage * 12 + 12).forEach((it, i) => {
+    const x = 50 + (i % 6) * 199, y = 162 + Math.floor(i / 6) * 234, w = 185, h = 222, own = ownsItem(it);
+    ctx.fillStyle = 'rgba(0,0,0,.08)'; rr(x, y + 5, w, h, 20); ctx.fill();
+    ctx.fillStyle = '#ffffff'; ctx.strokeStyle = own ? '#2fbf71' : '#f3c6de'; ctx.lineWidth = 3; rr(x, y, w, h, 20); ctx.fill(); ctx.stroke();
+    ctx.save(); rr(x, y, w, 120, 20); ctx.clip(); drawShopPreview(it, x + w / 2, y + 62); ctx.restore();
+    fitText(itemName(it), x + 12, y + 142, 18, w - 24, '#3a2340', 800);
+    const info = it.kind === 'polish' ? (hasPolish(it.id) ? `Sende: ${inv.polish[it.id]} müşterilik` : 'Sende yok')
+      : it.kind === 'cream' ? `Açık tüp: ${inv.tube} fıs • Yedek: ${inv.creams}`
+      : it.kind === 'supply' ? (hasSup(it.id) ? `Sende: ${inv.supplies[it.id]} müşterilik` : 'Sende yok')
+      : it.kind === 'makeup' ? (hasMk(it.id) ? `Sende: ${inv.makeup[it.id]} müşterilik` : 'Sende yok')
+      : it.kind === 'sticker' ? (hasSticker(it.id) ? `Sende: ${inv.stickers[it.id]} müşterilik` : 'Sende yok') : it.desc || '';
+    fitText(info, x + 12, y + 164, 14, w - 24, info === 'Sende yok' ? '#c0392b' : '#6b5a70', 700);
+    if (own) text('✅ Senin', x + w / 2, y + 204, 20, '#23884f', 'center', 800);
+    else btn(x + 14, y + 176, w - 28, 36, `Al • ${it.price} TL`, () => buy(it), { col: money >= it.price ? '#27b36a' : '#c9c1c6', fg: '#ffffff', size: 17 });
+  });
+  fitText(shopTab === 'makeup' ? 'Ruj 2, kirpik kıvırıcı 4; allık, far, sim, maske, saç boyası 3 müşteride biter.' : shopTab === 'polish' ? `Bir oje ${POLISH_PRICE} TL, ${POLISH_USES} müşteride biter.` : shopTab === 'care' ? `Bir krem ${CREAM_PRICE} TL, içinde 5 fıs var. Bir sticker paketi ${STICKER_USES} müşteride biter.` : 'Bir kere al, hep senin!', 50, 668, 20, 740, '#6b5a70', 700);
+  btn(1030, 636, 200, 56, shopFrom === 'title' ? '⬅ Geri' : '⬅ Salona dön', () => go(shopFrom), { col: '#ff5fa2', fg: '#ffffff', size: 22 });
+}
+function drawTitle() {
+  drawSalonBg();
+  ctx.fillStyle = 'rgba(58,31,61,.35)'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#ffffff'; ctx.shadowColor = 'rgba(0,0,0,.3)'; ctx.shadowBlur = 30; rr(290, 150, 700, 400, 36); ctx.fill(); ctx.shadowBlur = 0;
+  text('💅 YV Güzellik Salonu', 640, 250, 54, '#d6337f', 'center', 800);
+  text('Tırnak • Krem • Tıraş • Saç', 640, 300, 26, '#6b5a70', 'center', 700);
+  text(`💰 Kasada: ${money} TL   •   👩 ${served} müşteri`, 640, 350, 22, '#23884f', 'center', 800);
+  btn(420, 400, 220, 80, '▶ Başla', () => newCustomer(true), { col: '#ff5fa2', fg: '#ffffff', size: 34 });
+  btn(660, 400, 200, 80, '🛍️ Mağaza', () => openShop(), { col: '#ffe36e', size: 28 });
+  for (let i = 0; i < 6; i++) { ctx.fillStyle = pick(['#ffd23f', '#ff6fb5', '#b18cff']); star4(320 + i * 130, 180 + Math.sin(T * 2 + i) * 10, 8); }
+}
+function drawWork() {
+  const s = curStep();
+  ctx.save(); ctx.beginPath(); ctx.rect(0, 0, PANEL, H); ctx.clip();
+  if (HAND_STEPS.has(s)) { drawTable(); drawHand(0); drawHand(1); }
+  else { drawFaceBg(); drawHead(cust, FX, FY - Math.sin(hop * Math.PI) * 18, FS, { cape: true, mood: stepIdx / cust.steps.length + (stepDone ? 0.2 : 0) }); if (s === 'razor') drawBowl(); if (s === 'cut' && !stepDone) { const gy = FY + CUT_Y * FS; ctx.strokeStyle = 'rgba(214,51,127,.8)'; ctx.lineWidth = 3; ctx.setLineDash([12, 8]); line(FX - 250, gy, FX + 250, gy); ctx.setLineDash([]); text('✂️ buradan kes', FX + 170, gy - 10, 18, '#d6337f', 'left', 800); } }
+  drawInstr();
+  if (react) {
+    ctx.globalAlpha = clamp(react.t * 2, 0, 1);
+    ctx.font = `800 22px ${FONT}`; const t = `${cust.name}: ${react.text}`, w = ctx.measureText(t).width + 40;
+    ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#ff9ccf'; ctx.lineWidth = 3; rr(PANEL - 20 - w, 98, w, 44, 22); ctx.fill(); ctx.stroke();
+    text(t, PANEL - 20 - w / 2, 128, 22, '#d6337f', 'center', 800);
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+  drawPanel();
+}
+function drawToast() {
+  if (!toast) return;
+  const cx = scene === 'work' ? PANEL / 2 : W / 2;
+  ctx.globalAlpha = clamp(toast.t * 3, 0, 1);
+  ctx.font = `800 22px ${FONT}`; const w = ctx.measureText(toast.text).width + 48;
+  ctx.fillStyle = '#3a2340'; rr(cx - w / 2, 100, w, 46, 23); ctx.fill();
+  text(toast.text, cx, 131, 22, '#ffffff', 'center', 800);
+  ctx.globalAlpha = 1;
+}
+function draw() {
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+  buttons = [];
+  if (scene === 'title') drawTitle();
+  else if (scene === 'shop') drawShop();
+  else if (scene === 'work') drawWork();
+  else drawSalon();
+  drawParts();
+  drawToast();
+  drawCursor();
+  if (fade > 0) { ctx.fillStyle = `rgba(255,240,248,${fade * 0.9})`; ctx.fillRect(0, 0, W, H); }
+  const hide = scene === 'work' && ptr.x < PANEL && (tool || held);
+  const cur = hide ? 'none' : buttons.some(inBtn) ? 'pointer' : 'default';
+  if (cv.style.cursor !== cur) cv.style.cursor = cur;
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  update(dt); draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
