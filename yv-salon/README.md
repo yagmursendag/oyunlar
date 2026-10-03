@@ -1,6 +1,8 @@
 # YV Güzellik Salonu
 
-Oynamak için `index.html` dosyasını aç (her zaman en son sürüm).
+▶ **Oyna:** https://yagmursendag.github.io/oyunlar/yv-salon/ (telefonda da çalışır, "Ana ekrana ekle" ile uygulama gibi açılır)
+
+Bilgisayarda internetsiz oynamak için `index.html` dosyasını aç (her zaman en son sürüm).
 
 Eski sürümler `versions/` klasöründe durur; hiçbiri silinmez. Her yeni özellik = yeni sürüm dosyası.
 

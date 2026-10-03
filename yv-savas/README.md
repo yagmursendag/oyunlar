@@ -1,6 +1,8 @@
 # YV Su Savaşı
 
-Oynamak için `index.html` dosyasını aç (her zaman en son sürüm).
+▶ **Oyna:** https://yagmursendag.github.io/oyunlar/yv-savas/ (iki kişilik, klavyeyle oynanır)
+
+Bilgisayarda oynamak için `index.html` dosyasını da açabilirsin (her zaman en son sürüm).
 
 Eski sürümler `versions/` klasöründe durur; hiçbiri silinmez. Her yeni özellik = yeni sürüm dosyası.
 
