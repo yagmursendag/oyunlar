@@ -39,3 +39,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v29 | versions/v29-su-para.html | 💰 Lobideki kasabalı Su'nun profil kartındaki parası 1.000 TL |
 | v30 | versions/v30-altin-hukumdar.html | 👑 Yeni özel kıyafet: Altın Hükümdar Kıyafeti, 20.000 💎 (Mağaza > Kıyafet): altın cübbe, kırmızı pelerin, kürk yaka, mücevherli taç; kız ve erkekte salonda ve 3D lobide görünür. Admin elması sonsuz olduğu için alabilir |
 | v31 | versions/v31-hukumdar-ozel.html | 🏆 Altın Hükümdar Kıyafeti artık 👑 Özel bölümünde: Yıldız Prensesi ile yan yana iki sekmeli vitrin, kız ve erkek modeli, elmas ilerleme çubuğu (20.000 💎) |
+| v32 | versions/v32-sifir-kisa.html | 💈 Yeni saç modelleri (Karakterim > Saç): 🪒 Sıfır numara (makineyle sıfıra vurulmuş, silik gölge) ve 💈 Çok kısa (kısa kep gibi, yanlar ve ense kazınmış). Salonda, profil kartında ve 3D lobide çalışır |
