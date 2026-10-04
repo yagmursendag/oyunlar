@@ -1,0 +1,29 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "rooms": {
+      "$room": {
+        ".validate": "$room.length >= 20 && $room.length <= 40",
+        "players": {
+          ".read": "auth != null",
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid",
+            ".validate": "newData.hasChildren(['n', 'x', 'z', 't'])",
+            "n": { ".validate": "newData.isString() && newData.val().length <= 20" },
+            "l": { ".validate": "newData.isString() && newData.val().length <= 300" },
+            "x": { ".validate": "newData.isNumber() && newData.val() > -500 && newData.val() < 500" },
+            "z": { ".validate": "newData.isNumber() && newData.val() > -500 && newData.val() < 500" },
+            "r": { ".validate": "newData.isNumber()" },
+            "y": { ".validate": "newData.isNumber() && newData.val() >= -2 && newData.val() < 10" },
+            "e": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 30" },
+            "m": { ".validate": "newData.isNumber()" },
+            "h": { ".validate": "newData.isBoolean()" },
+            "t": { ".validate": "newData.val() === now" },
+            "$other": { ".validate": false }
+          }
+        }
+      }
+    }
+  }
+}
