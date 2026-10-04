@@ -37,3 +37,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v27 | versions/v27-teslim-duzeltme.html | 🐞 Düzeltme: lobideki işlerde (dondurma, pasta, çiçek, doktor) 'Teslim et'e art arda basınca her basışta para veriyordu; artık bir sipariş için sadece bir kez ödeme yapılıyor |
 | v28 | versions/v28-kel-kazitik.html | 👨‍🦲 Yeni saç modelleri (Karakterim > Saç): Kel ve ✂️ Yanlar kazıtık (üstte saç var, yanlarda yok, kulaklar görünür). Salonda, profil kartında ve 3D lobide çalışır |
 | v29 | versions/v29-su-para.html | 💰 Lobideki kasabalı Su'nun profil kartındaki parası 1.000 TL |
+| v30 | versions/v30-altin-hukumdar.html | 👑 Yeni özel kıyafet: Altın Hükümdar Kıyafeti, 20.000 💎 (Mağaza > Kıyafet): altın cübbe, kırmızı pelerin, kürk yaka, mücevherli taç; kız ve erkekte salonda ve 3D lobide görünür. Admin elması sonsuz olduğu için alabilir |
