@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>YV Mini Restoran</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+  body{margin:0;font-family:system-ui,sans-serif;background:#fff3e0;color:#4e2a14;min-height:100vh}
+  #top{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:#ff8a50;color:#fff;font-weight:bold;font-size:18px}
+  #customers{display:flex;gap:10px;padding:10px;min-height:150px;justify-content:center;flex-wrap:wrap}
+  .cust{background:#fff;border-radius:16px;padding:8px 10px;width:150px;text-align:center;box-shadow:0 3px 8px #0002;cursor:pointer;border:3px solid transparent}
+  .cust:hover{border-color:#ff8a50}
+  .cust .face{font-size:34px}
+  .cust .order{font-size:24px;min-height:30px}
+  .bar{height:8px;background:#eee;border-radius:4px;margin-top:6px;overflow:hidden}
+  .bar i{display:block;height:100%;background:#4caf50;transition:width .2s linear}
+  #tray{margin:6px auto;max-width:520px;background:#fff;border-radius:16px;padding:10px;text-align:center;box-shadow:0 3px 8px #0002}
+  #plate{font-size:30px;min-height:44px;letter-spacing:2px}
+  #items{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:10px;max-width:560px;margin:auto}
+  button{font:inherit;border:0;border-radius:14px;padding:10px 14px;cursor:pointer;background:#ffcc80;font-size:26px;box-shadow:0 3px 0 #c88a2e}
+  button:active{transform:translateY(2px);box-shadow:0 1px 0 #c88a2e}
+  .act{font-size:18px;font-weight:bold;margin:4px}
+  #serve{background:#81c784;box-shadow:0 3px 0 #4a8c4e}
+  #trash{background:#e57373;box-shadow:0 3px 0 #a04545}
+  #msg{text-align:center;height:24px;font-weight:bold}
+  #overlay{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center}
+  #box{background:#fff;border-radius:20px;padding:24px 30px;text-align:center;max-width:90vw}
+  #box h1{margin:0 0 8px}
+  #box p{margin:6px 0}
+  @media (max-height:520px){
+    #top{padding:4px 12px;font-size:15px}
+    #customers{min-height:100px;padding:4px;gap:6px}
+    .cust{width:120px;padding:4px 6px}
+    .cust .face{font-size:22px}.cust .order{font-size:18px;min-height:22px}
+    #tray{padding:4px;margin:2px auto}#plate{font-size:22px;min-height:30px}
+    #items{padding:4px;gap:5px}button{padding:5px 9px;font-size:20px}.act{font-size:14px;padding:5px 10px}
+    #msg{height:18px;font-size:14px}
+    #box{padding:14px 22px}
+  }
+</style>
+</head>
+<body>
+<div id="top"><span>🪙 <b id="coins">0</b></span><span>Gün <b id="day">1</b></span><span>⏱️ <b id="time">60</b></span></div>
+<div id="customers"></div>
+<div id="msg"></div>
+<div id="tray">
+  <div>Tabağın:</div>
+  <div id="plate"></div>
+  <button class="act" id="serve">✅ Servis et</button>
+  <button class="act" id="trash">🗑️ Çöpe at</button>
+</div>
+<div id="items"></div>
+<div id="overlay"><div id="box"></div></div>
+
+<script>
+// Menu: each dish is an ordered list of ingredients
+var MENU = [
+  {name:'Hamburger', parts:['🍞','🥩','🥬','🍞']},
+  {name:'Peynirli tost', parts:['🍞','🧀','🍞']},
+  {name:'Pizza', parts:['🫓','🍅','🧀','🍄']},
+  {name:'Salata', parts:['🥬','🍅','🥒']},
+  {name:'Sosisli', parts:['🍞','🌭','🧅']},
+  {name:'Taco', parts:['🌮','🥩','🥬','🧀']}
+];
+var FACES = ['😀','😎','🥰','🤠','🐱','🐶','🐰','🦊'];
+var ALL = ['🍞','🥩','🥬','🧀','🫓','🍅','🍄','🥒','🌭','🧅','🌮'];
+
+var coins, day, timeLeft, custs, plate, running, timer, spawn;
+
+function $(id){ return document.getElementById(id); }
+
+function say(t){ $('msg').textContent = t; }
+
+// Build ingredient buttons
+ALL.forEach(function(e){
+  var b = document.createElement('button');
+  b.textContent = e;
+  b.onclick = function(){ if(running && plate.length < 6){ plate.push(e); drawPlate(); } };
+  $('items').appendChild(b);
+});
+
+function drawPlate(){ $('plate').textContent = plate.join(' '); }
+
+function startDay(){
+  timeLeft = 60; custs = []; plate = [];
+  running = true;
+  $('overlay').style.display = 'none';
+  drawPlate(); render(); say('Müşteriye tıklayarak tabağı servis et!');
+  newCustomer();
+  clearInterval(timer);
+  timer = setInterval(tick, 1000);
+}
+
+function newCustomer(){
+  var max = Math.min(2 + Math.floor(day/2), 4);
+  if(custs.length < max){
+    var dishes = MENU.slice(0, Math.min(3 + day, MENU.length));
+    var d = dishes[Math.floor(Math.random()*dishes.length)];
+    var pat = Math.max(18, 34 - day*3);
+    custs.push({dish:d, face:FACES[Math.floor(Math.random()*FACES.length)], pat:pat, max:pat});
+    render();
+  }
+  clearTimeout(spawn);
+  spawn = setTimeout(function(){ if(running) newCustomer(); }, 3000 + Math.random()*3000);
+}
+
+function tick(){
+  timeLeft--;
+  custs.forEach(function(c){ c.pat--; });
+  var left = custs.filter(function(c){ return c.pat > 0; });
+  if(left.length < custs.length){ coins = Math.max(0, coins - 5); say('😢 Bir müşteri kızıp gitti! -5'); }
+  custs = left;
+  render();
+  if(timeLeft <= 0) endDay();
+}
+
+function render(){
+  $('coins').textContent = coins; $('day').textContent = day; $('time').textContent = timeLeft;
+  var box = $('customers'); box.innerHTML = '';
+  custs.forEach(function(c, i){
+    var el = document.createElement('div'); el.className = 'cust';
+    el.innerHTML = '<div class="face">'+c.face+'</div><div><b>'+c.dish.name+'</b></div><div class="order">'+c.dish.parts.join('')+'</div><div class="bar"><i style="width:'+(c.pat/c.max*100)+'%"></i></div>';
+    el.onclick = function(){ serve(i); };
+    box.appendChild(el);
+  });
+}
+
+function serve(i){
+  if(!running) return;
+  var c = custs[i], ok = plate.join('') === c.dish.parts.join('');
+  if(ok){
+    var gain = 10 + Math.ceil(c.pat/c.max*10);
+    coins += gain; say('😋 Harika! +'+gain);
+    custs.splice(i,1); plate = [];
+  } else {
+    say('🤔 Bu sipariş değil! Sıraya dikkat et.');
+  }
+  drawPlate(); render();
+}
+
+$('serve').onclick = function(){ if(custs.length === 1) serve(0); else say('Hangi müşteriye? Müşteriye tıkla!'); };
+$('trash').onclick = function(){ plate = []; drawPlate(); };
+
+function endDay(){
+  running = false; clearInterval(timer); clearTimeout(spawn);
+  var goal = 40 + day*30;
+  var win = coins >= goal;
+  $('overlay').style.display = 'flex';
+  $('box').innerHTML = '<h1>'+(win?'🎉 Gün bitti!':'😅 Olmadı')+'</h1><p>Kazandığın: 🪙 '+coins+'</p><p>Hedef: 🪙 '+goal+'</p>'
+    + '<button class="act" id="next">'+(win?'Sonraki gün ▶':'Tekrar dene')+'</button>';
+  $('next').onclick = function(){ if(win){ day++; } else { day = 1; coins = 0; } startDay(); };
+}
+
+function intro(){
+  coins = 0; day = 1; running = false;
+  $('box').innerHTML = '<h1>🍔 YV Mini Restoran</h1><p>Müşteriler sipariş verir.</p><p>Malzemeleri <b>sırayla</b> tabağa koy,<br>sonra müşteriye tıkla!</p><p>Hamburger: 🍞🥩🥬🍞</p>'
+    + '<button class="act" id="go">Başla ▶</button>';
+  $('go').onclick = startDay;
+}
+intro();
+</script>
+</body>
+</html>
