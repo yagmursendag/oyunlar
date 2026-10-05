@@ -1,6 +1,6 @@
 // YV Güzellik Salonu: keeps the game on the phone so it opens without internet.
 // The game page is fetched fresh when online (so updates arrive), the saved copy is used offline.
-const CACHE = 'yv-salon-v34';
+const CACHE = 'yv-salon-v35';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
