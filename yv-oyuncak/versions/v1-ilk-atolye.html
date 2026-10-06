@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>YV Oyuncak Atölyesi</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+  body{margin:0;font-family:system-ui,sans-serif;background:#e8f5ff;color:#2a3550;min-height:100vh}
+  #top{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:#5c7cfa;color:#fff;font-weight:bold;font-size:18px}
+  button{font:inherit;border:0;border-radius:14px;padding:10px 14px;cursor:pointer;background:#ffd43b;font-size:26px;box-shadow:0 3px 0 #b8941a}
+  button:active{transform:translateY(2px);box-shadow:0 1px 0 #b8941a}
+  button:disabled{background:#ddd;box-shadow:none;cursor:default;opacity:.7}
+  #kid{margin:10px auto;max-width:360px;background:#fff;border-radius:18px;padding:10px;text-align:center;box-shadow:0 3px 8px #0002;min-height:120px}
+  #kid .face{font-size:40px}
+  #kid .want{font-size:20px;font-weight:bold;min-height:28px}
+  .bar{height:8px;background:#eee;border-radius:4px;margin-top:6px;overflow:hidden}
+  .bar i{display:block;height:100%;background:#51cf66;transition:width .2s linear}
+  #bench{margin:6px auto;max-width:360px;background:#fff;border-radius:18px;padding:8px;text-align:center;box-shadow:0 3px 8px #0002}
+  #toy{position:relative;width:110px;height:110px;margin:auto}
+  #toy .paint{position:absolute;inset:0;border-radius:50%;background:#dee2e6;border:4px dashed #adb5bd}
+  #toy .body{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:62px}
+  #toy .acc{position:absolute;top:-6px;right:-4px;font-size:34px}
+  .row{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:4px;max-width:560px;margin:auto}
+  .row button{font-size:24px;padding:6px 10px}
+  .row button.sel{outline:4px solid #5c7cfa}
+  .sw{width:40px;height:40px;border-radius:50%;padding:0;border:3px solid #fff;box-shadow:0 2px 4px #0005}
+  .row button.sw{padding:0;font-size:0}
+  .lab{font-size:13px;font-weight:bold;margin-top:2px}
+  .act{font-size:18px;font-weight:bold;margin:4px}
+  #give{background:#69db7c;box-shadow:0 3px 0 #2f9e44}
+  #clear{background:#ff8787;box-shadow:0 3px 0 #c92a2a}
+  #msg{text-align:center;height:24px;font-weight:bold}
+  #overlay{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;z-index:8}
+  #box{background:#fff;border-radius:20px;padding:24px 30px;text-align:center;max-width:90vw}
+  #box h1{margin:0 0 8px}
+  #home{position:fixed;inset:0;background:linear-gradient(#74c0fc,#b197fc);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#fff;z-index:5;overflow:hidden}
+  #home h1{margin:0;font-size:42px;text-shadow:0 3px 0 #5f3dc4}
+  #home p{margin:6px 0;font-size:18px}
+  #home .big{font-size:24px;padding:12px 40px;margin:12px 0 6px;background:#fff;color:#5f3dc4;box-shadow:0 4px 0 #5f3dc4}
+  #home .small{font-size:16px;padding:6px 18px;background:#e5dbff;color:#5f3dc4;box-shadow:0 3px 0 #9775fa}
+  #best{background:#0003;border-radius:12px;padding:4px 14px;font-size:16px}
+  #how{background:#fff;color:#2a3550;border-radius:14px;padding:10px 16px;max-width:420px;font-size:15px;display:none;text-align:left;margin-top:8px}
+  .fly{position:absolute;font-size:36px;opacity:.5;animation:fly 7s linear infinite;pointer-events:none}
+  @keyframes fly{from{transform:translateY(110vh) rotate(0)}to{transform:translateY(-20vh) rotate(360deg)}}
+  #shop{position:fixed;inset:0;background:#e8f5ff;z-index:6;display:none;flex-direction:column;overflow:auto}
+  #shophead{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:#5c7cfa;color:#fff;font-weight:bold;font-size:18px;position:sticky;top:0}
+  #shoplist{display:flex;flex-wrap:wrap;gap:10px;padding:10px;justify-content:center}
+  .item{background:#fff;border-radius:16px;padding:10px;width:130px;text-align:center;box-shadow:0 3px 8px #0002;flex:none}
+  .item .e{font-size:34px;min-height:42px}
+  .item button{display:block;margin:6px auto 0;font-size:16px;font-weight:bold;padding:6px 14px;background:#69db7c;box-shadow:0 3px 0 #2f9e44}
+  .pop{animation:pop .25s}
+  @keyframes pop{from{transform:scale(.3)}to{transform:scale(1)}}
+  .shake{animation:shake .3s}
+  @keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+  @media (max-height:520px){
+    #top{padding:4px 12px;font-size:15px}
+    #kid{min-height:70px;padding:4px;margin:4px auto}#kid .face{font-size:26px}#kid .want{font-size:15px;min-height:20px}
+    #bench{padding:3px;margin:3px auto}#toy{width:70px;height:70px}#toy .body{font-size:40px}#toy .acc{font-size:22px}
+    .row{padding:2px;gap:4px}.row button{font-size:18px;padding:3px 7px}.sw{width:28px;height:28px}
+    .lab{font-size:11px}.act{font-size:14px;padding:5px 10px;margin:2px}#msg{height:16px;font-size:13px}
+    #home h1{font-size:28px}#home p{font-size:14px}#home .big{font-size:18px;padding:8px 28px}#home .small{font-size:13px;padding:4px 12px}.fly{font-size:26px}
+  }
+</style>
+</head>
+<body>
+
+<div id="home">
+  <div class="fly" style="left:8%;animation-delay:0s">🧸</div><div class="fly" style="left:30%;animation-delay:2s">🚗</div>
+  <div class="fly" style="left:55%;animation-delay:4s">🤖</div><div class="fly" style="left:80%;animation-delay:1s">🪀</div>
+  <h1>🧸 YV Oyuncak Atölyesi</h1>
+  <p>Çocukların istediği oyuncağı yap!</p>
+  <div id="best"></div>
+  <button class="big" id="play">▶ Oyna</button>
+  <div><button class="small" id="shopBtn">🏪 Mağaza</button> <button class="small" id="howBtn">❓ Nasıl oynanır</button></div>
+  <div id="how">1) Çocuğun istediği oyuncağa bak.<br>2) Gövdeyi, rengi (ve süsü) seç.<br>3) <b>Ver</b> düğmesine bas.<br>Doğru yaparsan altın kazanırsın. Çocuk beklemekten sıkılırsa gider; 3 çocuk giderse oyun biter. Altınla mağazadan yeni gövde, renk ve süs alırsın.</div>
+</div>
+
+<div id="shop">
+  <div id="shophead"><span>🏪 Mağaza</span><span id="shopGold"></span><button id="shopBack" style="font-size:16px;padding:4px 12px">⬅ Geri</button></div>
+  <div id="shoplist"></div>
+</div>
+
+<div id="top"><span id="day"></span><span id="goal"></span><span id="gold"></span><span id="lives"></span><button id="menu" style="font-size:14px;padding:2px 10px">🏠</button></div>
+<div id="kid"><div class="face" id="face">🙂</div><div class="want" id="want"></div><div class="bar"><i id="pat"></i></div></div>
+<div id="msg"></div>
+<div id="bench">
+  <div id="toy"><div class="paint" id="paint"></div><div class="body" id="body"></div><div class="acc" id="acc"></div></div>
+  <div class="lab">Gövde</div><div class="row" id="bodies"></div>
+  <div class="lab">Renk</div><div class="row" id="colors"></div>
+  <div class="lab" id="accLab">Süs</div><div class="row" id="accs"></div>
+  <button class="act" id="give">✅ Ver</button><button class="act" id="clear">🗑 Temizle</button>
+</div>
+<div id="overlay"><div id="box"></div></div>
+
+<script>
+"use strict";
+// Every item: id -> [emoji or color, name, price (0 = free from the start)]
+const BODIES = {ayi:["🧸","Ayıcık",0],araba:["🚗","Araba",0],robot:["🤖","Robot",0],tavsan:["🐰","Tavşan",40],ucak:["✈️","Uçak",50],tren:["🚂","Tren",60],ejder:["🐉","Ejderha",90],roket:["🚀","Roket",120]};
+const COLORS = {kirmizi:["#fa5252","Kırmızı",0],mavi:["#4dabf7","Mavi",0],sari:["#ffd43b","Sarı",0],yesil:["#51cf66","Yeşil",30],pembe:["#f783ac","Pembe",30],mor:["#9775fa","Mor",50],turuncu:["#ff922b","Turuncu",50]};
+const ACCS = {yok:["","Süssüz",0],fiyonk:["🎀","Fiyonk",0],tac:["👑","Taç",40],sapka:["🎩","Şapka",40],yildiz:["⭐","Yıldız",50],gozluk:["🕶️","Gözlük",60],kalp:["💖","Kalp",60]};
+const KEY = "yv-oyuncak-v1";
+let save = {gold:0, owned:{}, bestDay:1, day:1};
+try { Object.assign(save, JSON.parse(localStorage.getItem(KEY)) || {}); } catch (e) {}
+function persist() { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) {} }
+function has(group, id) { return group[id][2] === 0 || save.owned[id]; }
+
+const $ = id => document.getElementById(id);
+let day, served, lives, gold, kid, pick = {body:null, color:null, acc:"yok"}, timer, running = false;
+
+// ---- audio (tiny beeps, no files) ----
+let ac = null;
+function beep(f, d, t) { try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); const o = ac.createOscillator(), g = ac.createGain(); o.type = t || "sine"; o.frequency.value = f; g.gain.value = .08; o.connect(g); g.connect(ac.destination); o.start(); g.gain.exponentialRampToValueAtTime(.001, ac.currentTime + d); o.stop(ac.currentTime + d); } catch (e) {} }
+
+// ---- home / shop ----
+function showHome() {
+  running = false; clearInterval(timer);
+  $("home").style.display = "flex"; $("shop").style.display = "none"; $("overlay").style.display = "none";
+  $("best").textContent = "En yüksek gün: " + save.bestDay + "  ·  Cüzdan: 🪙 " + save.gold;
+  $("play").textContent = save.day > 1 ? "▶ " + save.day + ". günden devam" : "▶ Oyna";
+}
+function showShop() {
+  running = false; clearInterval(timer);
+  $("home").style.display = "none"; $("shop").style.display = "flex"; $("overlay").style.display = "none";
+  $("shopGold").textContent = "🪙 " + save.gold;
+  const list = $("shoplist"); list.innerHTML = "";
+  const add = (group, show) => { for (const id in group) {
+    if (group[id][2] === 0) continue;
+    const d = document.createElement("div"); d.className = "item";
+    const owned = save.owned[id];
+    d.innerHTML = '<div class="e">' + show(group[id]) + '</div><b>' + group[id][1] + '</b>';
+    const b = document.createElement("button");
+    b.textContent = owned ? "✔ Sende" : "🪙 " + group[id][2];
+    b.disabled = owned || save.gold < group[id][2];
+    b.onclick = () => { if (save.gold >= group[id][2]) { save.gold -= group[id][2]; save.owned[id] = 1; persist(); beep(880, .15); showShop(); } };
+    d.appendChild(b); list.appendChild(d);
+  } };
+  add(BODIES, v => v[0]);
+  add(COLORS, v => '<span style="display:inline-block;width:34px;height:34px;border-radius:50%;background:' + v[0] + '"></span>');
+  add(ACCS, v => v[0]);
+}
+
+// ---- game ----
+function startDay() {
+  day = save.day; served = 0; lives = 3; gold = 0;
+  $("home").style.display = "none"; $("shop").style.display = "none"; $("overlay").style.display = "none";
+  running = true; buildBench(); nextKid(); updateTop();
+  clearInterval(timer); timer = setInterval(tick, 200);
+}
+function goalCount() { return 3 + day; }
+function updateTop() {
+  $("day").textContent = "📅 Gün " + day;
+  $("goal").textContent = "🎯 " + served + "/" + goalCount();
+  $("gold").textContent = "🪙 " + save.gold;
+  $("lives").textContent = "❤️".repeat(lives) + "🖤".repeat(3 - lives);
+}
+function buildBench() {
+  pick = {body:null, color:null, acc:"yok"};
+  fill("bodies", BODIES, "body", v => v[0]);
+  fill("colors", COLORS, "color", v => "");
+  fill("accs", ACCS, "acc", v => v[0] || "✖");
+  $("accLab").style.display = $("accs").style.display = day >= 3 ? "" : "none";
+  drawToy();
+}
+function fill(rowId, group, key, label) {
+  const row = $(rowId); row.innerHTML = "";
+  for (const id in group) {
+    if (!has(group, id)) continue;
+    const b = document.createElement("button");
+    if (key === "color") { b.className = "sw"; b.style.background = group[id][0]; b.setAttribute("aria-label", group[id][1]); }
+    else b.textContent = label(group[id]);
+    b.dataset.id = id;
+    b.onclick = () => { pick[key] = id; beep(520, .06); drawToy(); };
+    row.appendChild(b);
+  }
+}
+function drawToy() {
+  $("body").textContent = pick.body ? BODIES[pick.body][0] : "❔";
+  $("paint").style.background = pick.color ? COLORS[pick.color][0] : "#dee2e6";
+  $("acc").textContent = pick.acc !== "yok" ? ACCS[pick.acc][0] : "";
+  for (const [row, key] of [["bodies","body"],["colors","color"],["accs","acc"]])
+    for (const b of $(row).children) b.classList.toggle("sel", b.dataset.id === pick[key]);
+}
+function rand(o, filter) { const ids = Object.keys(o).filter(id => has(o, id) && (!filter || filter(id))); return ids[Math.floor(Math.random() * ids.length)]; }
+function nextKid() {
+  const faces = ["🙂","😀","👧","👦","🧒","😃"];
+  const wantsAcc = day >= 3 && Math.random() < .7;
+  kid = {face: faces[Math.floor(Math.random() * faces.length)],
+    body: rand(BODIES), color: rand(COLORS), acc: wantsAcc ? rand(ACCS, id => id !== "yok") : "yok",
+    max: Math.max(25, 60 - day * 3), left: 0};
+  kid.left = kid.max;
+  $("want").innerHTML = "<span style='color:" + COLORS[kid.color][0] + "'>●</span> " + COLORS[kid.color][1] + " " + BODIES[kid.body][1] + (kid.acc !== "yok" ? " + " + ACCS[kid.acc][0] + " " + ACCS[kid.acc][1] : "") + " " + BODIES[kid.body][0];
+  $("kid").classList.remove("pop"); void $("kid").offsetWidth; $("kid").classList.add("pop");
+  pick.body = pick.color = null; pick.acc = "yok"; drawToy(); setBar();
+}
+function setBar() {
+  const p = Math.max(0, kid.left / kid.max), i = $("pat");
+  i.style.width = p * 100 + "%"; i.style.background = p > .5 ? "#51cf66" : p > .25 ? "#fcc419" : "#fa5252";
+  $("face").textContent = p > .5 ? kid.face : p > .25 ? "😐" : "😠";
+}
+function msg(t, c) { const m = $("msg"); m.textContent = t; m.style.color = c || "#2a3550"; }
+function tick() {
+  if (!running || document.hidden) return;
+  kid.left -= .2; setBar();
+  if (kid.left <= 0) {
+    lives--; beep(160, .35, "sawtooth"); msg("😢 Çocuk sıkılıp gitti!", "#c92a2a"); updateTop();
+    if (lives <= 0) return gameOver();
+    nextKid();
+  }
+}
+function give() {
+  if (!running) return;
+  if (!pick.body || !pick.color) { msg("Önce gövde ve renk seç!"); return; }
+  const ok = pick.body === kid.body && pick.color === kid.color && pick.acc === kid.acc;
+  if (ok) {
+    const fast = kid.left > kid.max * .6 ? 5 : 0;
+    const earn = 10 + day * 2 + (kid.acc !== "yok" ? 5 : 0) + fast;
+    save.gold += earn; gold += earn; served++; persist(); beep(660, .1); setTimeout(() => beep(880, .15), 100);
+    msg("🎉 Harika! +" + earn + " altın" + (fast ? " (hızlı bonus!)" : ""), "#2f9e44");
+    updateTop();
+    if (served >= goalCount()) return dayDone();
+    nextKid();
+  } else {
+    beep(200, .25, "square"); msg("🤔 Bu istediği oyuncak değil!", "#c92a2a");
+    const t = $("toy"); t.classList.remove("shake"); void t.offsetWidth; t.classList.add("shake");
+    kid.left -= kid.max * .08;
+  }
+}
+function box(html) { $("box").innerHTML = html; $("overlay").style.display = "flex"; }
+function dayDone() {
+  running = false; clearInterval(timer);
+  day++; save.day = day; save.bestDay = Math.max(save.bestDay, day); persist();
+  box("<h1>🎉 Gün bitti!</h1><p>Bu gün kazandığın: 🪙 " + gold + "</p><p>Cüzdan: 🪙 " + save.gold + "</p><button class='act' id='nx'>▶ " + day + ". gün</button> <button class='act' id='sh'>🏪 Mağaza</button>");
+  $("nx").onclick = startDay; $("sh").onclick = showShop;
+}
+function gameOver() {
+  running = false; clearInterval(timer); persist();
+  box("<h1>😢 Oyun bitti</h1><p>" + day + ". günde 3 çocuk gitti.</p><p>Bu gün kazandığın: 🪙 " + gold + "</p><button class='act' id='rt'>🔁 Aynı günü tekrar dene</button> <button class='act' id='hm'>🏠 Ana ekran</button>");
+  $("rt").onclick = startDay; $("hm").onclick = showHome;
+}
+
+$("play").onclick = startDay;
+$("howBtn").onclick = () => { const h = $("how"); h.style.display = h.style.display === "block" ? "none" : "block"; };
+$("shopBtn").onclick = showShop;
+$("shopBack").onclick = showHome;
+$("menu").onclick = showHome;
+$("give").onclick = give;
+$("clear").onclick = () => { pick.body = pick.color = null; pick.acc = "yok"; drawToy(); };
+document.addEventListener("keydown", e => { if (e.key === "Enter") give(); if (e.key === "Delete" || e.key === "Backspace") $("clear").click(); });
+showHome();
+</script>
+</body>
+</html>
