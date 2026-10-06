@@ -10,3 +10,4 @@ Müşteriler sipariş verir; malzemeleri sırayla tabağa koyup müşteriye tık
 | v4-ana-ekran | Ana ekran eklendi: Oyna, Nasıl oynanır, en yüksek gün/altın (bu cihazda saklanır). Oyun içinde 🏠 ile ana ekrana dönülür. |
 | v5-magaza | Ana ekrana 🏪 Mağaza eklendi: kazandığın altınlar cüzdanda birikir, yeni malzemeler (🥓🍳🍟🍤🥞🍯) ve yeni yemekler satın alınır. |
 | v6-sadece-malzeme | Mağazada artık sadece tek tek malzeme satılıyor (🥓🍳🍟🍤🥞🍯). Yemekler satılmıyor; ihtiyaç duyduğu malzemeler sende olunca siparişlerde kendiliğinden çıkıyor. |
+| v7-tek-musteri | Müşteriler tek tek geliyor (biri gidince ya da servis edilince yenisi geliyor). Bekleme süresi uzatıldı: 1. günde 67 saniye. |
