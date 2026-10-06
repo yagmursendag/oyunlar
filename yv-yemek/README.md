@@ -16,3 +16,4 @@ Müşteriler sipariş verir; malzemeleri sırayla tabağa koyup müşteriye tık
 | v10-stok | Malzemeler artık bitiyor: her malzemenin stoğu var (düğmelerde sayı görünür). Mağazada her malzemeden 10ar adet alınır. Yeni malzemeler: 🍗 Tavuk, 🌽 Mısır, 🥕 Havuç ve 3 yeni yemek. Stok bitince müşteri gelmez, "Malzemelerin bitti" ekranı çıkar. |
 | v11-cok-malzeme | 12 yeni malzeme (🐟🍚🥑🍆🌶️🥦🍋🍓🍫🍦🧇🥐) ve 11 yeni yemek (suşi, waffle, kruvasan, kebap...). Malzeme çok olunca düğmeler küçülüp telefona sığıyor. |
 | v12-devam-vip | Kaldığın günden devam edersin (kaybedersen aynı gün tekrar denenir; "Baştan başla" düğmesi var). ↩ Geri al düğmesi (malzemeyi geri verir). 👑 VIP müşteri: 2 kat öder ama daha sabırsız. Bilgisayarda klavye: Enter servis, Backspace geri al, Delete çöp. |
+| v13-rozet-uygulama | 🏅 10 rozet (ilk servis, kombo, VIP, kusursuz gün...). Telefona uygulama gibi kurulur ve internetsiz açılır (simge, manifest, sw.js). |

@@ -8,7 +8,7 @@ Tarayıcıda oynanan, HTML ile yazdığım oyunlar.
 |---|---|---|
 | 💅 YV Güzellik Salonu | [▶ Oyna](https://yagmursendag.github.io/oyunlar/yv-salon/) | Tırnak, makyaj, saç; 3D lobi, plaj, işler, hayvanlar. Telefonda da oynanır. |
 | 💦 YV Su Savaşı | [▶ Oyna](https://yagmursendag.github.io/oyunlar/yv-savas/) | İki takımlı su savaşı: karakterini ve haritanı tasarla, 2D/3D oyna. İki kişilik, klavyeyle. |
-| 🍔 YV Mini Restoran | [▶ Oyna](https://yagmursendag.github.io/oyunlar/yv-yemek/) | Yemek oyunu: siparişleri sırayla hazırla, müşterileri mutlu et. |
+| 🍔 YV Mini Restoran | [▶ Oyna](https://yagmursendag.github.io/oyunlar/yv-yemek/) | Yemek oyunu: siparişleri sırayla hazırla, müşterileri mutlu et. Telefona uygulama gibi kurulur. |
 
 📱 **Telefonda uygulama gibi:** Güzellik Salonu'nu telefonda aç. Android'de Chrome menüsünden "Ana ekrana ekle", iPhone'da Safari'de Paylaş → "Ana Ekrana Ekle" de.
 
