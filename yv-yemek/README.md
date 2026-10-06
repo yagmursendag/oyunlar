@@ -11,3 +11,4 @@ Müşteriler sipariş verir; malzemeleri sırayla tabağa koyup müşteriye tık
 | v5-magaza | Ana ekrana 🏪 Mağaza eklendi: kazandığın altınlar cüzdanda birikir, yeni malzemeler (🥓🍳🍟🍤🥞🍯) ve yeni yemekler satın alınır. |
 | v6-sadece-malzeme | Mağazada artık sadece tek tek malzeme satılıyor (🥓🍳🍟🍤🥞🍯). Yemekler satılmıyor; ihtiyaç duyduğu malzemeler sende olunca siparişlerde kendiliğinden çıkıyor. |
 | v7-tek-musteri | Müşteriler tek tek geliyor (biri gidince ya da servis edilince yenisi geliyor). Bekleme süresi uzatıldı: 1. günde 67 saniye. |
+| v8-detaylar | Pişirme (🥩🌭🍳🥓🍤🍟 biraz bekler), müşteri yüz ifadeleri, bahşiş ve kombo, yanlış serviste sinirlenme, ses efektleri (🔊 ile kapatılır), gün sonu istatistikleri. |
