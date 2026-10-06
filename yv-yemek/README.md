@@ -13,3 +13,4 @@ Müşteriler sipariş verir; malzemeleri sırayla tabağa koyup müşteriye tık
 | v7-tek-musteri | Müşteriler tek tek geliyor (biri gidince ya da servis edilince yenisi geliyor). Bekleme süresi uzatıldı: 1. günde 67 saniye. |
 | v8-detaylar | Pişirme (🥩🌭🍳🥓🍤🍟 biraz bekler), müşteri yüz ifadeleri, bahşiş ve kombo, yanlış serviste sinirlenme, ses efektleri (🔊 ile kapatılır), gün sonu istatistikleri. |
 | v9-kalite | Daha güzel görünüm (desenli duvar, tahta tezgâh, yuvarlak tabak), müşteri içeri kayarak giriyor, yanlış serviste sallanıyor, +altın yazıları uçuyor, pişerken düğmede dolan çubuk, kapı zili, gün sonunda konfeti, sekme gizlenince oyun duruyor. |
+| v10-stok | Malzemeler artık bitiyor: her malzemenin stoğu var (düğmelerde sayı görünür). Mağazada her malzemeden 10ar adet alınır. Yeni malzemeler: 🍗 Tavuk, 🌽 Mısır, 🥕 Havuç ve 3 yeni yemek. Stok bitince müşteri gelmez, "Malzemelerin bitti" ekranı çıkar. |
