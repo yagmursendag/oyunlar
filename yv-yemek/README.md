@@ -8,3 +8,4 @@ Müşteriler sipariş verir; malzemeleri sırayla tabağa koyup müşteriye tık
 | v2-telefon-duzeni | Telefonda yatay ekrana sığacak şekilde küçültüldü. |
 | v3-sadece-musteri-suresi | Gün süresi kalktı. Sadece müşterilerin sabır süresi var: 3 müşteri kızıp giderse oyun biter, günün hedef sayısı kadar müşteriyi servis edersen yeni güne geçersin. |
 | v4-ana-ekran | Ana ekran eklendi: Oyna, Nasıl oynanır, en yüksek gün/altın (bu cihazda saklanır). Oyun içinde 🏠 ile ana ekrana dönülür. |
+| v5-magaza | Ana ekrana 🏪 Mağaza eklendi: kazandığın altınlar cüzdanda birikir, yeni malzemeler (🥓🍳🍟🍤🥞🍯) ve yeni yemekler satın alınır. |
