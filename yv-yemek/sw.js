@@ -1,6 +1,6 @@
 // YV Mini Restoran: keeps the game on the phone so it opens without internet.
 // The game page is fetched fresh when online (so updates arrive), the saved copy is used offline.
-const CACHE = 'yv-yemek-v14';
+const CACHE = 'yv-yemek-v15';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
