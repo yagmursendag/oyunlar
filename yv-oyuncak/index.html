@@ -147,9 +147,9 @@
 <script>
 "use strict";
 // Every item: id -> [emoji or color, name, price (0 = free from the start)]
-const BODIES = {ayi:["🧸","Ayıcık",0],araba:["🚗","Araba",0],robot:["🤖","Robot",0],tavsan:["🐰","Tavşan",40],ucak:["✈️","Uçak",50],tren:["🚂","Tren",60],ejder:["🐉","Ejderha",90],roket:["🚀","Roket",120],gemi:["⛵","Gemi",70],balik:["🐟","Balık",80],kedi:["🐱","Kedi",100],helikopter:["🚁","Helikopter",110]};
-const COLORS = {kirmizi:["#fa5252","Kırmızı",0],mavi:["#4dabf7","Mavi",0],sari:["#ffd43b","Sarı",0],yesil:["#51cf66","Yeşil",30],pembe:["#f783ac","Pembe",30],mor:["#9775fa","Mor",50],turuncu:["#ff922b","Turuncu",50],turkuaz:["#22b8cf","Turkuaz",40],lacivert:["#4263eb","Lacivert",40],limon:["#a9e34b","Limon",40]};
-const ACCS = {yok:["","Süssüz",0],fiyonk:["🎀","Fiyonk",0],tac:["👑","Taç",40],sapka:["🎩","Şapka",40],yildiz:["⭐","Yıldız",50],gozluk:["🕶️","Gözlük",60],kalp:["💖","Kalp",60],bere:["🧢","Bere",50],cicek:["🌸","Çiçek",50],bayrak:["🚩","Bayrak",60],kravat:["👔","Kravat",70]};
+const BODIES = {ayi:["🧸","Ayıcık",0],araba:["🚗","Araba",0],robot:["🤖","Robot",0],tavsan:["🐰","Tavşan",40],ucak:["✈️","Uçak",50],tren:["🚂","Tren",60],ejder:["🐉","Ejderha",90],roket:["🚀","Roket",120],gemi:["⛵","Gemi",70],balik:["🐟","Balık",80],kedi:["🐱","Kedi",100],helikopter:["🚁","Helikopter",110],tekboynuz:["🦄","Tek Boynuzlu At",250],denizalti:["🛥️","Denizaltı",300],dinozor:["🦖","Dinozor",350],ufo:["🛸","Uzay Gemisi",400]};
+const COLORS = {kirmizi:["#fa5252","Kırmızı",0],mavi:["#4dabf7","Mavi",0],sari:["#ffd43b","Sarı",0],yesil:["#51cf66","Yeşil",30],pembe:["#f783ac","Pembe",30],mor:["#9775fa","Mor",50],turuncu:["#ff922b","Turuncu",50],turkuaz:["#22b8cf","Turkuaz",40],lacivert:["#4263eb","Lacivert",40],limon:["#a9e34b","Limon",40],bordo:["#a61e4d","Bordo",120],gumus:["#a5b1c2","Gümüş",150],altin:["#f2b705","Altın",200]};
+const ACCS = {yok:["","Süssüz",0],fiyonk:["🎀","Fiyonk",0],tac:["👑","Taç",40],sapka:["🎩","Şapka",40],yildiz:["⭐","Yıldız",50],gozluk:["🕶️","Gözlük",60],kalp:["💖","Kalp",60],bere:["🧢","Bere",50],cicek:["🌸","Çiçek",50],bayrak:["🚩","Bayrak",60],kravat:["👔","Kravat",70],elmas:["💎","Elmas",150],madalya:["🏅","Madalya",180],kulaklik:["🎧","Kulaklık",200],kral:["🤴","Kral Tacı",250]};
 
 // ---- toy drawings (SVG, 100x100). c = main color, d = darker, l = lighter ----
 const S = 'stroke="#3b2a1a" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"';
@@ -261,6 +261,36 @@ const TOYS = {
     ["Gövde", (c, d, l) => `<ellipse cx="42" cy="56" rx="30" ry="21" fill="${c}" ${S}/><path d="M14 62 Q40 72 72 60" fill="none" stroke="${d}" stroke-width="4"/>`],
     ["Cam", (c, d, l) => `<path d="M34 41 Q58 38 66 56 L34 56Z" fill="${GLASS}" ${S}/><path d="M40 46 q5 -3 10 -2" stroke="#fff" stroke-width="2.2" fill="none"/>`],
     ["Pervane", (c, d, l) => `<rect x="38" y="28" width="5" height="12" fill="#868e96" ${S} stroke-width="1.8"/><rect x="4" y="22" width="78" height="6" rx="3" fill="#adb5bd" ${S}/>`]
+  ],
+  tekboynuz: [
+    ["Kuyruk", (c, d, l) => `<path d="M24 60 Q2 62 8 92 Q14 76 28 76Z" fill="#f783ac" ${S}/><path d="M20 66 Q10 70 12 84" fill="none" stroke="#9775fa" stroke-width="3" stroke-linecap="round"/>`],
+    ["Bacaklar", (c, d, l) => `<rect x="28" y="72" width="9" height="22" rx="3" fill="${c}" ${S}/><rect x="40" y="74" width="9" height="20" rx="3" fill="${d}" ${S}/><rect x="58" y="74" width="9" height="20" rx="3" fill="${d}" ${S}/><rect x="70" y="72" width="9" height="22" rx="3" fill="${c}" ${S}/>
+      <rect x="28" y="90" width="9" height="5" rx="2" fill="#ffd43b" ${S} stroke-width="1.6"/><rect x="40" y="90" width="9" height="5" rx="2" fill="#ffd43b" ${S} stroke-width="1.6"/><rect x="58" y="90" width="9" height="5" rx="2" fill="#ffd43b" ${S} stroke-width="1.6"/><rect x="70" y="90" width="9" height="5" rx="2" fill="#ffd43b" ${S} stroke-width="1.6"/>`],
+    ["Gövde", (c, d, l) => `<ellipse cx="50" cy="64" rx="28" ry="17" fill="${c}" ${S}/><ellipse cx="50" cy="70" rx="16" ry="8" fill="${l}"/><path d="M58 56 L68 30 L84 36 L76 62Z" fill="${c}" ${S}/><path d="M58 56 L68 30 L84 36 L76 62Z" fill="${c}"/>`],
+    ["Yele", (c, d, l) => `<path d="M52 58 Q44 42 58 24 Q62 36 70 32 Q64 46 70 58Z" fill="#f783ac" ${S}/><path d="M56 50 Q52 40 60 30" fill="none" stroke="#9775fa" stroke-width="3" stroke-linecap="round"/>`],
+    ["Kafa", (c, d, l) => `<path d="M72 24 L72 12 L82 22Z" fill="${c}" ${S}/><path d="M78 22 L84 2 L88 24Z" fill="#ffd43b" ${S}/><ellipse cx="80" cy="32" rx="14" ry="12" fill="${c}" ${S}/><ellipse cx="91" cy="38" rx="8" ry="6.5" fill="${l}" ${S}/>
+      <circle cx="82" cy="28" r="3" fill="${DARK}"/><circle cx="83" cy="27" r="1" fill="#fff"/><circle cx="92" cy="37" r="1.4" fill="${DARK}"/><path d="M88 42 q4 2 8 -1" fill="none" ${S} stroke-width="1.6"/>`]
+  ],
+  denizalti: [
+    ["Pervane", (c, d, l) => `<ellipse cx="8" cy="54" rx="3" ry="15" fill="#adb5bd" ${S} stroke-width="1.8"/><path d="M11 54 H18" ${S}/>`],
+    ["Kule", (c, d, l) => `<rect x="53" y="8" width="4" height="18" fill="#868e96" ${S} stroke-width="1.8"/><path d="M55 10 H67" fill="none" ${S} stroke-width="3"/><path d="M40 38 L46 22 L68 22 L72 38Z" fill="${d}" ${S}/>`],
+    ["Gövde", (c, d, l) => `<path d="M12 46 L4 36 L16 40Z M10 62 L2 72 L16 66Z" fill="${d}" ${S} stroke-width="1.8"/><ellipse cx="54" cy="56" rx="40" ry="22" fill="${c}" ${S}/><path d="M16 64 Q54 82 92 64" fill="none" stroke="${d}" stroke-width="5"/>`],
+    ["Camlar", (c, d, l) => `<circle cx="36" cy="54" r="6.5" fill="${GLASS}" ${S}/><circle cx="54" cy="54" r="6.5" fill="${GLASS}" ${S}/><circle cx="72" cy="54" r="6.5" fill="${GLASS}" ${S}/><path d="M33 51 q2 -2 4 -1 M51 51 q2 -2 4 -1 M69 51 q2 -2 4 -1" stroke="#fff" stroke-width="1.6" fill="none"/>`]
+  ],
+  dinozor: [
+    ["Kuyruk", (c, d, l) => `<path d="M32 62 Q8 62 4 88 Q22 84 40 80Z" fill="${d}" ${S}/>`],
+    ["Bacaklar", (c, d, l) => `<path d="M34 76 L30 94 H48 L52 80Z" fill="${d}" ${S}/><path d="M54 78 L52 94 H70 L68 78Z" fill="${d}" ${S}/>`],
+    ["Gövde", (c, d, l) => `<path d="M38 46 L42 36 L47 46Z M48 44 L53 33 L58 44Z M58 46 L62 38 L67 48Z" fill="${d}" ${S} stroke-width="1.8"/><ellipse cx="50" cy="66" rx="26" ry="22" fill="${c}" ${S}/><ellipse cx="55" cy="72" rx="14" ry="14" fill="#ffe8a3"/>`],
+    ["Kollar", (c, d, l) => `<path d="M66 64 q12 2 12 12 l-5 1 q-1 -7 -9 -8Z" fill="${c}" ${S}/>`],
+    ["Kafa", (c, d, l) => `<ellipse cx="72" cy="34" rx="19" ry="14" fill="${c}" ${S}/><ellipse cx="86" cy="40" rx="12" ry="8" fill="${c}" ${S}/><circle cx="76" cy="28" r="4" fill="#fff" ${S} stroke-width="1.8"/><circle cx="77" cy="28.5" r="2" fill="${DARK}"/>
+      <path d="M80 47 L83 51 L86 47 L89 51 L92 47Z" fill="#fff" ${S} stroke-width="1.4"/><circle cx="92" cy="36" r="1.5" fill="${DARK}"/><path d="M78 46 Q88 49 97 45" fill="none" ${S} stroke-width="1.8"/>`]
+  ],
+  ufo: [
+    ["Işın", (c, d, l) => `<path d="M40 62 L22 98 H78 L60 62Z" fill="#fff3bf" opacity=".65"/>`],
+    ["Kubbe", (c, d, l) => `<ellipse cx="50" cy="31" rx="7" ry="8.5" fill="#8ce99a" ${S} stroke-width="1.8"/><ellipse cx="47" cy="30" rx="2" ry="2.8" fill="${DARK}"/><ellipse cx="53" cy="30" rx="2" ry="2.8" fill="${DARK}"/>
+      <path d="M30 46 Q50 -6 70 46Z" fill="${GLASS}" fill-opacity=".55" ${S}/><path d="M38 34 Q41 22 52 18" stroke="#fff" stroke-width="2.4" fill="none"/>`],
+    ["Disk", (c, d, l) => `<ellipse cx="50" cy="60" rx="20" ry="7" fill="${d}" ${S}/><ellipse cx="50" cy="54" rx="42" ry="14" fill="${c}" ${S}/><ellipse cx="50" cy="51" rx="30" ry="5" fill="${l}"/>`],
+    ["Lambalar", (c, d, l) => `<circle cx="22" cy="57" r="4" fill="#ffe066" ${S} stroke-width="1.5"/><circle cx="50" cy="63" r="4" fill="#ff6b6b" ${S} stroke-width="1.5"/><circle cx="78" cy="57" r="4" fill="#ffe066" ${S} stroke-width="1.5"/>`]
   ]
 };
 // Where accessories go on each toy: T = top of head, E = eye line [x, y, width], C = chest
@@ -269,7 +299,9 @@ const ANCH = {
   tavsan:{T:[50,31],E:[50,49,20],C:[50,72]}, ucak:{T:[52,38],E:[84,45,10],C:[30,50]}, tren:{T:[30,18],E:[75,40,18],C:[30,52]},
   ejder:{T:[66,24],E:[70,38,16],C:[44,64]}, roket:{T:[50,6],E:[50,44,18],C:[50,68]},
   gemi:{T:[50,14],E:[50,71,28],C:[30,50]}, balik:{T:[54,28],E:[74,46,16],C:[54,62]}, kedi:{T:[50,22],E:[50,41,24],C:[50,62]},
-  helikopter:{T:[40,22],E:[52,48,16],C:[32,62]}
+  helikopter:{T:[40,22],E:[52,48,16],C:[32,62]},
+  tekboynuz:{T:[74,20],E:[82,29,14],C:[48,64]}, denizalti:{T:[56,22],E:[54,54,36],C:[54,68]}, dinozor:{T:[72,22],E:[76,28,16],C:[48,64]},
+  ufo:{T:[50,16],E:[50,34,16],C:[50,56]}
 };
 const STAR = "M0 -16 L4.5 -5.5 L16 -5 L7 2.5 L10 14 L0 7.5 L-10 14 L-7 2.5 L-16 -5 L-4.5 -5.5Z";
 // Accessories are drawn around (0,0): base of the item sits on the anchor
@@ -285,7 +317,13 @@ const ACC_SVG = {
   bayrak: `<line x1="0" y1="0" x2="0" y2="-26" ${S}/><path d="M0 -26 L17 -20 L0 -14Z" fill="#fa5252" ${S}/>`,
   kravat: `<path d="M-4 -6 L4 -6 L6 -1 L-6 -1Z" fill="#4263eb" ${S} stroke-width="1.8"/><path d="M-5 -1 L5 -1 L7 13 L0 18 L-7 13Z" fill="#4263eb" ${S} stroke-width="1.8"/><path d="M-3 4 L3 4 M-3 9 L3 9" stroke="#bac8ff" stroke-width="1.6"/>`
 };
-const ACC_GROUP = {tac:"T", sapka:"T", yildiz:"T", gozluk:"E", fiyonk:"C", kalp:"C", bere:"T", cicek:"T", bayrak:"T", kravat:"C"};
+Object.assign(ACC_SVG, {
+  elmas: `<path d="M-11 -10 L-6 -18 L6 -18 L11 -10 L0 2Z" fill="#66d9e8" ${S}/><path d="M-11 -10 H11 M-6 -18 L-3 -10 L0 2 M6 -18 L3 -10" fill="none" stroke="#fff" stroke-width="1.5"/>`,
+  madalya: `<path d="M-7 -15 L0 -1 L7 -15Z" fill="#fa5252" ${S}/><circle cx="0" cy="6" r="8.5" fill="#fcc419" ${S}/><path transform="translate(0 6) scale(.4)" d="${STAR}" fill="#e67700"/>`,
+  kulaklik: `<path d="M-14 8 Q-14 -15 0 -15 Q14 -15 14 8" fill="none" stroke="#343a40" stroke-width="3.6" stroke-linecap="round"/><rect x="-19" y="3" width="8" height="12" rx="3.5" fill="#fa5252" ${S}/><rect x="11" y="3" width="8" height="12" rx="3.5" fill="#fa5252" ${S}/>`,
+  kral: `<path d="M-17 0 L-20 -21 L-9 -11 L0 -25 L9 -11 L20 -21 L17 0Z" fill="#f2b705" ${S}/><rect x="-17" y="-6" width="34" height="7" rx="2" fill="#d6336c" ${S}/><circle cx="0" cy="-14" r="3" fill="#66d9e8" ${S} stroke-width="1.4"/><circle cx="-10" cy="-2.5" r="2.2" fill="#fff"/><circle cx="10" cy="-2.5" r="2.2" fill="#fff"/><circle cx="0" cy="-2.5" r="2.2" fill="#fff"/>`
+});
+const ACC_GROUP = {tac:"T", sapka:"T", yildiz:"T", gozluk:"E", fiyonk:"C", kalp:"C", bere:"T", cicek:"T", bayrak:"T", kravat:"C", elmas:"T", madalya:"C", kulaklik:"T", kral:"T"};
 // opts.placed = set of part numbers already put on the stand (null = whole toy); opts.ghost = faint outline of missing parts
 function toySVG(body, color, acc, opts) {
   opts = opts || {};
@@ -383,8 +421,8 @@ function showShop() {
   $("home").style.display = "none"; $("shop").style.display = "flex"; $("overlay").style.display = "none";
   $("shopGold").textContent = "🪙 " + save.gold;
   const list = $("shoplist"); list.innerHTML = "";
-  const add = (group, show) => { for (const id in group) {
-    if (group[id][2] === 0) continue;
+  const add = (group, show) => { for (const id of Object.keys(group).sort((a, b) => group[a][2] - group[b][2])) {
+    if (group[id][2] === 0) continue; // free items are already yours
     const d = document.createElement("div"); d.className = "item";
     const owned = save.owned[id];
     d.innerHTML = '<div class="e">' + show(id) + '</div><b>' + group[id][1] + '</b>';
