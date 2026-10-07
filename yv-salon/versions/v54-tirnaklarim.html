@@ -618,7 +618,7 @@ function isDone(s) {
   return true;
 }
 function finishStep(s) {
-  const c = cust; questEvent('step_' + s);
+  const c = cust;
   if (s === 'wash') { c.greasy = 0; for (const st of c.strands) st.wet = 1; }
   if (s === 'comb') for (const st of c.strands) st.tangle = 0;
   if (s === 'dry') for (const st of c.strands) st.wet = 0;
@@ -3009,10 +3009,10 @@ function drawTitle() {
   if (profile) {
     text(`👋 Merhaba ${profile.name}!  Numaran: #${profile.id}${profile.id === ADMIN_ID ? '  👑 Admin' : ''}`, 640, 342, 24, profile.id === ADMIN_ID ? '#b8860b' : '#3a2340', 'center', 800);
     btn(390, 316, 500, 36, '', () => { if (T - adminTapT > 2) adminTaps = 0; adminTapT = T; if (++adminTaps >= 5) { adminTaps = 0; askAdmin(); } }, { hidden: true });
-    btn(302, 500, 164, 38, `✏️ İsim • ${RENAME_PRICE} TL`, askRename, { size: 14 });
-    btn(476, 500, 164, 38, '🎨 Karakterim', openDesigner, { col: '#b18cff', fg: '#ffffff', size: 16 });
-    btn(650, 500, 164, 38, '💅 Tırnaklarım', openMyNails, { col: '#ffb3d9', size: 16 });
-    btn(824, 500, 154, 38, '🖌️ Salonu boya', openPaint, { col: '#7fe0b8', size: 15 });
+    btn(302, 500, 216, 38, `✏️ İsim değiştir • ${RENAME_PRICE} TL`, askRename, { size: 15 });
+    btn(532, 500, 216, 38, '🎨 Karakterim', openDesigner, { col: '#b18cff', fg: '#ffffff', size: 17 });
+    btn(762, 500, 216, 38, '🖌️ Salonu boya', openPaint, { col: '#7fe0b8', size: 17 });
+    btn(532, 546, 216, 38, '💅 Tırnaklarım', openMyNails, { col: '#ffb3d9', size: 17 });
   }
   fitCenter(`💰 ${cash()} TL   •   💎 ${gemCash()} elmas   •   👩 ${served} müşteri   •   👭 ${friends.length} arkadaş`, 640, 371, 20, 660, '#23884f');
   btn(16, 16, 150, 40, '⚙️ Ayarlar', showSettings, { size: 16 });
@@ -3184,7 +3184,6 @@ function openMyNails() {
   const c = buildChar(normLook(profile.look), profile.name); c.hands.forEach(h => { h.soft = true; h.blobs = []; h.flakes = []; }); mn.cust = c; cust = c; mnApply(); go('mynails');
 }
 function mnSet(prop, val) {
-  questEvent('mynails');
   const a = myNails(), idx = mn.all || mn.sel < 0 ? a.map((_, i) => i) : [mn.sel];
   idx.forEach(i => { a[i][prop] = val; });
   mnApply(); save(); sfx('paint', 150); sparkle(ptr.x, ptr.y, 6);
@@ -3341,7 +3340,7 @@ function drawDesigner() {
       shoe: pick(AV.shoe), hat: maybe(AV.hat, 0.4), glasses: maybe(AV.glasses, 0.3), pet: Math.random() < 0.6 ? pick(inv.pets) : 'none', makeup: AV.makeupKeys.filter(() => Math.random() < 0.35), face: AV.faceKeys.filter(() => Math.random() < 0.25) });
     designChar = buildChar(designLook, profile.name); sfx('pop');
   }, { col: '#ffe36e', size: 22 });
-  btn(754, 646, 210, 56, '✅ Kaydet', () => { questEvent('design'); if (profile.look && profile.look.outfit !== designLook.outfit) questEvent('outfit'); profile.look = designLook; save(); go(designFrom === 'designer' ? 'title' : designFrom); sfx('done'); say('Karakterin kaydedildi! ✨'); }, { col: '#27b36a', fg: '#ffffff', size: 24 });
+  btn(754, 646, 210, 56, '✅ Kaydet', () => { profile.look = designLook; save(); go(designFrom === 'designer' ? 'title' : designFrom); sfx('done'); say('Karakterin kaydedildi! ✨'); }, { col: '#27b36a', fg: '#ffffff', size: 24 });
   btn(978, 646, 180, 56, '⬅ Vazgeç', () => go(designFrom === 'designer' ? 'title' : designFrom), { size: 22 });
 }
 
@@ -4934,20 +4933,6 @@ const QUEST_POOL = [
   { id: 'z1', text: 'Yel Değirmeni\'ne git 🌾', goal: 1, reward: 15 },
   { id: 'z2', text: 'Oyun Parkı\'na git 🛝', goal: 1, reward: 15 },
   { id: 'z3', text: 'Lunaparka git 🎡', goal: 1, reward: 15 },
-  { id: 'mynails', text: 'Tırnaklarım bölümünde tırnaklarını boya 💅', goal: 1, reward: 20 },
-  { id: 'design', text: 'Karakterini tasarla ve kaydet 🎨', goal: 1, reward: 20 },
-  { id: 'outfit', text: 'Karakterinin kıyafetini değiştir 👗', goal: 1, reward: 15 },
-  { id: 'step_nails', text: 'Salonda 2 müşterinin tırnağını yap 💅', goal: 2, reward: 30 },
-  { id: 'step_makeup', text: 'Salonda 2 müşteriye makyaj yap 💄', goal: 2, reward: 35 },
-  { id: 'step_mask', text: 'Bir müşteriye yüz maskesi yap 🧖', goal: 1, reward: 25 },
-  { id: 'step_dye', text: 'Bir müşterinin saçını boya 🎨', goal: 1, reward: 30 },
-  { id: 'step_stickers', text: 'Tırnaklara sticker yapıştır 🌸', goal: 1, reward: 20 },
-  { id: 'step_cream', text: 'Salonda 2 kez el kremi sür 🧴', goal: 2, reward: 20 },
-  { id: 'step_jewel', text: 'Müşterilere 2 kez takı tak 💍', goal: 2, reward: 25 },
-  { id: 'step_comb', text: 'Salonda 2 müşterinin saçını tara 🪮', goal: 2, reward: 20 },
-  { id: 'step_brows', text: 'Bir müşterinin kaşını al ✨', goal: 1, reward: 20 },
-  { id: 'step_shave', text: 'Bir müşteriyi tıraş et 🪒', goal: 1, reward: 25 },
-  { id: 'step_cut', text: 'Bir müşterinin saçını kes ✂️', goal: 1, reward: 25 },
 ];
 const QUEST_BONUS = 50;
 const qDef = id => QUEST_POOL.find(q => q.id === id);
