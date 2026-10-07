@@ -94,6 +94,28 @@
           ".validate": false
         }
       }
+    },
+    "shopitems": {
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && root.child('adminuid').val() === auth.uid",
+        ".validate": "newData.hasChildren(['n', 'p', 'o', 't'])",
+        "n": {
+          ".validate": "newData.isString() && newData.val().length <= 24"
+        },
+        "p": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000"
+        },
+        "o": {
+          ".validate": "newData.isString() && newData.val().length <= 120"
+        },
+        "t": {
+          ".validate": "newData.val() === now"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
     }
   }
 }
