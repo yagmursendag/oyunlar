@@ -17,3 +17,4 @@ Müşteriler sipariş verir; malzemeleri sırayla tabağa koyup müşteriye tık
 | v11-cok-malzeme | 12 yeni malzeme (🐟🍚🥑🍆🌶️🥦🍋🍓🍫🍦🧇🥐) ve 11 yeni yemek (suşi, waffle, kruvasan, kebap...). Malzeme çok olunca düğmeler küçülüp telefona sığıyor. |
 | v12-devam-vip | Kaldığın günden devam edersin (kaybedersen aynı gün tekrar denenir; "Baştan başla" düğmesi var). ↩ Geri al düğmesi (malzemeyi geri verir). 👑 VIP müşteri: 2 kat öder ama daha sabırsız. Bilgisayarda klavye: Enter servis, Backspace geri al, Delete çöp. |
 | v13-rozet-uygulama | 🏅 10 rozet (ilk servis, kombo, VIP, kusursuz gün...). Telefona uygulama gibi kurulur ve internetsiz açılır (simge, manifest, sw.js). |
+| v14-dograma | 🔪 Doğrama: sebze ve meyveler için malzemeye 2-3 kez art arda dokunup doğrarsın. Müşterilerin bekleme süresi uzatıldı (1. günde 106 sn, en az 70 sn). |
