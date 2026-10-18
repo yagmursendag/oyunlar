@@ -1259,16 +1259,17 @@ function drawFace(c, mood) {
     ctx.fillStyle = '#ffffff'; if (a > 0.5) for (let k = 0; k < 3; k++) { ctx.globalAlpha = a * (0.5 + 0.5 * Math.sin(T * 5 + k * 2 + s)); star4(s * (28 + k * 8), -12 - (k % 2) * 4, 2.2); }
     ctx.restore(); } });
   // brows
-  ctx.strokeStyle = mix(c.hairCol, '#000000', 0.35); ctx.lineWidth = c.girl ? 4 : 6;
-  for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(s * 18, -22); ctx.quadraticCurveTo(s * 34, mood < 0.34 ? -26 : -32, s * 50, -24); ctx.stroke(); }
+  ctx.strokeStyle = mix(c.hairCol, '#000000', 0.3); ctx.lineWidth = c.girl ? 3.2 : 5;
+  for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(s * 20, -27); ctx.quadraticCurveTo(s * 35, mood < 0.34 ? -30 : -38, s * 50, -29); ctx.stroke(); }
   if (c.strays && c.strays.length) { ctx.strokeStyle = mix(c.hairCol, '#000000', 0.35); ctx.lineWidth = 2.4; for (const h of c.strays) line(h.x, h.y, h.x + Math.sin(h.a) * h.l, h.y - Math.cos(h.a) * h.l); }
   // eyes
   const blink = ((T + c.seed) % 3.6) < 0.12;
   for (const s of [-1, 1]) {
     const ex = s * 34, ey = 6;
-    if (blink) { ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(ex, ey, 12, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke(); continue; }
+    ctx.save(); ctx.translate(ex, ey + 1); ctx.scale(1.17, 1.2); ctx.translate(-ex, -ey);
+    if (blink) { ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(ex, ey, 12, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke(); ctx.restore(); continue; }
     const es = c.av ? c.av.eyeStyle : 'normal';
-    if (es === 'happy') { ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(ex, ey + 8, 12, 1.15 * Math.PI, 1.85 * Math.PI); ctx.stroke(); continue; }
+    if (es === 'happy') { ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(ex, ey + 8, 12, 1.15 * Math.PI, 1.85 * Math.PI); ctx.stroke(); ctx.restore(); continue; }
     ctx.fillStyle = '#ffffff'; ell(ex, ey, 15, 18);
     { const lg2 = ctx.createLinearGradient(0, ey - 18, 0, ey - 2); lg2.addColorStop(0, 'rgba(120,70,80,.3)'); lg2.addColorStop(1, 'rgba(120,70,80,0)'); ctx.fillStyle = lg2; ell(ex, ey - 8, 14, 10); ctx.fillStyle = 'rgba(255,150,160,.55)'; circle(ex - s * 13, ey + 3, 2); }
     ctx.fillStyle = c.eyes; ell(ex, ey + 2, 11, 13); ctx.strokeStyle = mix(c.eyes, '#000000', 0.5); ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(ex, ey + 2, 11, 13, 0, 0, Math.PI * 2); ctx.stroke(); ctx.fillStyle = mix(c.eyes, '#ffffff', 0.4); ctx.globalAlpha = 0.55; ctx.beginPath(); ctx.ellipse(ex, ey + 9, 8, 4.5, 0, 0, Math.PI); ctx.fill(); ctx.globalAlpha = 1;
@@ -1279,9 +1280,8 @@ function drawFace(c, mood) {
     else ell(ex, ey + 3, 6, 7);
     ctx.fillStyle = '#ffffff'; circle(ex - 4, ey - 3, 4); circle(ex + 4, ey + 7, 2);
     ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(ex, ey, 15, 18, 0, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
-    ctx.strokeStyle = mix(c.skin, '#7a3a3a', 0.4); ctx.lineWidth = 1.8; ctx.beginPath(); ctx.ellipse(ex, ey - 4, 17, 20, 0, Math.PI * 1.2, Math.PI * 1.8); ctx.stroke();
-    if (c.girl) { ctx.strokeStyle = 'rgba(40,25,35,.5)'; ctx.lineWidth = 1.3; for (let i = 0; i < 4; i++) line(ex + s * (-6 + i * 4), ey + 17 + (i % 2), ex + s * (-6 + i * 4) + s * 1, ey + 21 + (i % 2)); }
-    if (c.girl) { ctx.lineWidth = 2.5; for (let i = 0; i < 3; i++) line(ex + s * (9 + i * 3), ey - 14 + i * 3, ex + s * (15 + i * 4), ey - 19 + i * 3); }
+    ctx.strokeStyle = mix(c.skin, '#7a3a3a', 0.4); ctx.lineWidth = 1.5; ctx.globalAlpha = 0.55; ctx.beginPath(); ctx.ellipse(ex, ey - 4, 17, 20, 0, Math.PI * 1.25, Math.PI * 1.75); ctx.stroke(); ctx.globalAlpha = 1;
+    if (c.girl) { ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 2.6; for (let i = 0; i < 2; i++) { ctx.beginPath(); ctx.moveTo(ex + s * (11 + i * 4), ey - 12 + i * 5); ctx.quadraticCurveTo(ex + s * (17 + i * 4), ey - 15 + i * 5, ex + s * (20 + i * 5), ey - 21 + i * 6); ctx.stroke(); } }
     // curled lashes after the eyelash curler
     if (mk && mk.liner) { const la = mk.liner[(s + 1) / 2]; if (la > 0) { ctx.save(); ctx.globalAlpha = Math.min(1, 0.35 + la); ctx.strokeStyle = '#120a16'; ctx.lineCap = 'round'; ctx.lineWidth = 3.4; ctx.beginPath(); ctx.ellipse(ex, ey, 15.5, 18.5, 0, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke(); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(ex + s * 14, ey - 9); ctx.quadraticCurveTo(ex + s * (22 + 6 * la), ey - 14 - 4 * la, ex + s * (18 + 14 * la), ey - 20 - 10 * la); ctx.stroke(); ctx.restore(); } }
     if (mk && mk.mascara) { const ma = mk.mascara[(s + 1) / 2]; if (ma > 0) { ctx.strokeStyle = '#120a16'; ctx.lineWidth = 2.8; for (let j = 0; j < 9; j++) { const a = Math.PI * (1.08 + j * 0.105), bx = ex + Math.cos(a) * 15.5, by = ey + Math.sin(a) * 18.5, L = (6 + 9 * ma) * (1 - Math.abs(j - 4) * 0.07); ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo(bx + Math.cos(a) * L, by + Math.sin(a) * L * 0.7, bx + Math.cos(a) * L * 0.9 + s * 2, by + Math.sin(a) * L - 3); ctx.stroke(); } } }
@@ -1293,6 +1293,7 @@ function drawFace(c, mood) {
         ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo(bx + Math.cos(a) * L, by + Math.sin(a) * L * 0.6, bx + Math.cos(a) * L * 0.8, by - L * 0.9); ctx.stroke();
       }
     }
+    ctx.restore();
   }
   if (mk && (mk.blush[0] || mk.shadow[0] || mk.lip.some(v => v))) { ctx.fillStyle = 'rgba(255,255,255,.28)'; ell(0, 12, 3.2, 12); ell(0, -34, 20, 3.5); ctx.fillStyle = 'rgba(120,60,40,.1)'; ell(-66, 24, 6, 20, 0.2); ell(66, 24, 6, 20, -0.2); }
   // more makeup: contour, brows, freckles, face gems, false lashes
@@ -1304,8 +1305,7 @@ function drawFace(c, mood) {
   // nose
   ctx.strokeStyle = mix(c.skin, '#000000', 0.35); ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 26, 5, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke();
   ctx.fillStyle = mix(c.skin, '#5a2a2a', 0.45); ell(-3.2, 29, 1.5, 1); ell(3.2, 29, 1.5, 1); ctx.strokeStyle = 'rgba(120,70,60,.16)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-3, 4); ctx.quadraticCurveTo(-5, 16, -4, 24); ctx.stroke();
-  ctx.strokeStyle = mix(c.skin, '#8a3a4a', 0.55); ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(-9, 41); ctx.quadraticCurveTo(-4, 38, 0, 40); ctx.quadraticCurveTo(4, 38, 9, 41); ctx.stroke();
-  { const ch = ctx.createRadialGradient(0, 74, 2, 0, 74, 28); ch.addColorStop(0, 'rgba(255,255,255,.12)'); ch.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = ch; ell(0, 74, 28, 14); ctx.fillStyle = 'rgba(120,60,50,.08)'; ell(0, 84, 36, 8); }
+  { const ch = ctx.createRadialGradient(0, 74, 2, 0, 74, 28); ch.addColorStop(0, 'rgba(255,255,255,.12)'); ch.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = ch; ell(0, 74, 28, 14); }
   if (mk && mk.lip.every(v => v)) {
     const lg = ctx.createLinearGradient(0, 38, 0, 58); lg.addColorStop(0, mix(lpc, '#ffffff', 0.18)); lg.addColorStop(0.5, lpc); lg.addColorStop(1, mix(lpc, '#000000', 0.28));
     ctx.fillStyle = lg; ctx.beginPath(); ctx.moveTo(-22, 47); ctx.quadraticCurveTo(-12, 38, -4, 41); ctx.quadraticCurveTo(0, 44, 4, 41); ctx.quadraticCurveTo(12, 38, 22, 47); ctx.quadraticCurveTo(10, 60, 0, 60); ctx.quadraticCurveTo(-10, 60, -22, 47); ctx.closePath(); ctx.fill();
@@ -3338,7 +3338,7 @@ function sxBuy(it) {
   inv.custom = inv.custom || {}; inv.custom[it.id] = { n: it.n, o: it.o };
   questEvent('shop'); questEvent('shop3'); save(); sfx('done'); sparkle(ptr.x, ptr.y, 30); say(it.n + ' senin! 🎉 Giymek için "Giy" düğmesine bas');
 }
-function sxWear(o) { profile.look = normLook({ ...profile.look, ...o }); save(); sfx('done'); sparkle(ptr.x, ptr.y, 16); say('Giydin! ✨'); }
+function sxWear(o) { questEvent('newwear'); profile.look = normLook({ ...profile.look, ...o }); save(); sfx('done'); sparkle(ptr.x, ptr.y, 16); say('Giydin! ✨'); }
 function drawNewTab() {
   const items = sxItems(), per = 4, pages = Math.max(1, Math.ceil(items.length / per)); if (newPage >= pages) newPage = 0;
   ctx.fillStyle = 'rgba(255,255,255,.55)'; rr(50, 156, 1180, 470, 28); ctx.fill();
@@ -3415,7 +3415,7 @@ function openDraw() {
 function daPush() { da.undo.push(da.grid.slice()); if (da.undo.length > 30) da.undo.shift(); }
 function daCell() { const i = Math.floor((ptr.x - da.gx) / da.cell), j = Math.floor((ptr.y - da.gy) / da.cell); return i >= 0 && j >= 0 && i < ART_N && j < ART_N ? [i, j] : null; }
 function daPaint(first) {
-  const c = daCell(); if (!c) return; const [i, j] = c, v = da.tool === 'erase' ? 0 : da.color;
+  const c = daCell(); if (!c) return; questEvent('artdraw'); const [i, j] = c, v = da.tool === 'erase' ? 0 : da.color;
   if (da.tool === 'fill') { if (!first) return; daFill(i, j, da.grid[j * ART_N + i], da.color); }
   else { const set = (a, b) => { da.grid[b * ART_N + a] = v; }; set(i, j); if (da.mirror) set(ART_N - 1 - i, j); }
   daSync();
@@ -5203,6 +5203,21 @@ const QUEST_POOL = [
   { id: 'nailpreset', text: 'Hazır bir tırnak tasarımı dene ✨', goal: 1, reward: 15 },
   { id: 'shop3', text: 'Mağazadan 3 şey al 🛍️', goal: 3, reward: 30 },
   { id: 'serve5', text: 'Salonda 5 müşteriye bak 💅', goal: 5, reward: 70 },
+  { id: 'walk800', text: 'Lobide 800 adım yürü 👣', goal: 800, reward: 35 },
+  { id: 'jump50', text: 'Lobide 50 kez zıpla ⬆️', goal: 50, reward: 40 },
+  { id: 'emote15', text: 'Emoji ya da hareketlerden 15 tane kullan 🎭', goal: 15, reward: 35 },
+  { id: 'swim90', text: 'Denizde 90 saniye yüz 🏊', goal: 90, reward: 45 },
+  { id: 'serve8', text: 'Salonda 8 müşteriye bak 💅', goal: 8, reward: 100 },
+  { id: 'luna4', text: 'Lunaparkta 4 oyuncağı bitir 🎡', goal: 4, reward: 55 },
+  { id: 'goal6', text: 'Plajda futbolda 6 gol at ⚽', goal: 6, reward: 45 },
+  { id: 'volley6', text: 'Plajda voleybolda 6 sayı al 🏐', goal: 6, reward: 45 },
+  { id: 'eat5', text: 'Çantandan 5 yiyecek ye 😋', goal: 5, reward: 30 },
+  { id: 'lobby10', text: 'Lobide 10 dakika vakit geçir ⏱️', goal: 600, reward: 50 },
+  { id: 'mynails3', text: 'Tırnaklarını 3 kez değiştir 💅', goal: 3, reward: 20 },
+  { id: 'artdraw', text: 'Çizim tahtasında 40 kez boya 🖌️', goal: 40, reward: 20 },
+  { id: 'newwear', text: 'Mağazadan aldığın yeni kıyafeti giy 👗', goal: 1, reward: 20 },
+  { id: 'step_wash', text: 'Salonda 3 müşterinin saçını yıka 🚿', goal: 3, reward: 25 },
+  { id: 'step_dry', text: 'Salonda 3 müşterinin saçını kurut 💨', goal: 3, reward: 25 },
   { id: 'art', text: 'Kıyafetine bir resim çiz 🖌️', goal: 1, reward: 25 },
   { id: 'design', text: 'Karakterini tasarla ve kaydet 🎨', goal: 1, reward: 20 },
   { id: 'outfit', text: 'Karakterinin kıyafetini değiştir 👗', goal: 1, reward: 15 },
@@ -5231,8 +5246,10 @@ function quests() {
   }
   return profile.quests.list;
 }
+const QUEST_ALIAS = { walk: ['walk800'], jump: ['jump50'], emote: ['emote15'], swim: ['swim90'], serve: ['serve8'], luna: ['luna4'], goal: ['goal6'], volley: ['volley6'], eat: ['eat5'], lobbytime: ['lobby10'], mynails: ['mynails3'] };
 function questEvent(id, amt = 1) {
   if (!profile) return;
+  if (QUEST_ALIAS[id] && !questEvent.busy) { questEvent.busy = 1; QUEST_ALIAS[id].forEach(a => questEvent(a, amt)); questEvent.busy = 0; }
   for (const q of quests()) {
     if (q.id !== id || q.claimed) continue;
     const Q = qDef(id), was = q.n >= Q.goal;
