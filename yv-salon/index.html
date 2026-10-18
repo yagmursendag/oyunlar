@@ -1505,14 +1505,15 @@ function drawBody(c, walk, mood) {
     ctx.fillStyle = O.long ? sleeveCol : c.skin; ctx.strokeStyle = O.long ? mix(sleeveCol, '#000000', 0.25) : skinOl; ctx.lineWidth = 4;
     ctx.beginPath(); ctx.moveTo(-17, 10); ctx.lineTo(17, 10); ctx.quadraticCurveTo(16, 110, 12, 206); ctx.lineTo(-12, 206); ctx.quadraticCurveTo(-16, 110, -17, 10); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.fillStyle = c.skin; ctx.strokeStyle = skinOl;
-    ctx.beginPath(); ctx.ellipse(-s * 13, 212, 7, 12, -s * 0.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.ellipse(0, 224, 18, 22, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    const fl = [15, 19, 18, 13];
+    for (let k = 0; k < 4; k++) { const fx = -10.5 + k * 7; rr(fx - 3.5, 222, 7, fl[k] + 6, 3.5); ctx.fill(); ctx.stroke(); }
+    ctx.beginPath(); ctx.ellipse(-s * 14, 216, 6, 12, -s * 0.55, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(0, 220, 16, 17, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.lineWidth = 0; ctx.beginPath(); ctx.ellipse(0, 219, 14.5, 15.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.lineWidth = 4;
     if (O.long) { ctx.fillStyle = mix(sleeveCol, '#000000', 0.15); rr(-15, 188, 30, 16, 6); ctx.fill(); }
     else ctx.fillRect(-10, 194, 20, 16);
-    ctx.strokeStyle = mix(c.skin, '#000000', 0.2); ctx.lineWidth = 1.6; for (let k = 0; k < 3; k++) line(-6 + k * 6, 232, -6 + k * 6, 244);
-    ctx.strokeStyle = mix(c.skin, '#000000', 0.12); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(0, 230, 14, 1.15 * Math.PI, 1.85 * Math.PI); ctx.stroke(); for (let k = 0; k < 4; k++) circle(-9 + k * 6, 228, 0.9);
-    ctx.beginPath(); ctx.moveTo(-8, 214); ctx.quadraticCurveTo(0, 220, 9, 215); ctx.stroke();
-    for (let k = 0; k < 4; k++) { ctx.fillStyle = done || mix(c.skin, '#ff8a9a', 0.35); ell(-9 + k * 6, 242, 2.8, 3.8); ctx.fillStyle = 'rgba(255,255,255,.65)'; ell(-9.6 + k * 6, 240.6, 0.9, 1.4); }
+    ctx.strokeStyle = mix(c.skin, '#000000', 0.16); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-s * 9, 226); ctx.quadraticCurveTo(-s * 3, 231, s * 6, 228); ctx.stroke();
+    for (let k = 0; k < 4; k++) { const fx = -10.5 + k * 7, ty = 222 + fl[k] + 3; ctx.fillStyle = done || mix(c.skin, '#ff8a9a', 0.3); ell(fx, ty + 0.5, 2.6, 3.2); ctx.fillStyle = 'rgba(255,255,255,.7)'; ell(fx - 0.7, ty - 0.6, 0.8, 1.2); }
     ctx.fillStyle = sleeveCol; ctx.strokeStyle = mix(sleeveCol, '#000000', 0.25); ctx.lineWidth = 4; ell(0, 22, O.long ? 23 : 27, O.long ? 30 : 36); ctx.stroke();
     if (!O.long) { ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(0, 22, 20, 28, 0, 0.3 * Math.PI, 0.7 * Math.PI); ctx.stroke(); }
     if (outfit === 'tracksuit') { ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 4; line(s * 8, 30, s * 6, 184); }
@@ -3924,8 +3925,8 @@ function lbAvatar(look, name, tagCol) {
     const ag = new THREE.Group(); ag.position.set(s * 0.34, 1.4, 0); ag.rotation.z = s * 0.12; body.add(ag); A.arms.push(ag);
     ag.add(lbM(new THREE.SphereGeometry(0.12, 12, 10), o === 'jacket' ? denim : cloth, 0, -0.04, 0));
     ag.add(lbM(new THREE.CylinderGeometry(0.075, 0.065, 0.55, 10), longSl ? (o === 'jacket' ? denim : cloth) : skin, 0, -0.3, 0));
-    for (let k = -1.5; k <= 1.5; k++) { const fg = lbM(new THREE.CylinderGeometry(0.022, 0.02, 0.1, 6), skin, k * 0.04, -0.69, 0.025); ag.add(fg); ag.add(lbM(new THREE.SphereGeometry(0.022, 8, 6), skin, k * 0.04, -0.745, 0.025)); if (!(L.nail && L.nail !== 'none')) ag.add(lbM(new THREE.SphereGeometry(0.014, 6, 5), toon('#ffc4cc'), k * 0.04, -0.752, 0.04)); }
-    ag.add(lbM(new THREE.SphereGeometry(0.09, 12, 10), skin, 0, -0.6, 0)); if (L.nail && L.nail !== 'none') for (let k = -1; k <= 1; k++) ag.add(lbM(new THREE.SphereGeometry(0.026, 8, 6), toon(L.nail, { emissive: L.nail, emissiveIntensity: 0.25 }), k * 0.045, -0.675, 0.04)); ag.add(lbM(new THREE.SphereGeometry(0.035, 8, 6), skin, -s * 0.07, -0.57, 0.05));
+    for (let k = -1.5; k <= 1.5; k++) { const fg = lbM(new THREE.CylinderGeometry(0.026, 0.023, 0.12, 6), skin, k * 0.04, -0.7, 0.025); ag.add(fg); ag.add(lbM(new THREE.SphereGeometry(0.022, 8, 6), skin, k * 0.04, -0.745, 0.025)); if (!(L.nail && L.nail !== 'none')) ag.add(lbM(new THREE.SphereGeometry(0.014, 6, 5), toon('#ffc4cc'), k * 0.04, -0.752, 0.04)); }
+    ag.add(lbM(new THREE.SphereGeometry(0.09, 12, 10), skin, 0, -0.6, 0)); if (L.nail && L.nail !== 'none') for (let k = -1; k <= 1; k++) ag.add(lbM(new THREE.SphereGeometry(0.026, 8, 6), toon(L.nail, { emissive: L.nail, emissiveIntensity: 0.25 }), k * 0.045, -0.675, 0.04)); { const th = lbM(new THREE.SphereGeometry(0.04, 8, 6), skin, -s * 0.085, -0.6, 0.04); th.scale.set(0.8, 1.7, 0.9); th.rotation.z = -s * 0.35; ag.add(th); }
   }
   body.add(lbM(new THREE.CylinderGeometry(0.09, 0.1, 0.18, 12), skin, 0, 1.52, 0));
   { const hm = lbM(new THREE.TorusGeometry(0.3, 0.012, 6, 28), toon(mix(L.cloth, '#000000', 0.2)), 0, 0.9, 0); hm.rotation.x = Math.PI / 2; hm.userData.noOutline = true; body.add(hm); } { const cr = lbM(new THREE.TorusGeometry(0.15, 0.035, 8, 20), cloth, 0, 1.43, 0); cr.rotation.x = Math.PI / 2; body.add(cr); }
