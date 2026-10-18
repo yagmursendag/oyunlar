@@ -4525,7 +4525,7 @@ function lbInit() {
   }
   LB.tapMark = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.55, 24), new THREE.MeshBasicMaterial({ color: '#ff5fa2', transparent: true, opacity: 0 })); LB.tapMark.rotation.x = -Math.PI / 2; LB.tapMark.position.y = 0.05; sc.add(LB.tapMark);
   lbBuildInteriors();
-  lbBuildBeach(); lbBuildSky(); lbBuildVolley(); lbBuildFootball(); lbBuildOuter(); lbBuildPark(); lbBuildLuna(); lbBuildLuna2(); lbBuildFx(); lbBuildGlints();
+  lbBuildBeach(); lbBuildSky(); lbBuildVolley(); lbBuildFootball(); lbBuildOuter(); lbBuildPark(); lbBuildLuna(); lbBuildLuna2(); lbBuildScenery(); lbBuildFx(); lbBuildGlints();
   LB.ok = true;
   return true;
 }
@@ -5999,7 +5999,67 @@ function lbBuildOuter() {
     (LB.trees = LB.trees || []).push([gx - 5, gz - 3, 1.0], [gx + 2, gz + 2, 0.5]);
     sign('🛝 Oyun Parkı', '#ff8a1f', gx + 11 * Math.sin(face(gx, gz)), gz + 11 * Math.cos(face(gx, gz))); }
 }
+// ---------- prettier town: grass, plaza inlay, flower bed, bunting, mountains, balloons ----------
+function lbBuildScenery() {
+  const sc = LB.scene; let seed = 77; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  // grass with soft patches and little blades instead of one flat colour
+  { const gt = lbTex(512, 512, (g, w, h) => {
+      g.fillStyle = '#93d97d'; g.fillRect(0, 0, w, h);
+      for (let i = 0; i < 240; i++) { g.fillStyle = i % 2 ? 'rgba(175,238,135,.34)' : 'rgba(105,190,100,.28)'; g.beginPath(); g.ellipse(rnd() * w, rnd() * h, 10 + rnd() * 34, 6 + rnd() * 20, rnd() * 3, 0, 7); g.fill(); }
+      g.lineWidth = 1.6; for (let i = 0; i < 420; i++) { g.strokeStyle = i % 3 ? 'rgba(70,150,80,.4)' : 'rgba(210,255,170,.45)'; const x = rnd() * w, y = rnd() * h; g.beginPath(); g.moveTo(x, y); g.lineTo(x + 2, y - 7); g.stroke(); }
+    });
+    gt.wrapS = gt.wrapT = THREE.RepeatWrapping; gt.repeat.set(22, 22);
+    const grass = sc.children.find(o => o.geometry && o.geometry.type === 'CircleGeometry' && o.geometry.parameters && o.geometry.parameters.radius === 200);
+    if (grass) grass.material = new THREE.MeshToonMaterial({ map: gt, gradientMap: lbGrad }); }
+  // plaza inlay: a big star and rings
+  { const it = lbTex(512, 512, (g, w, h) => {
+      g.translate(w / 2, h / 2); g.strokeStyle = 'rgba(255,255,255,.75)'; g.lineWidth = 7; for (const r of [236, 150, 98]) { g.beginPath(); g.arc(0, 0, r, 0, 7); g.stroke(); }
+      g.fillStyle = 'rgba(255,255,255,.55)'; g.beginPath(); for (let k = 0; k < 24; k++) { const a = k * Math.PI / 12, r = k % 2 ? 100 : 226; g.lineTo(Math.cos(a) * r, Math.sin(a) * r); } g.closePath(); g.fill();
+      g.fillStyle = 'rgba(214,51,127,.5)'; for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6; g.beginPath(); g.arc(Math.cos(a) * 200, Math.sin(a) * 200, 11, 0, 7); g.fill(); }
+    });
+    const inl = new THREE.Mesh(new THREE.CircleGeometry(16.2, 64), new THREE.MeshBasicMaterial({ map: it, transparent: true, depthWrite: false })); inl.rotation.x = -Math.PI / 2; inl.position.y = 0.04; sc.add(inl); }
+  // flower bed around the fountain
+  { const bed = new THREE.Mesh(new THREE.RingGeometry(3.7, 5.4, 48), toon('#7fcf6a')); bed.rotation.x = -Math.PI / 2; bed.position.y = 0.07; bed.receiveShadow = true; sc.add(bed);
+    const edge = lbM(new THREE.TorusGeometry(5.4, 0.22, 8, 56), toon('#f2eaf5'), 0, 0.2, 0); edge.rotation.x = Math.PI / 2; sc.add(edge);
+    const N = 46, fl = new THREE.InstancedMesh(new THREE.SphereGeometry(0.22, 8, 6), toon('#ffffff'), N), M = new THREE.Matrix4(), col = new THREE.Color();
+    for (let i = 0; i < N; i++) { const a = i / N * Math.PI * 2 + (i % 2) * 0.07, r = 4.1 + (i % 3) * 0.45; M.makeTranslation(Math.sin(a) * r, 0.3 + (i % 2) * 0.08, -Math.cos(a) * r); fl.setMatrixAt(i, M); fl.setColorAt(i, col.set(['#ff6fb5', '#ffd23f', '#b18cff', '#ff8a3d', '#ffffff', '#ff4f8b'][i % 6])); }
+    sc.add(fl); }
+  // bunting between the lamp posts
+  { const cols = ['#ff6fb5', '#ffd23f', '#5ac8ff', '#8be07e', '#b18cff', '#ff8a3d'], P = i => { const a = (i + 0.25) / 6 * Math.PI * 2; return new THREE.Vector3(Math.sin(a) * 15.5, 4.0, -Math.cos(a) * 15.5); };
+    const fg = new THREE.InstancedMesh(new THREE.ConeGeometry(0.24, 0.5, 3), new THREE.MeshToonMaterial({ color: '#ffffff', gradientMap: lbGrad }), 6 * 9), M = new THREE.Matrix4(), Q = new THREE.Quaternion(), col = new THREE.Color(); let n = 0;
+    for (let i = 0; i < 6; i++) {
+      const p0 = P(i), p1 = P((i + 1) % 6), pts = [];
+      for (let k = 0; k <= 24; k++) { const t = k / 24; pts.push(new THREE.Vector3().lerpVectors(p0, p1, t).add(new THREE.Vector3(0, -Math.sin(t * Math.PI) * 1.0, 0))); }
+      sc.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: '#ffffff' })));
+      const yaw = Math.atan2(p1.x - p0.x, p1.z - p0.z);
+      for (let k = 0; k < 9; k++) { const t = (k + 0.5) / 9, p = new THREE.Vector3().lerpVectors(p0, p1, t); p.y -= Math.sin(t * Math.PI) * 1.0 + 0.28; Q.setFromEuler(new THREE.Euler(Math.PI, yaw, 0)); M.compose(p, Q, new THREE.Vector3(1, 1, 0.2)); fg.setMatrixAt(n, M); fg.setColorAt(n, col.set(cols[(i + k) % 6])); n++; }
+    }
+    sc.add(fg); }
+  // far mountains (north side), fading into the fog
+  { const cnt = LITE ? 14 : 28, mt = new THREE.InstancedMesh(new THREE.ConeGeometry(1, 1, 7), toon('#ffffff'), cnt), cap = new THREE.InstancedMesh(new THREE.ConeGeometry(1, 1, 7), toon('#ffffff'), cnt), M = new THREE.Matrix4(), Q = new THREE.Quaternion(), col = new THREE.Color();
+    for (let i = 0; i < cnt; i++) {
+      const a = (i / (cnt - 1) - 0.5) * 3.8 + (rnd() - 0.5) * 0.1, R = 135 + rnd() * 30, x = Math.sin(a) * R, z = -Math.cos(a) * R, h = 26 + rnd() * 30, r = 18 + rnd() * 16;
+      M.compose(new THREE.Vector3(x, h / 2 - 1, z), Q, new THREE.Vector3(r, h, r)); mt.setMatrixAt(i, M); mt.setColorAt(i, col.set(['#7fb6d8', '#8fc4e0', '#9ab8e8', '#86c7b8'][i % 4]));
+      M.compose(new THREE.Vector3(x, h * 0.8 - 1, z), Q, new THREE.Vector3(r * 0.36, h * 0.4, r * 0.36)); cap.setMatrixAt(i, M); cap.setColorAt(i, col.set('#ffffff'));
+    }
+    sc.add(mt); sc.add(cap); }
+  // hot-air balloons drifting around the town
+  LB.balloons = [0, 1, 2].map(i => {
+    const g = new THREE.Group(), c1 = ['#ff6fb5', '#ffd23f', '#5ac8ff'][i], c2 = ['#ffffff', '#ff6fb5', '#ffffff'][i];
+    const env = lbM(new THREE.SphereGeometry(2.6, 18, 14), toon(c1), 0, 0, 0); env.scale.y = 1.2; g.add(env);
+    const band = lbM(new THREE.TorusGeometry(2.6, 0.32, 8, 24), toon(c2), 0, 0.2, 0); band.rotation.x = Math.PI / 2; g.add(band);
+    g.add(lbM(new THREE.BoxGeometry(1.3, 0.9, 1.3), toon('#c98b5a'), 0, -4.6, 0));
+    for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) g.add(lbM(new THREE.CylinderGeometry(0.04, 0.04, 2.3, 4), toon('#6b4a3a'), sx * 0.55, -3.2, sz * 0.55));
+    g.userData = { a: i * 2.1 + 0.6, r: 55 + i * 16, h: 40 + i * 6, sp: 0.016 + i * 0.004 };
+    sc.add(g); return g;
+  });
+}
+function lbScenAnim(dt) {
+  if (!LB.balloons) return;
+  for (const b of LB.balloons) { const u = b.userData; u.a += dt * u.sp; b.position.set(Math.sin(u.a) * u.r, u.h + Math.sin(T * 0.6 + u.a * 3) * 1.4, -Math.cos(u.a) * u.r); b.rotation.y = -u.a; }
+}
 function lbOuterAnim(dt) {
+  lbScenAnim(dt);
   if (LB.mill) LB.mill.rotation.z += dt * 0.7;
   (LB.swings || []).forEach((s, i) => { s.rotation.x = Math.sin(T * 1.6 + i * 1.4) * (LB.ride && LB.ride.kind === 'swing' && LB.ride.i === i ? 0.85 : 0.55); });
   if (LB.seesaw) LB.seesaw.rotation.z = Math.sin(T * 1.2) * 0.22;
