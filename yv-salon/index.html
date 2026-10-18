@@ -1271,16 +1271,14 @@ function drawFace(c, mood) {
     const es = c.av ? c.av.eyeStyle : 'normal';
     if (es === 'happy') { ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(ex, ey + 8, 12, 1.15 * Math.PI, 1.85 * Math.PI); ctx.stroke(); ctx.restore(); continue; }
     ctx.fillStyle = '#ffffff'; ell(ex, ey, 15, 18);
-    { const lg2 = ctx.createLinearGradient(0, ey - 18, 0, ey - 2); lg2.addColorStop(0, 'rgba(120,70,80,.3)'); lg2.addColorStop(1, 'rgba(120,70,80,0)'); ctx.fillStyle = lg2; ell(ex, ey - 8, 14, 10); ctx.fillStyle = 'rgba(255,150,160,.55)'; circle(ex - s * 13, ey + 3, 2); }
     ctx.fillStyle = c.eyes; ell(ex, ey + 2, 11, 13); ctx.strokeStyle = mix(c.eyes, '#000000', 0.5); ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(ex, ey + 2, 11, 13, 0, 0, Math.PI * 2); ctx.stroke(); ctx.fillStyle = mix(c.eyes, '#ffffff', 0.4); ctx.globalAlpha = 0.55; ctx.beginPath(); ctx.ellipse(ex, ey + 9, 8, 4.5, 0, 0, Math.PI); ctx.fill(); ctx.globalAlpha = 1;
     ctx.fillStyle = '#1a1020';
     if (es === 'heart') { ctx.fillStyle = '#ff4f8b'; heart(ex, ey + 3, 7); }
     else if (es === 'star') { ctx.fillStyle = '#ffd23f'; ctx.beginPath(); for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? 3.5 : 8; ctx.lineTo(ex + Math.cos(a) * r, ey + 3 + Math.sin(a) * r); } ctx.closePath(); ctx.fill(); }
     else if (es === 'cat') ell(ex, ey + 3, 2.6, 9);
     else ell(ex, ey + 3, 6, 7);
-    ctx.fillStyle = '#ffffff'; circle(ex - 4, ey - 3, 4); circle(ex + 4, ey + 7, 2);
-    ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(ex, ey, 15, 18, 0, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
-    ctx.strokeStyle = mix(c.skin, '#7a3a3a', 0.4); ctx.lineWidth = 1.5; ctx.globalAlpha = 0.55; ctx.beginPath(); ctx.ellipse(ex, ey - 4, 17, 20, 0, Math.PI * 1.25, Math.PI * 1.75); ctx.stroke(); ctx.globalAlpha = 1;
+    ctx.fillStyle = '#ffffff'; circle(ex - 4, ey - 2, 4.6); circle(ex + 4.5, ey + 7, 2.2);
+    ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(ex, ey, 15, 18, 0, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke();
     if (c.girl) { ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 2.6; for (let i = 0; i < 2; i++) { ctx.beginPath(); ctx.moveTo(ex + s * (11 + i * 4), ey - 12 + i * 5); ctx.quadraticCurveTo(ex + s * (17 + i * 4), ey - 15 + i * 5, ex + s * (20 + i * 5), ey - 21 + i * 6); ctx.stroke(); } }
     // curled lashes after the eyelash curler
     if (mk && mk.liner) { const la = mk.liner[(s + 1) / 2]; if (la > 0) { ctx.save(); ctx.globalAlpha = Math.min(1, 0.35 + la); ctx.strokeStyle = '#120a16'; ctx.lineCap = 'round'; ctx.lineWidth = 3.4; ctx.beginPath(); ctx.ellipse(ex, ey, 15.5, 18.5, 0, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke(); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(ex + s * 14, ey - 9); ctx.quadraticCurveTo(ex + s * (22 + 6 * la), ey - 14 - 4 * la, ex + s * (18 + 14 * la), ey - 20 - 10 * la); ctx.stroke(); ctx.restore(); } }
@@ -1303,8 +1301,7 @@ function drawFace(c, mood) {
   if (mk && mk.facegems) [-1, 1].forEach((s, i) => { const a = mk.facegems[i]; if (a > 0) { [[62, -4, 6, '#5ac8ff'], [67, 8, 4.5, '#ff7ac6'], [60, 17, 3.5, '#ffffff']].forEach(([gx, gy, r, col], k) => { ctx.save(); ctx.translate(s * gx, gy); ctx.scale(a, a); ctx.fillStyle = col; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(0, -r * 1.3); ctx.lineTo(r, 0); ctx.lineTo(0, r * 1.3); ctx.lineTo(-r, 0); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.fillStyle = 'rgba(255,255,255,.8)'; ell(-r * 0.3, -r * 0.4, r * 0.25, r * 0.4); ctx.restore(); }); ctx.fillStyle = '#ffffff'; ctx.globalAlpha = a * (0.5 + 0.5 * Math.sin(T * 5 + i)); star4(s * 66, 2, 3.4); ctx.globalAlpha = 1; } });
   if (mk && mk.falselash) [-1, 1].forEach((s, i) => { const a = mk.falselash[i]; if (a > 0) { const ex = s * 34, ey = 6; ctx.save(); ctx.strokeStyle = '#120a16'; ctx.lineCap = 'round'; ctx.lineWidth = 3.4; ctx.beginPath(); ctx.ellipse(ex, ey, 16, 19, 0, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke(); ctx.lineWidth = 2.6; for (let j = 0; j < 8; j++) { const ang = Math.PI * (1.1 + j * 0.1), bx = ex + Math.cos(ang) * 16, by = ey + Math.sin(ang) * 19, L = (8 + 14 * a) * (0.7 + 0.5 * (j / 7)); ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo(bx + Math.cos(ang) * L * 0.9 + s * 4, by + Math.sin(ang) * L * 0.8, bx + Math.cos(ang) * L + s * 9, by + Math.sin(ang) * L - 5); ctx.stroke(); } ctx.restore(); } });
   // nose
-  ctx.strokeStyle = mix(c.skin, '#000000', 0.35); ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 26, 5, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke();
-  ctx.fillStyle = mix(c.skin, '#5a2a2a', 0.45); ell(-3.2, 29, 1.5, 1); ell(3.2, 29, 1.5, 1); ctx.strokeStyle = 'rgba(120,70,60,.16)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-3, 4); ctx.quadraticCurveTo(-5, 16, -4, 24); ctx.stroke();
+  ctx.strokeStyle = mix(c.skin, '#8a4a3a', 0.45); ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(0, 27, 3.6, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
   { const ch = ctx.createRadialGradient(0, 74, 2, 0, 74, 28); ch.addColorStop(0, 'rgba(255,255,255,.12)'); ch.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = ch; ell(0, 74, 28, 14); }
   if (mk && mk.lip.every(v => v)) {
     const lg = ctx.createLinearGradient(0, 38, 0, 58); lg.addColorStop(0, mix(lpc, '#ffffff', 0.18)); lg.addColorStop(0.5, lpc); lg.addColorStop(1, mix(lpc, '#000000', 0.28));
@@ -1324,7 +1321,7 @@ function drawFace(c, mood) {
     ctx.restore();
   }
   // mouth: grumpy → smile → big happy smile
-  ctx.strokeStyle = '#8b2a3a'; ctx.lineWidth = 4;
+  ctx.strokeStyle = '#a03a4a'; ctx.lineWidth = 3.2;
   if (mood < 0.34) { ctx.beginPath(); ctx.arc(0, 66, 14, 1.2 * Math.PI, 1.8 * Math.PI); ctx.stroke(); }
   else if (mood < 0.99) { ctx.beginPath(); ctx.arc(0, 42, 8 + mood * 8, 0.2 * Math.PI, 0.8 * Math.PI); ctx.stroke(); }
   else { ctx.fillStyle = '#8b2a3a'; ctx.beginPath(); ctx.arc(0, 46, 16, 0, Math.PI); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#ff7b9c'; ell(0, 56, 8, 4); }
@@ -5216,6 +5213,21 @@ const QUEST_POOL = [
   { id: 'mynails3', text: 'Tırnaklarını 3 kez değiştir 💅', goal: 3, reward: 20 },
   { id: 'artdraw', text: 'Çizim tahtasında 40 kez boya 🖌️', goal: 40, reward: 20 },
   { id: 'newwear', text: 'Mağazadan aldığın yeni kıyafeti giy 👗', goal: 1, reward: 20 },
+  { id: 'walk2000', text: 'Lobide 2000 adım yürü 👣', goal: 2000, reward: 70 },
+  { id: 'jump100', text: 'Lobide 100 kez zıpla ⬆️', goal: 100, reward: 70 },
+  { id: 'emote30', text: 'Emoji ya da hareketlerden 30 tane kullan 🎭', goal: 30, reward: 70 },
+  { id: 'swim180', text: 'Denizde 3 dakika yüz 🏊', goal: 180, reward: 80 },
+  { id: 'serve12', text: 'Salonda 12 müşteriye bak 💅', goal: 12, reward: 150 },
+  { id: 'luna6', text: 'Lunaparkta 6 oyuncağı bitir 🎡', goal: 6, reward: 90 },
+  { id: 'goal10', text: 'Plajda futbolda 10 gol at ⚽', goal: 10, reward: 80 },
+  { id: 'volley10', text: 'Plajda voleybolda 10 sayı al 🏐', goal: 10, reward: 80 },
+  { id: 'eat8', text: 'Çantandan 8 yiyecek ye 😋', goal: 8, reward: 50 },
+  { id: 'lobby20', text: 'Lobide 20 dakika vakit geçir ⏱️', goal: 1200, reward: 90 },
+  { id: 'park8', text: 'Oyun parkında 8 kez oyna 🛝', goal: 8, reward: 45 },
+  { id: 'market6', text: 'Market\'ten 6 şey al 🛒', goal: 6, reward: 45 },
+  { id: 'job5', text: 'Lobideki işinde 5 sipariş tamamla 💼', goal: 5, reward: 70 },
+  { id: 'artdraw100', text: 'Çizim tahtasında 100 kez boya 🖌️', goal: 100, reward: 45 },
+  { id: 'shop5', text: 'Mağazadan 5 şey al 🛍️', goal: 5, reward: 60 },
   { id: 'step_wash', text: 'Salonda 3 müşterinin saçını yıka 🚿', goal: 3, reward: 25 },
   { id: 'step_dry', text: 'Salonda 3 müşterinin saçını kurut 💨', goal: 3, reward: 25 },
   { id: 'art', text: 'Kıyafetine bir resim çiz 🖌️', goal: 1, reward: 25 },
@@ -5247,6 +5259,7 @@ function quests() {
   return profile.quests.list;
 }
 const QUEST_ALIAS = { walk: ['walk800'], jump: ['jump50'], emote: ['emote15'], swim: ['swim90'], serve: ['serve8'], luna: ['luna4'], goal: ['goal6'], volley: ['volley6'], eat: ['eat5'], lobbytime: ['lobby10'], mynails: ['mynails3'] };
+Object.entries({ walk: 'walk2000', jump: 'jump100', emote: 'emote30', swim: 'swim180', serve: 'serve12', luna: 'luna6', goal: 'goal10', volley: 'volley10', eat: 'eat8', lobbytime: 'lobby20', park: 'park8', market: 'market6', job: 'job5', artdraw: 'artdraw100', shop: 'shop5' }).forEach(([k, v]) => { (QUEST_ALIAS[k] = QUEST_ALIAS[k] || []).push(v); });
 function questEvent(id, amt = 1) {
   if (!profile) return;
   if (QUEST_ALIAS[id] && !questEvent.busy) { questEvent.busy = 1; QUEST_ALIAS[id].forEach(a => questEvent(a, amt)); questEvent.busy = 0; }
