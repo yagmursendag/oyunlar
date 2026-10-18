@@ -1270,6 +1270,7 @@ function drawFace(c, mood) {
     const es = c.av ? c.av.eyeStyle : 'normal';
     if (es === 'happy') { ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(ex, ey + 8, 12, 1.15 * Math.PI, 1.85 * Math.PI); ctx.stroke(); continue; }
     ctx.fillStyle = '#ffffff'; ell(ex, ey, 15, 18);
+    { const lg2 = ctx.createLinearGradient(0, ey - 18, 0, ey - 2); lg2.addColorStop(0, 'rgba(120,70,80,.3)'); lg2.addColorStop(1, 'rgba(120,70,80,0)'); ctx.fillStyle = lg2; ell(ex, ey - 8, 14, 10); ctx.fillStyle = 'rgba(255,150,160,.55)'; circle(ex - s * 13, ey + 3, 2); }
     ctx.fillStyle = c.eyes; ell(ex, ey + 2, 11, 13); ctx.strokeStyle = mix(c.eyes, '#000000', 0.5); ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(ex, ey + 2, 11, 13, 0, 0, Math.PI * 2); ctx.stroke(); ctx.fillStyle = mix(c.eyes, '#ffffff', 0.4); ctx.globalAlpha = 0.55; ctx.beginPath(); ctx.ellipse(ex, ey + 9, 8, 4.5, 0, 0, Math.PI); ctx.fill(); ctx.globalAlpha = 1;
     ctx.fillStyle = '#1a1020';
     if (es === 'heart') { ctx.fillStyle = '#ff4f8b'; heart(ex, ey + 3, 7); }
@@ -1278,6 +1279,8 @@ function drawFace(c, mood) {
     else ell(ex, ey + 3, 6, 7);
     ctx.fillStyle = '#ffffff'; circle(ex - 4, ey - 3, 4); circle(ex + 4, ey + 7, 2);
     ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(ex, ey, 15, 18, 0, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
+    ctx.strokeStyle = mix(c.skin, '#7a3a3a', 0.4); ctx.lineWidth = 1.8; ctx.beginPath(); ctx.ellipse(ex, ey - 4, 17, 20, 0, Math.PI * 1.2, Math.PI * 1.8); ctx.stroke();
+    if (c.girl) { ctx.strokeStyle = 'rgba(40,25,35,.5)'; ctx.lineWidth = 1.3; for (let i = 0; i < 4; i++) line(ex + s * (-6 + i * 4), ey + 17 + (i % 2), ex + s * (-6 + i * 4) + s * 1, ey + 21 + (i % 2)); }
     if (c.girl) { ctx.lineWidth = 2.5; for (let i = 0; i < 3; i++) line(ex + s * (9 + i * 3), ey - 14 + i * 3, ex + s * (15 + i * 4), ey - 19 + i * 3); }
     // curled lashes after the eyelash curler
     if (mk && mk.liner) { const la = mk.liner[(s + 1) / 2]; if (la > 0) { ctx.save(); ctx.globalAlpha = Math.min(1, 0.35 + la); ctx.strokeStyle = '#120a16'; ctx.lineCap = 'round'; ctx.lineWidth = 3.4; ctx.beginPath(); ctx.ellipse(ex, ey, 15.5, 18.5, 0, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke(); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(ex + s * 14, ey - 9); ctx.quadraticCurveTo(ex + s * (22 + 6 * la), ey - 14 - 4 * la, ex + s * (18 + 14 * la), ey - 20 - 10 * la); ctx.stroke(); ctx.restore(); } }
@@ -1300,6 +1303,9 @@ function drawFace(c, mood) {
   if (mk && mk.falselash) [-1, 1].forEach((s, i) => { const a = mk.falselash[i]; if (a > 0) { const ex = s * 34, ey = 6; ctx.save(); ctx.strokeStyle = '#120a16'; ctx.lineCap = 'round'; ctx.lineWidth = 3.4; ctx.beginPath(); ctx.ellipse(ex, ey, 16, 19, 0, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke(); ctx.lineWidth = 2.6; for (let j = 0; j < 8; j++) { const ang = Math.PI * (1.1 + j * 0.1), bx = ex + Math.cos(ang) * 16, by = ey + Math.sin(ang) * 19, L = (8 + 14 * a) * (0.7 + 0.5 * (j / 7)); ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo(bx + Math.cos(ang) * L * 0.9 + s * 4, by + Math.sin(ang) * L * 0.8, bx + Math.cos(ang) * L + s * 9, by + Math.sin(ang) * L - 5); ctx.stroke(); } ctx.restore(); } });
   // nose
   ctx.strokeStyle = mix(c.skin, '#000000', 0.35); ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 26, 5, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke();
+  ctx.fillStyle = mix(c.skin, '#5a2a2a', 0.45); ell(-3.2, 29, 1.5, 1); ell(3.2, 29, 1.5, 1); ctx.strokeStyle = 'rgba(120,70,60,.16)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-3, 4); ctx.quadraticCurveTo(-5, 16, -4, 24); ctx.stroke();
+  ctx.strokeStyle = mix(c.skin, '#8a3a4a', 0.55); ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(-9, 41); ctx.quadraticCurveTo(-4, 38, 0, 40); ctx.quadraticCurveTo(4, 38, 9, 41); ctx.stroke();
+  { const ch = ctx.createRadialGradient(0, 74, 2, 0, 74, 28); ch.addColorStop(0, 'rgba(255,255,255,.12)'); ch.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = ch; ell(0, 74, 28, 14); ctx.fillStyle = 'rgba(120,60,50,.08)'; ell(0, 84, 36, 8); }
   if (mk && mk.lip.every(v => v)) {
     const lg = ctx.createLinearGradient(0, 38, 0, 58); lg.addColorStop(0, mix(lpc, '#ffffff', 0.18)); lg.addColorStop(0.5, lpc); lg.addColorStop(1, mix(lpc, '#000000', 0.28));
     ctx.fillStyle = lg; ctx.beginPath(); ctx.moveTo(-22, 47); ctx.quadraticCurveTo(-12, 38, -4, 41); ctx.quadraticCurveTo(0, 44, 4, 41); ctx.quadraticCurveTo(12, 38, 22, 47); ctx.quadraticCurveTo(10, 60, 0, 60); ctx.quadraticCurveTo(-10, 60, -22, 47); ctx.closePath(); ctx.fill();
@@ -1486,10 +1492,13 @@ function drawBody(c, walk, mood) {
     ctx.beginPath(); ctx.moveTo(-19, 0); ctx.lineTo(19, 0); ctx.quadraticCurveTo(18, 110, 14, 192); ctx.lineTo(-14, 192); ctx.quadraticCurveTo(-18, 110, -19, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
     if (outfit === 'tracksuit') { ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.fillRect(s * 12 - 2, 10, 4, 170); }
     if (legCol === c.skin) { ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#e6d5e0'; ctx.lineWidth = 2; rr(-16, 170, 32, 22, 8); ctx.fill(); ctx.stroke(); }
+    ctx.fillStyle = 'rgba(0,0,0,.07)'; ell(0, 100, 15, 9); ctx.strokeStyle = 'rgba(0,0,0,.13)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 98, 11, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+    if (legCol === c.skin) { ctx.fillStyle = c.shoe; ctx.globalAlpha = 0.55; ctx.fillRect(-16, 176, 32, 3); ctx.globalAlpha = 1; }
     ctx.fillStyle = c.shoe; ctx.strokeStyle = mix(c.shoe, '#000000', 0.35); ctx.lineWidth = 3;
     ctx.beginPath(); ctx.ellipse(s * 7, 204, 28, 16, 0, Math.PI, 0); ctx.lineTo(s * 7 + 28, 210); ctx.lineTo(s * 7 - 28, 210); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.fillStyle = mix(c.shoe, '#000000', 0.3); rr(s * 7 - 29, 207, 58, 8, 4); ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,.55)'; ell(s * 7 - 9, 196, 8, 4, -0.2);
+    ctx.fillStyle = mix(c.shoe, '#ffffff', 0.22); ell(s * 7 + 15, 205, 11, 7); ctx.strokeStyle = 'rgba(0,0,0,.28)'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(s * 7 + 8, 205, 8, -1.3, 1.3); ctx.stroke(); for (let k = 0; k < 3; k++) { ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 2; line(s * 7 - 6 + k * 6, 196 + k * 1.5, s * 7 - 1 + k * 6, 200 + k * 1.5); } ctx.fillStyle = 'rgba(255,255,255,.7)'; rr(s * 7 - 28, 209, 56, 2.5, 1); ctx.fill();
     ctx.restore();
   }
   // arms: puffy sleeve (or a long sleeve), mitten hand with a thumb (tiny painted nails once done)
@@ -1503,10 +1512,14 @@ function drawBody(c, walk, mood) {
     ctx.beginPath(); ctx.ellipse(0, 224, 18, 22, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     if (O.long) { ctx.fillStyle = mix(sleeveCol, '#000000', 0.15); rr(-15, 188, 30, 16, 6); ctx.fill(); }
     else ctx.fillRect(-10, 194, 20, 16);
-    if (done) { ctx.fillStyle = done; for (let k = 0; k < 4; k++) ell(-9 + k * 6, 242, 2.6, 3.6); }
+    ctx.strokeStyle = mix(c.skin, '#000000', 0.2); ctx.lineWidth = 1.6; for (let k = 0; k < 3; k++) line(-6 + k * 6, 232, -6 + k * 6, 244);
+    ctx.strokeStyle = mix(c.skin, '#000000', 0.12); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(0, 230, 14, 1.15 * Math.PI, 1.85 * Math.PI); ctx.stroke(); for (let k = 0; k < 4; k++) circle(-9 + k * 6, 228, 0.9);
+    ctx.beginPath(); ctx.moveTo(-8, 214); ctx.quadraticCurveTo(0, 220, 9, 215); ctx.stroke();
+    for (let k = 0; k < 4; k++) { ctx.fillStyle = done || mix(c.skin, '#ff8a9a', 0.35); ell(-9 + k * 6, 242, 2.8, 3.8); ctx.fillStyle = 'rgba(255,255,255,.65)'; ell(-9.6 + k * 6, 240.6, 0.9, 1.4); }
     ctx.fillStyle = sleeveCol; ctx.strokeStyle = mix(sleeveCol, '#000000', 0.25); ctx.lineWidth = 4; ell(0, 22, O.long ? 23 : 27, O.long ? 30 : 36); ctx.stroke();
     if (!O.long) { ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(0, 22, 20, 28, 0, 0.3 * Math.PI, 0.7 * Math.PI); ctx.stroke(); }
     if (outfit === 'tracksuit') { ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 4; line(s * 8, 30, s * 6, 184); }
+    ctx.strokeStyle = 'rgba(0,0,0,.16)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-12, 110); ctx.quadraticCurveTo(0, 114, 12, 110); ctx.stroke(); ctx.setLineDash([4, 4]); ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.beginPath(); ctx.moveTo(-14, 190); ctx.lineTo(14, 190); ctx.stroke(); ctx.setLineDash([]);
     ctx.restore();
   }
   // torso with rounded shoulders
@@ -1841,6 +1854,7 @@ function drawBody(c, walk, mood) {
     else for (let y = 180, r = 0; y < by + 20; y += 40, r++) for (let x = -150 + (r % 2) * 20; x < 160; x += 40) { if (pat === 'dots') circle(x, y, 7); else if (pat === 'hearts') heart(x, y, 8); else star4(x, y, 10); }
   }
   if (av && av.art) drawArt2D(av.art);
+  ctx.strokeStyle = 'rgba(0,0,0,.1)'; ctx.lineWidth = 2; line(-36, 143, -82, 168); line(36, 143, 82, 168); ctx.setLineDash([5, 5]); ctx.strokeStyle = 'rgba(255,255,255,.45)'; ctx.beginPath(); ctx.moveTo(-bx + 8, by - 12); ctx.quadraticCurveTo(0, by + 6, bx - 8, by - 12); ctx.stroke(); ctx.setLineDash([]); ctx.strokeStyle = 'rgba(0,0,0,.06)'; ctx.lineWidth = 6; line(-bx + 3, 190, -bx + 3, by - 10); line(bx - 3, 190, bx - 3, by - 10);
   if (outfit === 'gown') { ctx.strokeStyle = 'rgba(0,0,0,.1)'; ctx.lineWidth = 3; for (const k of [-2, -1, 0, 1, 2]) { ctx.beginPath(); ctx.moveTo(k * 18, 285); ctx.quadraticCurveTo(k * 40, 440, k * 62, 590); ctx.stroke(); } ctx.fillStyle = '#ffffff'; for (let i = 0; i < 16; i++) star4(-110 + (i * 53) % 220, 320 + (i * 37) % 250, 4 + Math.sin(T * 4 + i) * 1.5); }
   ctx.fillStyle = 'rgba(0,0,0,.09)'; ctx.fillRect(34, 130, 140, by); ctx.fillStyle = 'rgba(255,255,255,.14)'; ell(-46, 230, 24, 70); { const sg2 = ctx.createLinearGradient(0, 140, 0, by); sg2.addColorStop(0, 'rgba(255,255,255,.10)'); sg2.addColorStop(1, 'rgba(0,0,0,.16)'); ctx.fillStyle = sg2; ctx.fillRect(-180, 130, 360, by); if (O.shape === 'dress' || O.shape === 'gown') { ctx.strokeStyle = 'rgba(0,0,0,.08)'; ctx.lineWidth = 3; for (const k of [-3, -2, -1, 0, 1, 2, 3]) { ctx.beginPath(); ctx.moveTo(k * 14, 300); ctx.quadraticCurveTo(k * 30, by - 60, k * 44, by); ctx.stroke(); } } }
   ctx.restore();
@@ -1909,7 +1923,7 @@ function drawHead(c, x, y, s, o = {}) {
   ctx.fillStyle = c.skin; rr(-24, 60, 48, 92, 12); ctx.fill(); { const ng = ctx.createLinearGradient(0, 90, 0, 140); ng.addColorStop(0, 'rgba(120,60,40,.32)'); ng.addColorStop(1, 'rgba(120,60,40,0)'); ctx.fillStyle = ng; ctx.fillRect(-24, 90, 48, 50); }
   if (o.body) o.body();
   if (o.cape) drawCape();
-  if (c.short) { ctx.fillStyle = c.skin; ctx.strokeStyle = mix(c.skin, '#000000', 0.25); ctx.lineWidth = 4; for (const sd of [-1, 1]) { ell(sd * 90, 12, 14, 20); ctx.stroke(); } }
+  if (c.short) { ctx.fillStyle = c.skin; ctx.strokeStyle = mix(c.skin, '#000000', 0.25); ctx.lineWidth = 4; for (const sd of [-1, 1]) { ell(sd * 90, 12, 14, 20); ctx.stroke(); ctx.fillStyle = mix(c.skin, '#e07a8a', 0.3); ell(sd * 91, 12, 7, 12); ctx.fillStyle = c.skin; ctx.strokeStyle = mix(c.skin, '#000000', 0.25); } }
   // head + face
   ctx.fillStyle = c.skin; ctx.strokeStyle = mix(c.skin, '#000000', 0.25); ctx.lineWidth = 4;
   ctx.beginPath(); ctx.ellipse(0, 0, 92, 100, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -3892,6 +3906,7 @@ function lbAvatar(look, name, tagCol) {
     const lg = new THREE.Group(); lg.position.set(s * 0.14, 0.72, 0); body.add(lg); A.legs.push(lg);
     lg.add(lbM(new THREE.CylinderGeometry(0.105, 0.09, 0.66, 12), legM, 0, -0.33, 0));
     const sh = lbM(new THREE.SphereGeometry(0.13, 14, 10), shoe, 0, -0.68, 0.06); sh.scale.set(1, 0.62, 1.45); lg.add(sh); const so = lbM(new THREE.SphereGeometry(0.13, 14, 10), toon('#ffffff'), 0, -0.72, 0.06); so.scale.set(1.03, 0.26, 1.48); lg.add(so);
+    { const tc = lbM(new THREE.SphereGeometry(0.1, 12, 8), toon(mix(L.shoe, '#ffffff', 0.25)), 0, -0.7, 0.17); tc.scale.set(1, 0.55, 0.9); lg.add(tc); for (let k = 0; k < 3; k++) { const lc = lbM(new THREE.BoxGeometry(0.1, 0.012, 0.012), toon('#ffffff'), 0, -0.627 - k * 0.012, 0.06 + k * 0.045); lg.add(lc); } const kn = lbM(new THREE.SphereGeometry(0.1, 10, 8), legM, 0, -0.3, 0.02); kn.scale.set(1, 0.4, 0.9); lg.add(kn); }
   }
   // torso by outfit
   if (o === 'gown') body.add(lbM(new THREE.CylinderGeometry(0.27, 0.62, 1.36, 24), cloth, 0, 0.78, 0));
@@ -3912,9 +3927,11 @@ function lbAvatar(look, name, tagCol) {
     const ag = new THREE.Group(); ag.position.set(s * 0.34, 1.4, 0); ag.rotation.z = s * 0.12; body.add(ag); A.arms.push(ag);
     ag.add(lbM(new THREE.SphereGeometry(0.12, 12, 10), o === 'jacket' ? denim : cloth, 0, -0.04, 0));
     ag.add(lbM(new THREE.CylinderGeometry(0.075, 0.065, 0.55, 10), longSl ? (o === 'jacket' ? denim : cloth) : skin, 0, -0.3, 0));
+    for (let k = -1.5; k <= 1.5; k++) { const fg = lbM(new THREE.CylinderGeometry(0.022, 0.02, 0.1, 6), skin, k * 0.04, -0.69, 0.025); ag.add(fg); ag.add(lbM(new THREE.SphereGeometry(0.022, 8, 6), skin, k * 0.04, -0.745, 0.025)); if (!(L.nail && L.nail !== 'none')) ag.add(lbM(new THREE.SphereGeometry(0.014, 6, 5), toon('#ffc4cc'), k * 0.04, -0.752, 0.04)); }
     ag.add(lbM(new THREE.SphereGeometry(0.09, 12, 10), skin, 0, -0.6, 0)); if (L.nail && L.nail !== 'none') for (let k = -1; k <= 1; k++) ag.add(lbM(new THREE.SphereGeometry(0.026, 8, 6), toon(L.nail, { emissive: L.nail, emissiveIntensity: 0.25 }), k * 0.045, -0.675, 0.04)); ag.add(lbM(new THREE.SphereGeometry(0.035, 8, 6), skin, -s * 0.07, -0.57, 0.05));
   }
-  body.add(lbM(new THREE.CylinderGeometry(0.09, 0.1, 0.18, 12), skin, 0, 1.52, 0)); { const cr = lbM(new THREE.TorusGeometry(0.15, 0.035, 8, 20), cloth, 0, 1.43, 0); cr.rotation.x = Math.PI / 2; body.add(cr); }
+  body.add(lbM(new THREE.CylinderGeometry(0.09, 0.1, 0.18, 12), skin, 0, 1.52, 0));
+  { const hm = lbM(new THREE.TorusGeometry(0.3, 0.012, 6, 28), toon(mix(L.cloth, '#000000', 0.2)), 0, 0.9, 0); hm.rotation.x = Math.PI / 2; hm.userData.noOutline = true; body.add(hm); } { const cr = lbM(new THREE.TorusGeometry(0.15, 0.035, 8, 20), cloth, 0, 1.43, 0); cr.rotation.x = Math.PI / 2; body.add(cr); }
   // head
   const head = new THREE.Group(); head.position.y = 1.95; body.add(head); A.head = head;
   const hd = lbM(new THREE.SphereGeometry(0.45, 32, 24), skin); hd.scale.set(1, 0.95, 0.95); head.add(hd);
@@ -3943,6 +3960,9 @@ function lbAvatar(look, name, tagCol) {
   if (L.makeup.includes('spray')) { const sp = lbM(new THREE.SphereGeometry(0.455, 20, 14), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.09 }), 0, -0.04, 0.02); sp.userData.noOutline = true; head.add(sp); }
   if (L.makeup.includes('foundation')) { const fd = lbM(new THREE.SphereGeometry(0.45, 20, 14), new THREE.MeshBasicMaterial({ color: '#fff0e0', transparent: true, opacity: 0.12 }), 0, -0.04, 0.02); fd.userData.noOutline = true; head.add(fd); }
   if (L.makeup.includes('facepaint')) for (const s of [-1, 1]) { const pk = new THREE.MeshBasicMaterial({ color: s < 0 ? '#ff4f8b' : '#8b5cf6' }); if (s < 0) { for (const t of [-1, 1]) head.add(lbM(new THREE.SphereGeometry(0.026, 8, 6), pk, -0.3 + t * 0.022, -0.1 + 0.015, 0.385)); const tp = lbM(new THREE.ConeGeometry(0.05, 0.05, 3), pk, -0.3, -0.135, 0.385); tp.rotation.x = Math.PI; head.add(tp); } else { const st = lbM(new THREE.OctahedronGeometry(0.045), pk, 0.3, -0.1, 0.385); st.scale.z = 0.3; head.add(st); } }
+  for (const s of [-1, 1]) { const cr = lbM(new THREE.TorusGeometry(0.108, 0.006, 5, 14, Math.PI * 0.8), toon(mix(L.skin, '#7a3a3a', 0.5)), s * 0.16, 0.06, 0.405); cr.rotation.z = Math.PI * 0.1; cr.scale.set(1, 1.1, 0.5); head.add(cr); head.add(lbM(new THREE.SphereGeometry(0.012, 6, 5), toon('#ff9aa8'), s * 0.065, 0.015, 0.425)); }
+  for (const s of [-1, 1]) head.add(lbM(new THREE.SphereGeometry(0.008, 6, 5), toon(mix(L.skin, '#5a2a2a', 0.6)), s * 0.017, -0.06, 0.447));
+  { const ul = lbM(new THREE.TorusGeometry(0.06, 0.007, 5, 14, Math.PI), toon(mix(L.skin, '#8a3a4a', 0.55)), 0, -0.145, 0.425); ul.scale.set(1, 0.5, 0.6); head.add(ul); }
   const nose = lbM(new THREE.SphereGeometry(0.034, 10, 8), toon(mix(L.skin, '#c06a4a', 0.28)), 0, -0.045, 0.435); nose.scale.set(1, 0.85, 0.8); head.add(nose);
   const mouth = lbM(new THREE.TorusGeometry(0.07, 0.02, 6, 14, Math.PI), toon(L.makeup.includes('lip') ? L.lipc : '#8b2a3a'), 0, -0.17, 0.4); mouth.rotation.z = Math.PI; head.add(mouth);
   if (L.makeup.includes('lip')) { mouth.scale.set(1.12, 1.12, 1.6); const lp = lbM(new THREE.TorusGeometry(0.052, 0.014, 6, 14, Math.PI), toon(mix(L.lipc, '#ffffff', 0.18)), 0, -0.175, 0.41); lp.rotation.z = Math.PI; head.add(lp); head.add(lbM(new THREE.SphereGeometry(0.008, 6, 5), new THREE.MeshBasicMaterial({ color: '#ffffff' }), -0.04, -0.2, 0.43)); }
