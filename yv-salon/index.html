@@ -183,6 +183,12 @@ const MAKEUP = {
   highlighter: { name: 'Aydınlatıcı', icon: '💫', price: 28, uses: 3, pay: 9, ask: 'parlayan yanaklar' },
   foundation: { name: 'Fondöten', icon: '🧽', price: 30, uses: 3, pay: 10, ask: 'pürüzsüz cilt' },
   facepaint: { name: 'Yüz boyası', icon: '🖍️', price: 35, uses: 2, pay: 14, ask: 'yanağıma kalp' },
+  eyebrow: { name: 'Kaş kalemi', icon: '🖊️', price: 18, uses: 3, pay: 7, ask: 'dolgun kaşlar' },
+  contour: { name: 'Kontür', icon: '🍂', price: 26, uses: 3, pay: 9, ask: 'kontür' },
+  facegems: { name: 'Yüz taşı', icon: '💎', price: 32, uses: 2, pay: 12, ask: 'gözümün yanına taş' },
+  freckles: { name: 'Çil kalemi', icon: '🔸', price: 20, uses: 3, pay: 8, ask: 'şirin çiller' },
+  falselash: { name: 'Takma kirpik', icon: '🪭', price: 34, uses: 3, pay: 12, ask: 'takma kirpik' },
+  spray: { name: 'Makyaj spreyi', icon: '💦', price: 24, uses: 4, pay: 8, ask: 'ışıltılı sabitleyici' },
 };
 const LIP_COL = '#e0245e', SHADOW_COL = '#9b6bff', BLUSH_COL = '#ff7fa8';
 const LIP_PTS = Array.from({ length: 10 }, (_, i) => [-16 + (i % 5) * 8, i < 5 ? 45 : 51]);
@@ -370,7 +376,7 @@ const weekNo = () => Math.floor((Date.now() / 86400000 + 3) / 7); // weeks start
 const gemsReady = () => profile && profile.gemWeek !== weekNo();
 function claimGems() {
   if (!gemsReady()) return say('Bu haftanın elmasları alındı. Pazartesi yenileri gelir! 💎');
-  inv.gems = (inv.gems || 0) + GEMS_PER_WEEK; profile.gemWeek = weekNo(); save();
+  inv.gems = (inv.gems || 0) + GEMS_PER_WEEK; profile.gemWeek = weekNo(); questEvent('gems'); save();
   sfx('done'); sparkle(880, 180, 30); say(`+${GEMS_PER_WEEK} 💎 elmas aldın! Haftaya yine gel`);
 }
 // admin #000000: the admin password is turned into a private signing key (PBKDF2); the password itself is not in the game.
@@ -490,7 +496,7 @@ function makeCustomer(isFirst) {
   }
   c.specks0 = c.specks.length || 1;
   c.foam = [];
-  c.mk = { lip: LIP_PTS.map(() => 0), lash: [0, 0], blush: [0, 0], shadow: [0, 0], glitter: [0, 0], gloss: LIP_PTS.map(() => 0), liner: [0, 0], mascara: [0, 0], highlighter: [0, 0], foundation: [0, 0], facepaint: [0, 0] };
+  c.mk = { lip: LIP_PTS.map(() => 0), lash: [0, 0], blush: [0, 0], shadow: [0, 0], glitter: [0, 0], gloss: LIP_PTS.map(() => 0), liner: [0, 0], mascara: [0, 0], highlighter: [0, 0], foundation: [0, 0], facepaint: [0, 0], eyebrow: [0, 0], contour: [0, 0], facegems: [0, 0], freckles: [0, 0], falselash: [0, 0], spray: [0, 0] };
   c.capDye = 0; c.maskPh = 'apply'; c.maskPts = MASK_PTS.map(() => 0); c.cucumbers = [0, 0]; c.maskT = 0;
   c.jewelOn = Object.fromEntries(JK.map(k => [k, JEWELS[k].spots.map(() => 0)]));
   // messy brows: a unibrow + stray hairs around them
@@ -578,12 +584,12 @@ function buy(it, withGems) {
   if (withGems) {
     if (!rich() && (inv.gems || 0) < it.gems) { sfx('no'); return say(`${fmt(it.gems - (inv.gems || 0))} 💎 daha lazım! Her hafta 5 elmas al`); }
     if (!rich()) inv.gems -= it.gems;
-    grantItem(it); questEvent('shop'); save(); sfx('done'); sparkle(ptr.x, ptr.y, 30); return say(`${itemName(it)} senin! 🎉`);
+    grantItem(it); questEvent('shop'); questEvent('shop3'); save(); sfx('done'); sparkle(ptr.x, ptr.y, 30); return say(`${itemName(it)} senin! 🎉`);
   }
   if (!rich() && money < it.price) { sfx('no'); return say(`${fmt(it.price - money)} TL daha lazım! 💸 Çalış, para kazan`); }
   if (!rich()) money -= it.price;
-  if (it.kind === 'thing') { inv.things[it.id] = (inv.things[it.id] || 0) + 1; questEvent('shop'); save(); sfx('coin'); sparkle(ptr.x, ptr.y, 14); return say(`${it.name} çantana girdi! 🎒`); }
-  if (it.kind === 'pet' || it.kind === 'outfit' || it.kind === 'bag') { grantItem(it); questEvent('shop'); save(); sfx('done'); sparkle(ptr.x, ptr.y, 30); return say(`${itemName(it)} senin! 🎉`); }
+  if (it.kind === 'thing') { inv.things[it.id] = (inv.things[it.id] || 0) + 1; questEvent('shop'); questEvent('shop3'); save(); sfx('coin'); sparkle(ptr.x, ptr.y, 14); return say(`${it.name} çantana girdi! 🎒`); }
+  if (it.kind === 'pet' || it.kind === 'outfit' || it.kind === 'bag') { grantItem(it); questEvent('shop'); questEvent('shop3'); save(); sfx('done'); sparkle(ptr.x, ptr.y, 30); return say(`${itemName(it)} senin! 🎉`); }
   if (it.kind === 'polish') inv.polish[it.id] = (inv.polish[it.id] || 0) + POLISH_USES;
   else if (it.kind === 'cream') inv.creams++;
   else if (it.kind === 'supply') inv.supplies[it.id] = (inv.supplies[it.id] || 0) + SUPPLIES[it.id].uses;
@@ -591,10 +597,10 @@ function buy(it, withGems) {
   else if (it.kind === 'makeup') inv.makeup[it.id] = (inv.makeup[it.id] || 0) + MAKEUP[it.id].uses;
   else if (it.kind === 'sticker') inv.stickers[it.id] = (inv.stickers[it.id] || 0) + STICKER_USES;
   else inv[it.kind].push(it.id);
-  questEvent('shop'); save(); sfx('coin'); sparkle(ptr.x, ptr.y, 18); say(`${itemName(it)} alındı! 🎉`);
+  questEvent('shop'); questEvent('shop3'); save(); sfx('coin'); sparkle(ptr.x, ptr.y, 18); say(`${itemName(it)} alındı! 🎉`);
 }
 const REACTS = ['Ooo çok güzel! 😍', 'Bayıldım! 💖', 'Harikasın! ✨', 'Vay be! 🤩', 'Çok beğendim! 😊'];
-const MK_REG = { blush: sd => [sd * 54, 30, 28], glitter: sd => [sd * 54, 22, 28], shadow: sd => [sd * 34, -10, 22], liner: sd => [sd * 34, -6, 24], highlighter: sd => [sd * 58, 14, 26], foundation: sd => [sd * 40, 20, 46], facepaint: sd => [sd * 54, 34, 22] };
+const MK_REG = { blush: sd => [sd * 54, 30, 28], glitter: sd => [sd * 54, 22, 28], shadow: sd => [sd * 34, -10, 22], liner: sd => [sd * 34, -6, 24], highlighter: sd => [sd * 58, 14, 26], foundation: sd => [sd * 40, 20, 46], facepaint: sd => [sd * 54, 34, 22], eyebrow: sd => [sd * 34, -26, 22], contour: sd => [sd * 62, 30, 26], facegems: sd => [sd * 62, 4, 20], freckles: sd => [sd * 30, 24, 26], spray: sd => [sd * 40, 20, 52] };
 function mkDone(k) { const m = cust.mk; return k === 'lipstick' ? m.lip.every(v => v >= 1) : k === 'curler' ? m.lash.every(v => v >= 1) : m[k].every(v => v >= 1); }
 function isDone(s) {
   const c = cust, r = c.req, F = frontStrands();
@@ -863,7 +869,7 @@ function work(d) {
     if (tool === 'lipstick' || tool === 'gloss') { const arr = tool === 'gloss' ? m.gloss : m.lip; let hit = false; LIP_PTS.forEach(([px, py], i) => { if (dist(px, py, lx, ly) < 12 && !arr[i]) { arr[i] = 1; hit = true; } }); if (hit) sfx('paint', 120); }
     else if (MK_REG[tool]) [-1, 1].forEach((sd, i) => {
       const [cx, cy, r] = MK_REG[tool](sd);
-      if (dist(cx, cy, lx, ly) < r && m[tool][i] < 1) { m[tool][i] = Math.min(1, m[tool][i] + amt * (tool === 'foundation' ? 0.7 : 1)); sfx('scrub', 150); if (Math.random() < 0.25) sparkle(ptr.x, ptr.y, 2); if (m[tool][i] >= 1) sparkle(ptr.x, ptr.y, 10); }
+      if (dist(cx, cy, lx, ly) < r && m[tool][i] < 1) { m[tool][i] = Math.min(1, m[tool][i] + amt * (tool === 'foundation' || tool === 'spray' ? 0.7 : 1)); sfx('scrub', 150); if (Math.random() < 0.25) sparkle(ptr.x, ptr.y, 2); if (m[tool][i] >= 1) sparkle(ptr.x, ptr.y, 10); }
     });
   } else if (s === 'comb' && d > 0) {
     const [lx, ly] = lp(), dy = (ptr.y - ptr.py) / FS;
@@ -891,7 +897,7 @@ function update(dt) {
     if (bill && (bill.t += dt * 1.2) >= 1 && !bill.done) {
       const tip = has('decor', 'tipjar') ? 2 + Math.floor(Math.random() * 4) : 0;
       if (tip) part({ x: 1040, y: 190, vy: -40, life: 1.8, kind: 'txt', t: `💝 Bahşiş +${tip} TL`, col: '#d6337f' });
-      bill.done = true; money += cust.price + tip; served++; questEvent('serve'); usePolish(); save(); sfx('coin'); sparkle(1158, 36, 16); leaveT = 1;
+      bill.done = true; money += cust.price + tip; served++; questEvent('serve'); questEvent('serve5'); usePolish(); save(); sfx('coin'); sparkle(1158, 36, 16); leaveT = 1;
       part({ x: 1158, y: 110, vy: -40, life: 1.4, kind: 'txt', t: '+' + cust.price + ' TL', col: '#23884f' });
     }
     if (leaveT > 0 && (leaveT -= dt) <= 0) scene = 'leave';
@@ -917,8 +923,8 @@ function workUpdate(dt) {
     sfx('air', 100);
   }
   if (s === 'mask' && c.maskPh === 'wait' && (c.maskT -= dt) <= 0) { c.maskPh = 'wipe'; tool = 'towel'; say('Maske kurudu! 🧻 Havluyla sil'); sfx('done'); }
-  if (hold && s === 'makeup' && (tool === 'curler' || tool === 'mascara')) {
-    const [lx, ly] = lp(), arr = tool === 'curler' ? c.mk.lash : c.mk.mascara;
+  if (hold && s === 'makeup' && (tool === 'curler' || tool === 'mascara' || tool === 'falselash')) {
+    const [lx, ly] = lp(), arr = tool === 'curler' ? c.mk.lash : c.mk[tool];
     [-1, 1].forEach((sd, i) => { if (dist(sd * 34, 0, lx, ly) < 26 && arr[i] < 1) { arr[i] = Math.min(1, arr[i] + dt * 0.8); if (Math.random() < 0.2) sparkle(ptr.x, ptr.y, 2); if (arr[i] >= 1) { sparkle(ptr.x, ptr.y, 8); sfx('stick'); } } });
   }
   if (hold && s === 'style') {
@@ -1240,15 +1246,16 @@ function capPath(bangs) {
   }
   ctx.closePath();
 }
+const hexA = (h, a) => { const n = parseInt(String(h).replace('#', ''), 16) || 0; return 'rgba(' + (n >> 16 & 255) + ',' + (n >> 8 & 255) + ',' + (n & 255) + ',' + a + ')'; };
 function drawFace(c, mood) {
   ctx.lineCap = 'round';
   ctx.fillStyle = 'rgba(255,255,255,.2)'; ell(-26, -46, 22, 9, -0.45); ell(30, -48, 12, 5, 0.5); ctx.fillStyle = 'rgba(180,100,80,.12)'; ell(0, 22, 7, 4);
-  const mk = c.mk;
+  const mk = c.mk, shc = c.shadCol || SHADOW_COL, blc = c.blushCol || BLUSH_COL, lpc = c.lipCol || LIP_COL;
   if (mk && mk.foundation) [-1, 1].forEach((s, i) => { const a = mk.foundation[i]; if (a > 0) { const fg = ctx.createRadialGradient(s * 34, 26, 8, s * 34, 26, 78); fg.addColorStop(0, 'rgba(255,236,216,.7)'); fg.addColorStop(0.7, 'rgba(255,226,200,.35)'); fg.addColorStop(1, 'rgba(255,226,200,0)'); ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = fg; ell(s * 36, 24, 52, 84); ctx.fillStyle = 'rgba(255,255,255,.18)'; ell(s * 22, -34, 14, 6); ctx.restore(); } });
   if (mk) [-1, 1].forEach((s, i) => { if (mk.shadow[i] > 0) {
-    const a = mk.shadow[i], sx = s * 36, sy = -10, gr = ctx.createRadialGradient(sx, sy + 2, 2, sx, sy, 26); gr.addColorStop(0, 'rgba(150,100,255,.95)'); gr.addColorStop(0.6, 'rgba(176,120,255,.55)'); gr.addColorStop(1, 'rgba(255,140,200,0)');
+    const a = mk.shadow[i], sx = s * 36, sy = -10, gr = ctx.createRadialGradient(sx, sy + 2, 2, sx, sy, 26); gr.addColorStop(0, hexA(shc, 0.95)); gr.addColorStop(0.6, hexA(mix(shc, '#ffffff', 0.2), 0.55)); gr.addColorStop(1, hexA(shc, 0));
     ctx.save(); ctx.globalAlpha = 0.85 * a; ctx.fillStyle = gr; ell(sx, sy, 27, 17, s * -0.12); ctx.globalAlpha = a; ctx.fillStyle = 'rgba(255,230,255,.5)'; ell(s * 29, 0, 9, 4.5, s * -0.1);
-    ctx.strokeStyle = 'rgba(95,50,170,.55)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(s * 34, 4, 17, 19, 0, Math.PI * 1.18, Math.PI * 1.82); ctx.stroke();
+    ctx.strokeStyle = hexA(mix(shc, '#000000', 0.45), 0.55); ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(s * 34, 4, 17, 19, 0, Math.PI * 1.18, Math.PI * 1.82); ctx.stroke();
     ctx.fillStyle = '#ffffff'; if (a > 0.5) for (let k = 0; k < 3; k++) { ctx.globalAlpha = a * (0.5 + 0.5 * Math.sin(T * 5 + k * 2 + s)); star4(s * (28 + k * 8), -12 - (k % 2) * 4, 2.2); }
     ctx.restore(); } });
   // brows
@@ -1285,10 +1292,16 @@ function drawFace(c, mood) {
     }
   }
   if (mk && (mk.blush[0] || mk.shadow[0] || mk.lip.some(v => v))) { ctx.fillStyle = 'rgba(255,255,255,.28)'; ell(0, 12, 3.2, 12); ell(0, -34, 20, 3.5); ctx.fillStyle = 'rgba(120,60,40,.1)'; ell(-66, 24, 6, 20, 0.2); ell(66, 24, 6, 20, -0.2); }
+  // more makeup: contour, brows, freckles, face gems, false lashes
+  if (mk && mk.contour) [-1, 1].forEach((s, i) => { const a = mk.contour[i]; if (a > 0) { const cg = ctx.createRadialGradient(s * 74, 30, 1, s * 74, 30, 24); cg.addColorStop(0, 'rgba(140,80,45,.55)'); cg.addColorStop(1, 'rgba(140,80,45,0)'); ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = cg; ell(s * 72, 30, 14, 36, s * 0.15); ctx.fillStyle = 'rgba(140,80,45,.22)'; ell(s * 9, 6, 3, 15); ctx.restore(); } });
+  if (mk && mk.eyebrow) [-1, 1].forEach((s, i) => { const a = mk.eyebrow[i]; if (a > 0) { ctx.save(); ctx.globalAlpha = Math.min(1, 0.35 + a); ctx.strokeStyle = mix(c.hairCol, '#000000', 0.45); ctx.lineCap = 'round'; ctx.lineWidth = 8.5; ctx.beginPath(); ctx.moveTo(s * 18, -22); ctx.quadraticCurveTo(s * 34, mood < 0.34 ? -27 : -34, s * 52, -24); ctx.stroke(); ctx.lineWidth = 1.6; for (let k = 0; k < 7; k++) { const t = k / 6, x = s * (18 + 34 * t), y = -22 - 9 * Math.sin(t * Math.PI) * 0.9; line(x, y + 5, x + s * 4, y - 6); } ctx.restore(); } });
+  if (mk && mk.freckles) [-1, 1].forEach((s, i) => { const a = mk.freckles[i]; if (a > 0) { ctx.fillStyle = 'rgba(160,90,45,.8)'; const n = Math.ceil(a * 11); for (let k = 0; k < n; k++) circle(s * (14 + (k * 7) % 36), 20 + ((k * 5) % 14) + (k % 2) * 3, 1.6 + (k % 3) * 0.4); } });
+  if (mk && mk.facegems) [-1, 1].forEach((s, i) => { const a = mk.facegems[i]; if (a > 0) { [[62, -4, 6, '#5ac8ff'], [67, 8, 4.5, '#ff7ac6'], [60, 17, 3.5, '#ffffff']].forEach(([gx, gy, r, col], k) => { ctx.save(); ctx.translate(s * gx, gy); ctx.scale(a, a); ctx.fillStyle = col; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(0, -r * 1.3); ctx.lineTo(r, 0); ctx.lineTo(0, r * 1.3); ctx.lineTo(-r, 0); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.fillStyle = 'rgba(255,255,255,.8)'; ell(-r * 0.3, -r * 0.4, r * 0.25, r * 0.4); ctx.restore(); }); ctx.fillStyle = '#ffffff'; ctx.globalAlpha = a * (0.5 + 0.5 * Math.sin(T * 5 + i)); star4(s * 66, 2, 3.4); ctx.globalAlpha = 1; } });
+  if (mk && mk.falselash) [-1, 1].forEach((s, i) => { const a = mk.falselash[i]; if (a > 0) { const ex = s * 34, ey = 6; ctx.save(); ctx.strokeStyle = '#120a16'; ctx.lineCap = 'round'; ctx.lineWidth = 3.4; ctx.beginPath(); ctx.ellipse(ex, ey, 16, 19, 0, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke(); ctx.lineWidth = 2.6; for (let j = 0; j < 8; j++) { const ang = Math.PI * (1.1 + j * 0.1), bx = ex + Math.cos(ang) * 16, by = ey + Math.sin(ang) * 19, L = (8 + 14 * a) * (0.7 + 0.5 * (j / 7)); ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo(bx + Math.cos(ang) * L * 0.9 + s * 4, by + Math.sin(ang) * L * 0.8, bx + Math.cos(ang) * L + s * 9, by + Math.sin(ang) * L - 5); ctx.stroke(); } ctx.restore(); } });
   // nose
   ctx.strokeStyle = mix(c.skin, '#000000', 0.35); ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 26, 5, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke();
   if (mk && mk.lip.every(v => v)) {
-    const lg = ctx.createLinearGradient(0, 38, 0, 58); lg.addColorStop(0, '#f23a73'); lg.addColorStop(0.5, '#e0245e'); lg.addColorStop(1, '#b8154a');
+    const lg = ctx.createLinearGradient(0, 38, 0, 58); lg.addColorStop(0, mix(lpc, '#ffffff', 0.18)); lg.addColorStop(0.5, lpc); lg.addColorStop(1, mix(lpc, '#000000', 0.28));
     ctx.fillStyle = lg; ctx.beginPath(); ctx.moveTo(-22, 47); ctx.quadraticCurveTo(-12, 38, -4, 41); ctx.quadraticCurveTo(0, 44, 4, 41); ctx.quadraticCurveTo(12, 38, 22, 47); ctx.quadraticCurveTo(10, 60, 0, 60); ctx.quadraticCurveTo(-10, 60, -22, 47); ctx.closePath(); ctx.fill();
     ctx.strokeStyle = 'rgba(120,10,50,.45)'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(-22, 47); ctx.quadraticCurveTo(0, 51, 22, 47); ctx.stroke();
     ctx.fillStyle = 'rgba(255,255,255,.55)'; ell(-8, 43, 6, 1.8, -0.2); ell(5, 54, 6, 1.6, 0.1);
@@ -1310,7 +1323,7 @@ function drawFace(c, mood) {
   else if (mood < 0.99) { ctx.beginPath(); ctx.arc(0, 42, 8 + mood * 8, 0.2 * Math.PI, 0.8 * Math.PI); ctx.stroke(); }
   else { ctx.fillStyle = '#8b2a3a'; ctx.beginPath(); ctx.arc(0, 46, 16, 0, Math.PI); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#ff7b9c'; ell(0, 56, 8, 4); }
   if (mood > 0.5) { ctx.fillStyle = 'rgba(255,110,140,.35)'; ell(-54, 30, 13, 8); ell(54, 30, 13, 8); }
-  if (mk) [-1, 1].forEach((s, i) => { if (mk.blush[i] > 0) { const bx = s * 52, by2 = 30, gr = ctx.createRadialGradient(bx, by2, 1, bx, by2, 22); gr.addColorStop(0, 'rgba(255,100,150,.9)'); gr.addColorStop(0.55, 'rgba(255,127,168,.45)'); gr.addColorStop(1, 'rgba(255,127,168,0)'); ctx.save(); ctx.globalAlpha = mk.blush[i]; ctx.fillStyle = gr; ell(bx, by2, 23, 15); ctx.fillStyle = 'rgba(255,255,255,.35)'; ell(bx - s * 3, by2 - 5, 6, 2.4); ctx.restore(); } });
+  if (mk) [-1, 1].forEach((s, i) => { if (mk.blush[i] > 0) { const bx = s * 52, by2 = 30, gr = ctx.createRadialGradient(bx, by2, 1, bx, by2, 22); gr.addColorStop(0, hexA(mix(blc, '#d02050', 0.3), 0.9)); gr.addColorStop(0.55, hexA(blc, 0.45)); gr.addColorStop(1, hexA(blc, 0)); ctx.save(); ctx.globalAlpha = mk.blush[i]; ctx.fillStyle = gr; ell(bx, by2, 23, 15); ctx.fillStyle = 'rgba(255,255,255,.35)'; ell(bx - s * 3, by2 - 5, 6, 2.4); ctx.restore(); } });
   if (mk && mk.highlighter) [-1, 1].forEach((s, i) => { const a = mk.highlighter[i]; if (a > 0) { const hg = ctx.createRadialGradient(s * 62, 10, 1, s * 62, 10, 20); hg.addColorStop(0, 'rgba(255,255,255,.95)'); hg.addColorStop(0.5, 'rgba(255,240,190,.55)'); hg.addColorStop(1, 'rgba(255,240,190,0)'); ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = hg; ell(s * 62, 10, 11, 24, s * 0.35); ctx.fillStyle = '#ffffff'; ctx.globalAlpha = a * (0.5 + 0.5 * Math.sin(T * 4 + i)); star4(s * 63, 6, 3.4); ctx.restore(); } });
   if (mk && mk.facepaint) [-1, 1].forEach((s, i) => { const a = mk.facepaint[i]; if (a > 0) { ctx.save(); ctx.translate(s * 54, 34); ctx.scale(0.4 + 0.6 * a, 0.4 + 0.6 * a); ctx.globalAlpha = Math.min(1, 0.4 + a); ctx.fillStyle = s < 0 ? '#ff4f8b' : '#8b5cf6'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; if (s < 0) { heart(0, 0, 11); ctx.fill(); ctx.stroke(); } else { ctx.beginPath(); for (let k = 0; k < 10; k++) { const aa = -Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? 5.5 : 12; ctx.lineTo(Math.cos(aa) * r, Math.sin(aa) * r); } ctx.closePath(); ctx.fill(); ctx.stroke(); } ctx.fillStyle = 'rgba(255,255,255,.7)'; circle(-3, -3, 2); ctx.restore(); } });
   if (c.av && c.av.face.includes('freckles')) { ctx.fillStyle = 'rgba(150,90,50,.6)'; for (const sd of [-1, 1]) for (let k = 0; k < 6; k++) circle(sd * (30 + (k % 3) * 9), 22 + Math.floor(k / 3) * 7 + (k % 2) * 2, 1.8); }
@@ -1320,6 +1333,7 @@ function drawFace(c, mood) {
     for (let k = 0; k < 8; k++) { ctx.globalAlpha = mk.glitter[i] * (0.5 + 0.5 * Math.sin(T * 6 + k)); ctx.fillStyle = k % 2 ? '#ffd23f' : '#ffffff'; star4(s * 54 + Math.cos(k * 2.4) * 15, 22 + Math.sin(k * 2.4) * 9, 4); }
     ctx.globalAlpha = 1;
   });
+  if (mk && mk.spray) [-1, 1].forEach((s, i) => { const a = mk.spray[i]; if (a > 0) { const sg = ctx.createRadialGradient(s * 36, 12, 4, s * 36, 20, 84); sg.addColorStop(0, 'rgba(255,255,255,.34)'); sg.addColorStop(1, 'rgba(255,255,255,0)'); ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = sg; ell(s * 36, 22, 50, 82); for (let k = 0; k < 9; k++) { ctx.globalAlpha = a * (0.4 + 0.6 * Math.max(0, Math.sin(T * 4 + k * 1.7 + i))); ctx.fillStyle = '#ffffff'; circle(s * (10 + (k * 13) % 70), -30 + (k * 23) % 90, 1.6 + (k % 2)); } ctx.restore(); } });
 }
 // makeup tools (lipstick, blush brush, eyeshadow applicator, eyelash curler); (x, y) is the working tip
 function drawMk(k, x, y) {
@@ -1340,6 +1354,21 @@ function drawMk(k, x, y) {
   } else if (k === 'glitter') {
     ctx.rotate(0.6); ctx.fillStyle = '#8a4b2e'; rr(-3, 14, 6, 64, 3); ctx.fill(); ctx.fillStyle = '#ffd23f'; ell(0, 0, 10, 14);
     ctx.fillStyle = '#ffffff'; for (let i = 0; i < 4; i++) star4(Math.cos(i * 1.6) * 6, Math.sin(i * 1.6) * 8, 3);
+  } else if (k === 'eyebrow') {
+    ctx.rotate(0.6); ctx.fillStyle = '#5a3a22'; ctx.beginPath(); ctx.moveTo(-2, 0); ctx.lineTo(-6, 16); ctx.lineTo(6, 16); ctx.lineTo(2, 0); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#c9a074'; rr(-6, 16, 12, 58, 3); ctx.fill(); ctx.fillStyle = '#8a5a34'; rr(-6, 16, 12, 6, 2); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.5)'; rr(-3, 26, 2.5, 38, 1); ctx.fill();
+  } else if (k === 'contour') {
+    ctx.rotate(0.6); ctx.fillStyle = '#8a4b2e'; rr(-3, 18, 6, 62, 3); ctx.fill(); ctx.fillStyle = '#c9cfd8'; rr(-8, 8, 16, 14, 3); ctx.fill();
+    const g = ctx.createRadialGradient(0, -4, 1, 0, -4, 20); g.addColorStop(0, '#a8673a'); g.addColorStop(1, '#7a4524'); ctx.fillStyle = g; ell(0, -4, 17, 20); ctx.fillStyle = 'rgba(255,255,255,.25)'; ell(-5, -10, 5, 7);
+  } else if (k === 'facegems') {
+    ctx.strokeStyle = '#9aa7b5'; ctx.lineWidth = 4; line(-6, 56, -1, 0); line(6, 56, 1, 0); ctx.fillStyle = '#5ac8ff'; ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(8, -2); ctx.lineTo(0, 8); ctx.lineTo(-8, -2); ctx.closePath(); ctx.fill(); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.stroke(); ctx.fillStyle = '#ffffff'; star4(5, -9, 3 + Math.sin(T * 6));
+  } else if (k === 'freckles') {
+    ctx.rotate(0.6); ctx.fillStyle = '#7a4524'; ctx.beginPath(); ctx.moveTo(-2, 0); ctx.lineTo(-5, 14); ctx.lineTo(5, 14); ctx.lineTo(2, 0); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#e0a050'; rr(-5, 14, 10, 56, 3); ctx.fill(); ctx.fillStyle = '#7a4524'; for (let i = 0; i < 4; i++) circle(-3 + (i % 2) * 6, 24 + i * 8, 1.6);
+  } else if (k === 'falselash') {
+    ctx.rotate(0.15); ctx.strokeStyle = '#1a1020'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 14, 26, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke(); ctx.lineWidth = 2.2; for (let j = 0; j < 9; j++) { const a = Math.PI * (1.1 + j * 0.1), bx = Math.cos(a) * 26, by = 14 + Math.sin(a) * 26; ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo(bx + Math.cos(a) * 12, by + Math.sin(a) * 10, bx + Math.cos(a) * 11 + 4, by + Math.sin(a) * 14 - 4); ctx.stroke(); }
+  } else if (k === 'spray') {
+    ctx.rotate(0.3); ctx.fillStyle = '#e8f6ff'; ctx.strokeStyle = '#7ac8ff'; ctx.lineWidth = 3; rr(-12, 18, 24, 52, 8); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#7ac8ff'; rr(-8, 8, 16, 12, 3); ctx.fill(); ctx.fillStyle = '#2a1f2e'; rr(-4, 0, 12, 8, 2); ctx.fill();
+    ctx.fillStyle = 'rgba(190,230,255,.75)'; for (let i = 0; i < 7; i++) circle(10 + ((T * 40 + i * 13) % 28), -4 - i * 3 + Math.sin(T * 5 + i) * 3, 2 + (i % 3));
   } else if (k === 'liner') {
     ctx.rotate(0.6); ctx.fillStyle = '#1a1020'; ctx.beginPath(); ctx.moveTo(-2, 0); ctx.lineTo(-5, 14); ctx.lineTo(5, 14); ctx.lineTo(2, 0); ctx.closePath(); ctx.fill();
     ctx.fillStyle = '#e8434f'; rr(-6, 14, 12, 56, 4); ctx.fill(); ctx.fillStyle = '#ffd23f'; rr(-6, 14, 12, 7, 2); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.5)'; rr(-3, 24, 2.5, 38, 1); ctx.fill();
@@ -2519,7 +2548,7 @@ function drawCursor() {
     case 'dryer': drawDryer(x, y); break;
     case 'iron': drawIron(x, y, cust.req.hairStyle === 'straight'); break;
     case 'scissors': emoji('✂️', x, y, 52); break;
-    case 'lipstick': case 'blush': case 'shadow': case 'curler': case 'glitter': case 'gloss': case 'liner': case 'mascara': case 'highlighter': case 'foundation': case 'facepaint': drawMk(tool, x, y); break;
+    case 'lipstick': case 'blush': case 'shadow': case 'curler': case 'glitter': case 'gloss': case 'liner': case 'mascara': case 'highlighter': case 'foundation': case 'facepaint': case 'eyebrow': case 'contour': case 'facegems': case 'freckles': case 'falselash': case 'spray': drawMk(tool, x, y); break;
     case 'tweezers': drawTweezers(x, y); break;
     case 'maskJar': drawMaskJar(x, y); break;
     case 'cucumber': ctx.fillStyle = '#4f9a3c'; circle(x, y, 19); ctx.fillStyle = '#c9eeb0'; circle(x, y, 15); ctx.fillStyle = '#e9f9dc'; circle(x, y, 7); break;
@@ -2957,7 +2986,7 @@ function drawShop() {
   ctx.fillStyle = 'rgba(255,255,255,.6)'; for (let x = 40; x < W; x += 110) for (let y = 40; y < H; y += 110) star4(x + (Math.floor(y / 110) % 2) * 55, y, 6);
   text('🛍️ Mağaza', 50, 66, 44, '#d6337f', 'left', 800);
   moneyPill(1030, 22);
-  SHOP_TABS.forEach(([id, label], i) => btn(50 + i * 98, 92, 93, 50, label, () => { shopTab = id; shopPage = 0; if (id === 'new') { newPage = 0; shopxLoad(); } }, { active: shopTab === id, col: id === 'sale' && shopTab !== id ? '#ffd6d6' : shopTab !== id && id === 'new' ? '#d6f5e3' : undefined, size: TOUCH ? 13 : 12 }));
+  SHOP_TABS.forEach(([id, label], i) => btn(50 + i * 98, 92, 93, 50, label, () => { shopTab = id; shopPage = 0; if (id === 'new') { newPage = 0; shopxLoad(); questEvent('newtab'); } }, { active: shopTab === id, col: id === 'sale' && shopTab !== id ? '#ffd6d6' : shopTab !== id && id === 'new' ? '#d6f5e3' : undefined, size: TOUCH ? 13 : 12 }));
   ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#5aa9ff'; ctx.lineWidth = 3; rr(810, 22, 200, 48, 24); ctx.fill(); ctx.stroke(); text(`💎 ${gemCash()}`, 910, 55, 24, '#2d6fd6', 'center', 800);
   if (shopTab === 'special') drawSpecial();
   if (shopTab === 'sale') drawSale();
@@ -3051,8 +3080,8 @@ function mkGuide() {
   if (!tool || !cust || !cust.mk) return; const m = cust.mk, pulse = 0.5 + 0.5 * Math.sin(T * 5);
   const ring = (cx, cy, rx, ry) => { ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,' + (0.55 + 0.4 * pulse).toFixed(2) + ')'; ctx.lineWidth = 3; ctx.setLineDash([9, 7]); ctx.lineDashOffset = -T * 20; ctx.beginPath(); ctx.ellipse(FX + cx * FS, FY + cy * FS, rx * FS * (0.94 + 0.08 * pulse), ry * FS * (0.94 + 0.08 * pulse), 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); };
   if (tool === 'lipstick' || tool === 'gloss') { const arr = tool === 'gloss' ? m.gloss : m.lip; if (!arr.every(v => v)) ring(0, 48, 24, 11); return; }
-  const arr = tool === 'curler' ? m.lash : m[tool]; if (!arr || !MK_REG[tool] && tool !== 'curler' && tool !== 'mascara') return;
-  [-1, 1].forEach((sd, i) => { if (arr[i] >= 1) return; if (tool === 'curler' || tool === 'mascara') ring(sd * 34, 0, 26, 24); else { const [cx, cy, r] = MK_REG[tool](sd); ring(cx, cy, r, tool === 'foundation' ? r * 1.9 : r * 0.8); } });
+  const arr = tool === 'curler' ? m.lash : m[tool]; if (!arr || !MK_REG[tool] && tool !== 'curler' && tool !== 'mascara' && tool !== 'falselash') return;
+  [-1, 1].forEach((sd, i) => { if (arr[i] >= 1) return; if (tool === 'curler' || tool === 'mascara' || tool === 'falselash') ring(sd * 34, 0, 26, 24); else { const [cx, cy, r] = MK_REG[tool](sd); ring(cx, cy, r, tool === 'foundation' || tool === 'spray' ? r * 1.7 : r * 0.8); } });
 }
 function drawWork() {
   const s = curStep();
@@ -3114,11 +3143,12 @@ const AV = {
   hairdo: ['none', 'buns', 'topknot', 'pigtails', 'spiky', 'mohawk', 'sidepart', 'quiff', 'bowl', 'afro', 'bald', 'undercut', 'buzz', 'crop'], outfit: ['dress', 'tshirt', 'overalls', 'apron', 'gown', 'tutu', 'tracksuit', 'pajamas', 'raincoat', 'hero', 'jacket', 'sweater', 'galaxy', 'rainbow', 'mermaid', 'fairy', 'winter', 'swim', 'chef', 'cowgirl', 'astronaut', 'football', 'suit', 'police', 'firefighter', 'pirate', 'ninja', 'royal', 'knight', 'wizard', 'vampire', 'samurai', 'angel', 'diamond', 'cosmic', 'dragonarmor', 'whitedeer', 'cloud', 'farmer', 'doctor', 'bunny', 'tiger', 'witch', 'ball', 'sunking', 'icequeen', 'elf', 'robotsuit', 'pharaoh', 'unicornsuit', 'snowman', 'pumpkin', 'candy', 'crystal', 'lava', 'poseidon'], pattern: ['plain', 'stripes', 'dots', 'hearts', 'stars'],
   shoe: ['#ff5fa2', '#1c1c1c', '#ffffff', '#e8434f', '#3b82f6', '#ffd23f'], hat: ['none', 'cap', 'beanie', 'sunhat', 'party', 'backcap', 'headphones'], glasses: ['none', 'round', 'sun', 'star'],
   pet: ['none', 'cat', 'dog', 'bunny', 'snake', 'duck', 'dragon', 'penguin', 'unicorn', 'turtle', 'owl', 'fox', 'panda', 'axolotl', 'wolf', 'lion', 'robot', 'dino', 'phoenix', 'whitedeer', 'hedgehog', 'giraffe', 'elephant', 'monkey', 'koala', 'zebra', 'parrot', 'butterfly'], nail: ['none', ...NAIL_COLS.map(e => e[0])],
-  makeupKeys: ['lip', 'blush', 'shadow', 'lash', 'glitter', 'liner', 'mascara', 'highlighter', 'foundation', 'facepaint'], faceKeys: ['freckles', 'mole'],
+  lipc: ['#e0245e', '#ff6fa5', '#9b1b4b', '#d98a7a', '#ff6a2a', '#7a1fa2'], shadc: ['#9b6bff', '#3b82f6', '#ff7ac6', '#ffc83d', '#2fd27a', '#1fc7c7'], blushc: ['#ff7fa8', '#ff9a6b', '#e85a8a', '#c97bff', '#ffb3c8'],
+  makeupKeys: ['lip', 'blush', 'shadow', 'lash', 'glitter', 'liner', 'mascara', 'highlighter', 'foundation', 'facepaint', 'eyebrow', 'contour', 'facegems', 'freckles', 'falselash', 'spray'], faceKeys: ['freckles', 'mole'],
 };
-const LOOK_ENUMS = ['skin', 'hair', 'len', 'style', 'bangs', 'eyes', 'cloth', 'eyeStyle', 'tip', 'hairdo', 'pattern', 'shoe', 'hat', 'glasses', 'pet', 'nail'];
+const LOOK_ENUMS = ['skin', 'hair', 'len', 'style', 'bangs', 'eyes', 'cloth', 'eyeStyle', 'tip', 'hairdo', 'pattern', 'shoe', 'hat', 'glasses', 'pet', 'nail', 'lipc', 'shadc', 'blushc'];
 const DEFAULT_LOOK = { girl: true, skin: SKINS[0], hair: '#3b2314', len: 'long', style: 'wavy', bangs: 'scallop', eyes: '#5b3a1e', cloth: '#ff5fa2', jewels: [],
-  eyeStyle: 'normal', tip: 'none', hairdo: 'none', pattern: 'plain', shoe: '#ff5fa2', hat: 'none', glasses: 'none', pet: 'none', makeup: [], face: [], nail: 'none', art: '' };
+  eyeStyle: 'normal', tip: 'none', hairdo: 'none', pattern: 'plain', shoe: '#ff5fa2', hat: 'none', glasses: 'none', pet: 'none', makeup: [], face: [], nail: 'none', art: '', lipc: '#e0245e', shadc: '#9b6bff', blushc: '#ff7fa8' };
 // fill in anything missing or unknown (older looks and codes have fewer fields)
 function normLook(l) {
   const L = { ...DEFAULT_LOOK, ...(l || {}) };
@@ -3137,7 +3167,7 @@ function encodeLook(l) {
   l = normLook(l);
   return [l.girl ? 1 : 0, AV.skin.indexOf(l.skin), AV.hair.indexOf(l.hair), AV.len.indexOf(l.len), AV.style.indexOf(l.style), AV.bangs.indexOf(l.bangs), AV.eyes.indexOf(l.eyes), AV.cloth.indexOf(l.cloth),
     bits(Object.keys(JEWELS), l.jewels), AV.eyeStyle.indexOf(l.eyeStyle), AV.tip.indexOf(l.tip), AV.hairdo.indexOf(l.hairdo), AV.outfit.indexOf(l.outfit), AV.pattern.indexOf(l.pattern),
-    AV.shoe.indexOf(l.shoe), AV.hat.indexOf(l.hat), AV.glasses.indexOf(l.glasses), AV.pet.indexOf(l.pet), bits(AV.makeupKeys, l.makeup), bits(AV.faceKeys, l.face), AV.nail.indexOf(l.nail)];
+    AV.shoe.indexOf(l.shoe), AV.hat.indexOf(l.hat), AV.glasses.indexOf(l.glasses), AV.pet.indexOf(l.pet), bits(AV.makeupKeys, l.makeup), bits(AV.faceKeys, l.face), AV.nail.indexOf(l.nail), AV.lipc.indexOf(l.lipc), AV.shadc.indexOf(l.shadc), AV.blushc.indexOf(l.blushc)];
 }
 function decodeLook(a) {
   if (!Array.isArray(a)) return null;
@@ -3145,7 +3175,7 @@ function decodeLook(a) {
   const fromBits = (keys, i) => keys.filter((k, j) => (+a[i] || 0) & (1 << j));
   return normLook({ girl: !!a[0], skin: g(AV.skin, 1), hair: g(AV.hair, 2), len: g(AV.len, 3), style: g(AV.style, 4), bangs: g(AV.bangs, 5), eyes: g(AV.eyes, 6), cloth: g(AV.cloth, 7),
     jewels: fromBits(Object.keys(JEWELS), 8), eyeStyle: g(AV.eyeStyle, 9), tip: g(AV.tip, 10), hairdo: g(AV.hairdo, 11), outfit: g(AV.outfit, 12), pattern: g(AV.pattern, 13),
-    shoe: g(AV.shoe, 14), hat: g(AV.hat, 15), glasses: g(AV.glasses, 16), pet: g(AV.pet, 17), makeup: fromBits(AV.makeupKeys, 18), face: fromBits(AV.faceKeys, 19), nail: g(AV.nail, 20) });
+    shoe: g(AV.shoe, 14), hat: g(AV.hat, 15), glasses: g(AV.glasses, 16), pet: g(AV.pet, 17), makeup: fromBits(AV.makeupKeys, 18), face: fromBits(AV.faceKeys, 19), nail: g(AV.nail, 20), lipc: g(AV.lipc, 21), shadc: g(AV.shadc, 22), blushc: g(AV.blushc, 23) });
 }
 function hairStrands(len, w0, freq) {
   const front = [], back = [];
@@ -3161,9 +3191,9 @@ function buildChar(look, name) {
   Object.assign(c, { name: name || c.name, girl: L.girl, skin: L.skin, hairCol: L.hair, eyes: L.eyes, cloth: L.cloth, short: L.len === 'short' || L.len === 'zero' || ['bald', 'undercut', 'buzz', 'crop'].includes(L.hairdo), bangs: L.bangs,
     beard: [], greasy: 0, specks: [], foam: [], strays: [], capDye: 0, cucumbers: [0, 0], maskPts: MASK_PTS.map(() => 0) });
   c.req = { ...c.req, dye: null, makeup: [], jewels: [] };
-  c.av = L; c.shoe = L.shoe;
+  c.av = L; c.shoe = L.shoe; c.lipCol = L.lipc; c.shadCol = L.shadc; c.blushCol = L.blushc;
   const on = k => L.makeup.includes(k) ? 1 : 0;
-  c.mk = { lip: LIP_PTS.map(() => on('lip')), lash: [on('lash'), on('lash')], blush: [on('blush'), on('blush')], shadow: [on('shadow'), on('shadow')], glitter: [on('glitter'), on('glitter')], gloss: LIP_PTS.map(() => 0), liner: [on('liner'), on('liner')], mascara: [on('mascara'), on('mascara')], highlighter: [on('highlighter'), on('highlighter')], foundation: [on('foundation'), on('foundation')], facepaint: [on('facepaint'), on('facepaint')] };
+  c.mk = { lip: LIP_PTS.map(() => on('lip')), lash: [on('lash'), on('lash')], blush: [on('blush'), on('blush')], shadow: [on('shadow'), on('shadow')], glitter: [on('glitter'), on('glitter')], gloss: LIP_PTS.map(() => 0), liner: [on('liner'), on('liner')], mascara: [on('mascara'), on('mascara')], highlighter: [on('highlighter'), on('highlighter')], foundation: [on('foundation'), on('foundation')], facepaint: [on('facepaint'), on('facepaint')], eyebrow: [on('eyebrow'), on('eyebrow')], contour: [on('contour'), on('contour')], facegems: [on('facegems'), on('facegems')], freckles: [on('freckles'), on('freckles')], falselash: [on('falselash'), on('falselash')], spray: [on('spray'), on('spray')] };
   const [w0, freq] = { straight: [0.04, 24], wavy: [0.75, 24], curly: [1, 11] }[L.style];
   c.strands = hairStrands({ short: 80, mid: 150, long: 250, zero: 60 }[L.len], w0, freq);
   c.jewelOn = Object.fromEntries(Object.keys(JEWELS).map(k => [k, JEWELS[k].spots.map(() => L.jewels.includes(k) ? 1 : 0)]));
@@ -3204,7 +3234,7 @@ function openMyNails() {
   const c = buildChar(normLook(profile.look), profile.name); c.hands.forEach(h => { h.soft = true; h.blobs = []; h.flakes = []; }); mn.cust = c; cust = c; mnApply(); go('mynails');
 }
 function mnSet(prop, val) {
-  questEvent('mynails');
+  questEvent('mynails'); if (prop === 'st' && val) questEvent('nailsticker');
   const a = myNails(), idx = mn.all || mn.sel < 0 ? a.map((_, i) => i) : [mn.sel];
   idx.forEach(i => { a[i][prop] = val; });
   mnApply(); save(); sfx('paint', 150); sparkle(ptr.x, ptr.y, 6);
@@ -3248,7 +3278,7 @@ function drawMyNails() {
     btn(1022, 560, 232, 44, '🧽 Süsü sil', () => mnSet('st', null), { size: 17 });
   } else {
     text('Hazır tasarımlar', 1132, 98, 20, '#3a2340', 'center', 800);
-    MN_PRESETS.forEach(([nm, fn], i) => btn(1030, 112 + i * 62, 216, 54, nm, () => { const arr = myNails(); for (let k = 0; k < 10; k++) arr[k] = fn(k); mnApply(); save(); sfx('done'); sparkle(1130, 300, 14); }, { size: 19 }));
+    MN_PRESETS.forEach(([nm, fn], i) => btn(1030, 112 + i * 62, 216, 54, nm, () => { questEvent('nailpreset'); const arr = myNails(); for (let k = 0; k < 10; k++) arr[k] = fn(k); mnApply(); save(); sfx('done'); sparkle(1130, 300, 14); }, { size: 19 }));
     btn(1030, 500, 216, 44, '🧽 Hepsini sil', () => { profile.nails = Array.from({ length: 10 }, mnDef); mnApply(); save(); }, { size: 17 });
   }
   btn(40, 646, 220, 56, '✅ Tamam', mnClose, { col: '#7fe0b8', size: 22 });
@@ -3292,7 +3322,7 @@ function sxBuy(it) {
   if (sxOwn(it)) return;
   if (!rich()) { if (money < it.p) { sfx('no'); return say('Yeterli paran yok 💰'); } money -= it.p; }
   inv.custom = inv.custom || {}; inv.custom[it.id] = { n: it.n, o: it.o };
-  questEvent('shop'); save(); sfx('done'); sparkle(ptr.x, ptr.y, 30); say(it.n + ' senin! 🎉 Giymek için "Giy" düğmesine bas');
+  questEvent('shop'); questEvent('shop3'); save(); sfx('done'); sparkle(ptr.x, ptr.y, 30); say(it.n + ' senin! 🎉 Giymek için "Giy" düğmesine bas');
 }
 function sxWear(o) { profile.look = normLook({ ...profile.look, ...o }); save(); sfx('done'); sparkle(ptr.x, ptr.y, 16); say('Giydin! ✨'); }
 function drawNewTab() {
@@ -3441,7 +3471,7 @@ function drawPaint() {
   label('Zemin'); chips([['pinkcheck', '🩷 Pembe kare'], ['bluecheck', '🩵 Mavi kare'], ['mintcheck', '💚 Nane kare'], ['wood', '🪵 Parke'], ['marble', '🤍 Mermer'], ['purple', '💜 Mor kare']], 'floor');
   label('Kapı'); swatches(ROOM.door, 'door', 5);
   btn(40, 600, 220, 60, '🎲 Rastgele', () => { paintRoom = normRoom(Object.fromEntries(Object.keys(ROOM).map(k => [k, pick(ROOM[k])]))); sfx('pop'); }, { col: '#ffe36e', size: 22 });
-  btn(280, 600, 220, 60, '✅ Kaydet', () => { profile.room = paintRoom; save(); go(paintFrom === 'paint' ? 'title' : paintFrom); sfx('done'); say('Salonun boyandı! 🎨'); }, { col: '#27b36a', fg: '#ffffff', size: 24 });
+  btn(280, 600, 220, 60, '✅ Kaydet', () => { profile.room = paintRoom; questEvent('paintroom'); save(); go(paintFrom === 'paint' ? 'title' : paintFrom); sfx('done'); say('Salonun boyandı! 🎨'); }, { col: '#27b36a', fg: '#ffffff', size: 24 });
   btn(520, 600, 200, 60, '⬅ Vazgeç', () => go(paintFrom === 'paint' ? 'title' : paintFrom), { size: 22 });
 }
 function openDesigner() { designFrom = scene; designLook = normLook(profile.look); designChar = buildChar(designLook, profile.name); go('designer'); }
@@ -3480,7 +3510,12 @@ function drawDesigner() {
     row('Göz rengi', swatches(AV.eyes, 'eyes'));
     row('Göz stili', chips([['normal', 'Normal'], ['heart', '💖 Kalp'], ['star', '⭐ Yıldız'], ['happy', '😊 Mutlu'], ['cat', '🐱 Kedi']], 'eyeStyle', 104));
     row('Makyaj', toggles([['lip', '💄 Ruj'], ['blush', '🌸 Allık'], ['shadow', '✨ Far'], ['lash', '👁️ Kirpik'], ['glitter', '🌟 Sim']], 'makeup'));
+    row('Ruj rengi', swatches(AV.lipc, 'lipc'));
+    row('Far rengi', swatches(AV.shadc, 'shadc'));
+    row('Allık rengi', swatches(AV.blushc, 'blushc'));
     row('Makyaj 2', toggles([['liner', '✒️ Eyeliner'], ['mascara', '🖌️ Maskara'], ['highlighter', '💫 Parlak'], ['foundation', '🧽 Fondöten'], ['facepaint', '🖍️ Boya']], 'makeup', 104));
+    row('Makyaj 3', toggles([['eyebrow', '🖊️ Kaş'], ['contour', '🍂 Kontür'], ['facegems', '💎 Taş']], 'makeup', 124));
+    row('Makyaj 4', toggles([['freckles', '🔸 Çil'], ['falselash', '🪭 T.kirpik'], ['spray', '💦 Sprey']], 'makeup', 124));
     row('Yüz', toggles([['freckles', 'Çiller'], ['mole', 'Ben']], 'face', 124));
   } else if (designTab === 'hair') {
     row('Saç rengi', swatches(AV.hair, 'hair'));
@@ -3527,7 +3562,7 @@ function drawDesigner() {
   if (dMax > 0) {
     const tr = 190, th = 400; ctx.fillStyle = 'rgba(214,51,127,.15)'; rr(1256, tr, 8, th, 4); ctx.fill(); ctx.fillStyle = '#d6337f'; const bh = Math.max(40, th * 500 / (500 + dMax)); rr(1256, tr + (th - bh) * dScroll / dMax, 8, bh, 4); ctx.fill();
     btn(1236, 140, 40, 44, '▲', () => { dScroll = Math.max(0, dScroll - 140); }, { size: 20 }); btn(1236, 596, 40, 44, '▼', () => { dScroll = Math.min(dMax, dScroll + 140); }, { size: 20 });
-    if (dScroll < dMax - 4) text('⬇ aşağıda daha çok var', 1000, 634, 14, '#d6337f', 'center', 800);
+    if (dScroll < dMax - 4) text('⬇ daha çok var', 1220, 678, 13, '#d6337f', 'center', 800);
   }
   btn(560, 646, 180, 56, '🎲 Rastgele', () => {
     const maybe = (list, p) => Math.random() < p ? pick(list.slice(1)) : list[0];
@@ -3536,7 +3571,7 @@ function drawDesigner() {
       shoe: pick(AV.shoe), hat: maybe(AV.hat, 0.4), glasses: maybe(AV.glasses, 0.3), pet: Math.random() < 0.6 ? pick(inv.pets) : 'none', makeup: AV.makeupKeys.filter(() => Math.random() < 0.35), face: AV.faceKeys.filter(() => Math.random() < 0.25) });
     designChar = buildChar(designLook, profile.name); sfx('pop');
   }, { col: '#ffe36e', size: 22 });
-  btn(754, 646, 210, 56, '✅ Kaydet', () => { questEvent('design'); if (profile.look && profile.look.outfit !== designLook.outfit) questEvent('outfit'); profile.look = designLook; save(); mpPublishArt(); go(designFrom === 'designer' ? 'title' : designFrom); sfx('done'); say('Karakterin kaydedildi! ✨'); }, { col: '#27b36a', fg: '#ffffff', size: 24 });
+  btn(754, 646, 210, 56, '✅ Kaydet', () => { questEvent('design'); if (profile.look && profile.look.outfit !== designLook.outfit) questEvent('outfit'); if ((designLook.makeup || []).length >= 3) questEvent('makeup3'); if (designLook.pet && designLook.pet !== 'none') questEvent('petpick'); if (designLook.hat && designLook.hat !== 'none') questEvent('hatpick'); profile.look = designLook; save(); mpPublishArt(); go(designFrom === 'designer' ? 'title' : designFrom); sfx('done'); say('Karakterin kaydedildi! ✨'); }, { col: '#27b36a', fg: '#ffffff', size: 24 });
   btn(978, 646, 180, 56, '⬅ Vazgeç', () => go(designFrom === 'designer' ? 'title' : designFrom), { size: 22 });
 }
 
@@ -3663,7 +3698,7 @@ function renderFriends() {
 function goVisit(f) {
   // older codes have no character: make up a tidy one
   const c = buildChar(f.look || { girl: Math.random() < 0.7, hair: pick(AV.hair), style: pick(AV.style), cloth: pick(AV.cloth) }, f.name);
-  visit = { ...f, char: c }; closeModal(); go('visit'); sfx('done');
+  visit = { ...f, char: c }; questEvent('visit'); closeModal(); go('visit'); sfx('done');
 }
 // every player gets their own signing key; its public half travels in the invite code,
 // so a gift code can only be made by its sender and opened once, by the friend it is for
@@ -3894,17 +3929,23 @@ function lbAvatar(look, name, tagCol) {
       if (L.makeup.includes('lash')) for (let k = 0; k < 3; k++) { const fl = lbM(new THREE.ConeGeometry(0.011, 0.075, 5), toon('#1a1020'), s * (0.2 + k * 0.034), 0.085 - k * 0.012 + 0.02, 0.405); fl.rotation.z = -s * (0.55 + k * 0.4); head.add(fl); (A.eyeMeshes = A.eyeMeshes || []).push(fl); } lashT.scale.set(1, 1.1, 0.5); head.add(lashT); (A.eyeMeshes = A.eyeMeshes || []).push(lashT);  }
     const brow = lbM(new THREE.CylinderGeometry(0.014, 0.014, 0.14, 6), toon(mix(L.hair, '#000000', 0.35)), s * 0.17, 0.165, 0.405); brow.rotation.z = Math.PI / 2 + s * 0.12; brow.rotation.x = 0.2; head.add(brow);
     const ear = lbM(new THREE.SphereGeometry(0.07, 10, 8), skin, s * 0.435, -0.02, 0.0); ear.scale.set(0.5, 1, 0.75); head.add(ear); const ein = lbM(new THREE.SphereGeometry(0.04, 8, 6), toon(mix(L.skin, '#e07a8a', 0.3)), s * 0.447, -0.02, 0.01); ein.scale.set(0.4, 1, 0.7); head.add(ein);
-    const bl = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), new THREE.MeshBasicMaterial({ color: L.makeup.includes('blush') ? '#ff5f95' : '#ff8fa3', transparent: true, opacity: L.makeup.includes('blush') ? 0.8 : 0.45 })); bl.position.set(s * 0.27, -0.12, 0.35); bl.scale.set(L.makeup.includes('blush') ? 1.35 : 1, L.makeup.includes('blush') ? 0.8 : 0.6, 0.4); head.add(bl);
+    const bl = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), new THREE.MeshBasicMaterial({ color: L.makeup.includes('blush') ? L.blushc : '#ff8fa3', transparent: true, opacity: L.makeup.includes('blush') ? 0.8 : 0.45 })); bl.position.set(s * 0.27, -0.12, 0.35); bl.scale.set(L.makeup.includes('blush') ? 1.35 : 1, L.makeup.includes('blush') ? 0.8 : 0.6, 0.4); head.add(bl);
   }
-  if (L.makeup.includes('shadow')) for (const s of [-1, 1]) { const sh = lbM(new THREE.SphereGeometry(0.1, 14, 10), new THREE.MeshBasicMaterial({ color: '#9b6bff', transparent: true, opacity: 0.7 }), s * 0.17, 0.095, 0.4); sh.scale.set(1.3, 0.55, 0.3); head.add(sh); const sm = lbM(new THREE.SphereGeometry(0.05, 10, 8), new THREE.MeshBasicMaterial({ color: '#e6d2ff', transparent: true, opacity: 0.6 }), s * 0.13, 0.085, 0.425); sm.scale.set(1.2, 0.5, 0.3); head.add(sm); }
+  if (L.makeup.includes('shadow')) for (const s of [-1, 1]) { const sh = lbM(new THREE.SphereGeometry(0.1, 14, 10), new THREE.MeshBasicMaterial({ color: L.shadc, transparent: true, opacity: 0.7 }), s * 0.17, 0.095, 0.4); sh.scale.set(1.3, 0.55, 0.3); head.add(sh); const sm = lbM(new THREE.SphereGeometry(0.05, 10, 8), new THREE.MeshBasicMaterial({ color: '#e6d2ff', transparent: true, opacity: 0.6 }), s * 0.13, 0.085, 0.425); sm.scale.set(1.2, 0.5, 0.3); head.add(sm); }
   if (L.makeup.includes('glitter')) { const gt = new THREE.MeshBasicMaterial({ color: '#ffe680' }), gw = new THREE.MeshBasicMaterial({ color: '#ffffff' }); for (const s of [-1, 1]) for (let k = 0; k < 7; k++) { const a = k * 2.4, gs = lbM(new THREE.OctahedronGeometry(0.014), k % 2 ? gt : gw, s * (0.27 + Math.cos(a) * 0.07), -0.1 + Math.sin(a) * 0.05, 0.36 + (0.04 - Math.abs(Math.cos(a)) * 0.02)); head.add(gs); } }
   if (L.makeup.includes('liner')) for (const s of [-1, 1]) { const ln = lbM(new THREE.TorusGeometry(0.105, 0.012, 6, 14, Math.PI * 0.9), toon('#120a16'), s * 0.16, 0.03, 0.415); ln.scale.set(1, 1.1, 0.5); head.add(ln); const wg = lbM(new THREE.ConeGeometry(0.014, 0.1, 5), toon('#120a16'), s * 0.27, 0.085, 0.41); wg.rotation.z = -s * 1.15; head.add(wg); }
   if (L.makeup.includes('highlighter')) for (const s of [-1, 1]) { const hi = lbM(new THREE.SphereGeometry(0.06, 10, 8), new THREE.MeshBasicMaterial({ color: '#fff3c4', transparent: true, opacity: 0.75 }), s * 0.3, 0.0, 0.34); hi.scale.set(0.7, 1.4, 0.3); head.add(hi); }
+  if (L.makeup.includes('eyebrow')) for (const s of [-1, 1]) { const eb = lbM(new THREE.CylinderGeometry(0.03, 0.03, 0.17, 6), toon(mix(L.hair, '#000000', 0.55)), s * 0.17, 0.165, 0.41); eb.rotation.z = Math.PI / 2 + s * 0.12; eb.rotation.x = 0.2; head.add(eb); }
+  if (L.makeup.includes('contour')) for (const s of [-1, 1]) { const ct = lbM(new THREE.SphereGeometry(0.07, 10, 8), new THREE.MeshBasicMaterial({ color: '#8c502d', transparent: true, opacity: 0.4 }), s * 0.37, -0.08, 0.26); ct.scale.set(0.5, 1.5, 0.4); head.add(ct); }
+  if (L.makeup.includes('freckles')) { const fk = new THREE.MeshBasicMaterial({ color: '#a05a2d' }); for (const s of [-1, 1]) for (let k = 0; k < 6; k++) head.add(lbM(new THREE.SphereGeometry(0.011, 6, 5), fk, s * (0.1 + (k % 3) * 0.05), -0.07 - Math.floor(k / 3) * 0.03, 0.43 - (k % 3) * 0.02)); }
+  if (L.makeup.includes('facegems')) for (const s of [-1, 1]) [['#5ac8ff', 0.31, 0.0, 0.03], ['#ff7ac6', 0.33, -0.05, 0.024], ['#ffffff', 0.3, -0.09, 0.02]].forEach(([col, gx, gy, r]) => { const gm = lbM(new THREE.OctahedronGeometry(r), new THREE.MeshBasicMaterial({ color: col }), s * gx, gy, 0.36); gm.scale.y = 1.3; head.add(gm); });
+  if (L.makeup.includes('falselash')) for (const s of [-1, 1]) for (let k = 0; k < 4; k++) { const fl = lbM(new THREE.ConeGeometry(0.011, 0.1, 5), toon('#120a16'), s * (0.1 + k * 0.045), 0.1 + (k > 1 ? 0.02 : 0), 0.405); fl.rotation.z = -s * (0.2 + k * 0.4); head.add(fl); }
+  if (L.makeup.includes('spray')) { const sp = lbM(new THREE.SphereGeometry(0.455, 20, 14), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.09 }), 0, -0.04, 0.02); sp.userData.noOutline = true; head.add(sp); }
   if (L.makeup.includes('foundation')) { const fd = lbM(new THREE.SphereGeometry(0.45, 20, 14), new THREE.MeshBasicMaterial({ color: '#fff0e0', transparent: true, opacity: 0.12 }), 0, -0.04, 0.02); fd.userData.noOutline = true; head.add(fd); }
   if (L.makeup.includes('facepaint')) for (const s of [-1, 1]) { const pk = new THREE.MeshBasicMaterial({ color: s < 0 ? '#ff4f8b' : '#8b5cf6' }); if (s < 0) { for (const t of [-1, 1]) head.add(lbM(new THREE.SphereGeometry(0.026, 8, 6), pk, -0.3 + t * 0.022, -0.1 + 0.015, 0.385)); const tp = lbM(new THREE.ConeGeometry(0.05, 0.05, 3), pk, -0.3, -0.135, 0.385); tp.rotation.x = Math.PI; head.add(tp); } else { const st = lbM(new THREE.OctahedronGeometry(0.045), pk, 0.3, -0.1, 0.385); st.scale.z = 0.3; head.add(st); } }
   const nose = lbM(new THREE.SphereGeometry(0.034, 10, 8), toon(mix(L.skin, '#c06a4a', 0.28)), 0, -0.045, 0.435); nose.scale.set(1, 0.85, 0.8); head.add(nose);
-  const mouth = lbM(new THREE.TorusGeometry(0.07, 0.02, 6, 14, Math.PI), toon(L.makeup.includes('lip') ? '#e0245e' : '#8b2a3a'), 0, -0.17, 0.4); mouth.rotation.z = Math.PI; head.add(mouth);
-  if (L.makeup.includes('lip')) { mouth.scale.set(1.12, 1.12, 1.6); const lp = lbM(new THREE.TorusGeometry(0.052, 0.014, 6, 14, Math.PI), toon('#f23a73'), 0, -0.175, 0.41); lp.rotation.z = Math.PI; head.add(lp); head.add(lbM(new THREE.SphereGeometry(0.008, 6, 5), new THREE.MeshBasicMaterial({ color: '#ffffff' }), -0.04, -0.2, 0.43)); }
+  const mouth = lbM(new THREE.TorusGeometry(0.07, 0.02, 6, 14, Math.PI), toon(L.makeup.includes('lip') ? L.lipc : '#8b2a3a'), 0, -0.17, 0.4); mouth.rotation.z = Math.PI; head.add(mouth);
+  if (L.makeup.includes('lip')) { mouth.scale.set(1.12, 1.12, 1.6); const lp = lbM(new THREE.TorusGeometry(0.052, 0.014, 6, 14, Math.PI), toon(mix(L.lipc, '#ffffff', 0.18)), 0, -0.175, 0.41); lp.rotation.z = Math.PI; head.add(lp); head.add(lbM(new THREE.SphereGeometry(0.008, 6, 5), new THREE.MeshBasicMaterial({ color: '#ffffff' }), -0.04, -0.2, 0.43)); }
   // hair: cap, bangs, length at the back, tip dye, hairdo
   const bald3 = L.hairdo === 'bald', under3 = L.hairdo === 'undercut', buzz3 = L.hairdo === 'buzz' || (L.len === 'zero' && !['bald', 'undercut', 'crop'].includes(L.hairdo)), crop3 = L.hairdo === 'crop', clip3 = buzz3 || crop3;
   if (under3) { const st3 = lbM(new THREE.SphereGeometry(0.462, 28, 12, 0, Math.PI * 2, Math.PI * 0.3, Math.PI * 0.22), new THREE.MeshToonMaterial({ color: L.hair, gradientMap: lbGrad, transparent: true, opacity: 0.38 }), 0, 0.02, 0); st3.rotation.x = -0.35; head.add(st3); }
@@ -4425,7 +4466,7 @@ function lbUpdate(dt) {
   if (LB.where === 'town') { if (!(LB.fly && me.position.y > 4)) lbCollide(me.position); else { const hh = Math.hypot(me.position.x, me.position.z); if (hh > 95) { me.position.x *= 95 / hh; me.position.z *= 95 / hh; } } } else lbCollideRoom(me.position);
   if (vx || vz) { const ang = Math.atan2(vx, vz); me.rotation.y += Math.atan2(Math.sin(ang - me.rotation.y), Math.cos(ang - me.rotation.y)) * Math.min(1, dt * 12); }
   lbAnim(me, dt, vx || vz ? spd : 0);
-  lbSwim(me, dt); if (!LB.swim && (vx || vz) && scene === 'lobby') questEvent('walk', spd * dt);
+  lbSwim(me, dt); if (!LB.swim && (vx || vz) && scene === 'lobby') questEvent('walk', spd * dt); if (scene === 'lobby') questEvent('lobbytime', dt);
   if (!LB.ride) lbJumpUpdate(me, dt); lbRide(me, dt); lbParkUpdate(me, dt); lbLunaUpdate(me); lbLunaAnim(dt); lbLunaAnim2(dt); lbZoneQuests(me); lbFx(dt); lbGlintUpdate(); lbVolley(dt); lbFootball(dt); lbOuterAnim(dt);
   // pet follows
   if (LB.pet) {
@@ -5131,6 +5172,18 @@ const QUEST_POOL = [
   { id: 'z2', text: 'Oyun Parkı\'na git 🛝', goal: 1, reward: 15 },
   { id: 'z3', text: 'Lunaparka git 🎡', goal: 1, reward: 15 },
   { id: 'mynails', text: 'Tırnaklarım bölümünde tırnaklarını boya 💅', goal: 1, reward: 20 },
+  { id: 'paintroom', text: 'Salonunu boya ve kaydet 🖌️', goal: 1, reward: 20 },
+  { id: 'visit', text: 'Bir arkadaşının salonunu ziyaret et 👭', goal: 1, reward: 20 },
+  { id: 'gems', text: 'Haftalık elmaslarını al 💎', goal: 1, reward: 15 },
+  { id: 'lobbytime', text: 'Lobide 3 dakika vakit geçir ⏱️', goal: 180, reward: 25 },
+  { id: 'newtab', text: 'Mağazada 🆕 Yeni sekmesine bak', goal: 1, reward: 10 },
+  { id: 'makeup3', text: 'Karakterinde 3 makyaj çeşidi aç 💄', goal: 1, reward: 20 },
+  { id: 'petpick', text: 'Karakterine bir hayvan seç 🐾', goal: 1, reward: 15 },
+  { id: 'hatpick', text: 'Karakterine şapka tak 🎩', goal: 1, reward: 15 },
+  { id: 'nailsticker', text: 'Tırnaklarına süs yapıştır ⭐', goal: 1, reward: 20 },
+  { id: 'nailpreset', text: 'Hazır bir tırnak tasarımı dene ✨', goal: 1, reward: 15 },
+  { id: 'shop3', text: 'Mağazadan 3 şey al 🛍️', goal: 3, reward: 30 },
+  { id: 'serve5', text: 'Salonda 5 müşteriye bak 💅', goal: 5, reward: 70 },
   { id: 'art', text: 'Kıyafetine bir resim çiz 🖌️', goal: 1, reward: 25 },
   { id: 'design', text: 'Karakterini tasarla ve kaydet 🎨', goal: 1, reward: 20 },
   { id: 'outfit', text: 'Karakterinin kıyafetini değiştir 👗', goal: 1, reward: 15 },
