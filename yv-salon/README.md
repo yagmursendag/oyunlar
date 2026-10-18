@@ -78,3 +78,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v68 | versions/v68-yuz-gorev2.html | 😊 2D yüz daha sade ve temiz (gözdeki fazla gölge/çizgiler, burun delikleri kalktı, yumuşak burun ve ağız). 📋 15 yeni görev (toplam 79) |
 | v69 | versions/v69-eller.html | ✋ Eller düzeltildi: 2D elde avuç, 4 parmak, başparmak ve küçük tırnaklar; 3D elde daha belirgin parmaklar ve başparmak |
 | v70 | versions/v70-kiyafetler.html | 👗 12 yeni kıyafet (2D + 3D): Tilki, Panda, Kurbağa*, Arı, Uğur Böceği, Rockçı, Balerin, Bilim İnsanı, Yarışçı, Dinozor*, Kimono, Denizci (*indirimde). Mağazada Kıyafetler/İndirim sekmelerinde, Karakterim ekranında seçilir |
+| v71 | versions/v71-makyaj-cok.html | 💄 6 yeni makyaj malzemesi (Göz simi, Renkli eyeliner, Yanak yıldızı, Güneş pudrası, Renkli kaş, Geçici dövme) hem 2D hem 3D, aletleri ve rehber halkalarıyla; ruj +4, far +4, allık +3 yeni renk |
