@@ -5041,6 +5041,33 @@ const FOODS = {
   bread: ['🍞', 'Ekmek', 3, 12], croissant: ['🥐', 'Kruvasan', 4, 14], milk: ['🥛', 'Süt', 3, 10], cheese: ['🧀', 'Peynir', 4, 14],
   cookie: ['🍪', 'Kurabiye', 3, 10], choco: ['🍫', 'Çikolata', 3, 9], juice: ['🧃', 'Meyve suyu', 2, 6], candy: ['🍬', 'Şeker', 1, 4],
 };
+Object.assign(FOODS, {
+  strawberry: ['🍓', 'Çilek', 3, 10], grapes: ['🍇', 'Üzüm', 3, 10], orange: ['🍊', 'Portakal', 2, 9], pear: ['🍐', 'Armut', 2, 8], cherry: ['🍒', 'Kiraz', 3, 8], peach: ['🍑', 'Şeftali', 3, 9],
+  pineapple: ['🍍', 'Ananas', 5, 16], kiwi: ['🥝', 'Kivi', 3, 9], lemon: ['🍋', 'Limon', 1, 4], coconut: ['🥥', 'Hindistan cevizi', 5, 15], mango: ['🥭', 'Mango', 4, 14], blueberry: ['🫐', 'Yaban mersini', 4, 9],
+  tomato: ['🍅', 'Domates', 2, 8], cucumber: ['🥒', 'Salatalık', 1, 6], corn: ['🌽', 'Mısır', 2, 10], potato: ['🥔', 'Patates', 2, 10], broccoli: ['🥦', 'Brokoli', 3, 9], pepper: ['🫑', 'Biber', 2, 6], eggplant: ['🍆', 'Patlıcan', 3, 9], mushroom: ['🍄', 'Mantar', 3, 8], onion: ['🧅', 'Soğan', 1, 4],
+  pretzel: ['🥨', 'Simit', 3, 12], bagel: ['🥯', 'Bagel', 4, 13], pancake: ['🥞', 'Pankek', 5, 18], waffle: ['🧇', 'Waffle', 5, 18], donut: ['🍩', 'Donut', 4, 12], cupcake: ['🧁', 'Kek', 4, 12], cake: ['🍰', 'Pasta', 6, 20], pie: ['🥧', 'Turta', 6, 19],
+  icecream: ['🍦', 'Dondurma', 4, 12], shaved: ['🍧', 'Buzlu tatlı', 3, 9], mochi: ['🍡', 'Mochi', 4, 11], honey: ['🍯', 'Bal', 5, 14], lollipop: ['🍭', 'Lolipop', 2, 5],
+  pizza: ['🍕', 'Pizza', 8, 26], burger: ['🍔', 'Hamburger', 8, 25], hotdog: ['🌭', 'Sosisli', 6, 20], fries: ['🍟', 'Patates kızartması', 5, 16], sandwich: ['🥪', 'Sandviç', 6, 20], taco: ['🌮', 'Tako', 6, 20],
+  nuggets: ['🍗', 'Tavuk', 7, 22], egg: ['🥚', 'Yumurta', 2, 8], rice: ['🍚', 'Pilav', 5, 18], pasta: ['🍝', 'Makarna', 6, 22], soup: ['🍲', 'Çorba', 4, 16], salad: ['🥗', 'Salata', 5, 16], dumpling: ['🥟', 'Mantı', 6, 20], popcorn: ['🍿', 'Patlamış mısır', 3, 10], peanuts: ['🥜', 'Fıstık', 2, 7],
+  soda: ['🥤', 'Gazoz', 3, 8], boba: ['🧋', 'Boba çay', 5, 12], tea: ['🍵', 'Çay', 2, 6], water: ['💧', 'Su', 1, 4], cocoa: ['☕', 'Sıcak çikolata', 4, 10], cocktail: ['🍹', 'Meyve kokteyli', 5, 12],
+});
+const MARKET_CATS = [
+  ['🍎 Meyve', ['apple', 'banana', 'melon', 'strawberry', 'grapes', 'orange', 'pear', 'cherry', 'peach', 'pineapple', 'kiwi', 'lemon', 'coconut', 'mango', 'blueberry']],
+  ['🥕 Sebze', ['carrot', 'tomato', 'cucumber', 'corn', 'potato', 'broccoli', 'pepper', 'eggplant', 'mushroom', 'onion']],
+  ['🍞 Fırın', ['bread', 'croissant', 'pretzel', 'bagel', 'pancake', 'waffle', 'cookie', 'donut', 'cupcake', 'cake', 'pie']],
+  ['🍕 Yemek', ['pizza', 'burger', 'hotdog', 'fries', 'sandwich', 'taco', 'nuggets', 'egg', 'rice', 'pasta', 'soup', 'salad', 'dumpling', 'cheese']],
+  ['🍫 Tatlı', ['choco', 'candy', 'lollipop', 'icecream', 'shaved', 'mochi', 'honey', 'popcorn', 'peanuts']],
+  ['🥤 İçecek', ['milk', 'juice', 'soda', 'boba', 'tea', 'water', 'cocoa', 'cocktail']],
+];
+let marketTab = 0;
+function showCatalog() {
+  const cap = 24, tl = LB.basket.reduce((a, k) => a + FOODS[k][2], 0);
+  const cat = MARKET_CATS[marketTab];
+  openModal('<h2>🛍️ Büyük Raf</h2><div>' + MARKET_CATS.map((c, i) => '<button class="mb ' + (i === marketTab ? 'g' : 'y') + '" style="width:auto;display:inline-block;margin:3px;padding:8px 10px;font-size:15px" data-t="' + i + '">' + c[0] + '</button>').join('') + '</div><div style="max-height:46vh;overflow:auto;margin:6px 0">' + cat[1].map(k => '<button class="mb y" style="width:auto;display:inline-block;margin:3px;padding:8px 10px;font-size:15px" data-k="' + k + '">' + FOODS[k][0] + ' ' + FOODS[k][1] + ' • ' + FOODS[k][2] + ' TL</button>').join('') + '</div><p>🛒 Sepet: <b>' + LB.basket.length + '</b> ürün • <b>' + tl + ' TL</b><br><small>Sepetin dolunca kasada öde 💳</small></p><button class="mb s" id="mclose">Kapat</button>');
+  $('mclose').onclick = closeModal;
+  modal.querySelectorAll('[data-t]').forEach(b => { b.onclick = () => { marketTab = +b.dataset.t; showCatalog(); }; });
+  modal.querySelectorAll('[data-k]').forEach(b => { b.onclick = () => { if (LB.basket.length >= cap) { sfx('no'); return say('Sepet doldu! Kasaya git 💳'); } LB.basket.push(b.dataset.k); sfx('pop'); showCatalog(); }; });
+}
 const JOB_NAMES = { icecream: 'Dondurmacı', cake: 'Pastane', bouquet: 'Çiçekçi', doctor: 'Hastane doktoru' };
 // ---- one job at a time ----
 function takeJob(k) {
@@ -5092,6 +5119,7 @@ function lbFood(k) {
   else if (k === 'cookie') { add(new THREE.BoxGeometry(0.36, 0.26, 0.12), '#c98b5a', 0, 0.13); add(new THREE.BoxGeometry(0.2, 0.1, 0.13), '#ffffff', 0, 0.16); }
   else if (k === 'choco') { add(new THREE.BoxGeometry(0.34, 0.04, 0.18), '#5a3218', 0, 0.02); add(new THREE.BoxGeometry(0.2, 0.045, 0.19), '#e8434f', 0.07, 0.025); }
   else if (k === 'juice') { add(new THREE.BoxGeometry(0.18, 0.32, 0.12), '#ff8a1f', 0, 0.16); add(new THREE.CylinderGeometry(0.01, 0.01, 0.12, 6), '#ffffff', 0.05, 0.38); }
+  else if (k !== 'candy') { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: lbTex(128, 128, (c2, w, h) => { c2.font = '100px ' + FONT; c2.textAlign = 'center'; c2.textBaseline = 'middle'; c2.fillText(FOODS[k][0], w / 2, h / 2 + 6); }), transparent: true })); sp.scale.set(0.36, 0.36, 1); sp.position.y = 0.2; g.add(sp); }
   else { for (let i = 0; i < 3; i++) add(new THREE.SphereGeometry(0.07, 8, 6), ['#ff6fb5', '#b18cff', '#5aa9ff'][i], (i - 1) * 0.12, 0.07); }
   return g;
 }
@@ -5109,13 +5137,13 @@ function lbBuildInteriors() {
     const O = new THREE.Vector3(120, 0, 0), g = lbRoom(O, 24, 18, '#ffe9b8', '#ececec', '#8fd6b8'), spots = [], obs = [];
     const s = lbSignPlane('🛒 YV Market', '#2d7ff9', 7, 1.4); s.position.set(0, 4.4, -8.75); g.add(s);
     // produce crates along the back wall
-    ['apple', 'banana', 'carrot', 'melon'].forEach((k, i) => {
+    ['apple', 'banana', 'carrot', 'melon', 'strawberry'].forEach((k, i) => {
       const x = -9 + i * 4;
       g.add(lbM(new THREE.BoxGeometry(3, 0.9, 1.4), toon('#c98b5a'), x, 0.45, -7.6));
       for (let n = 0; n < 6; n++) { const f = lbFood(k); f.scale.setScalar(2.2); f.position.set(x - 1.1 + (n % 3) * 1.1, 0.9, -7.9 + Math.floor(n / 3) * 0.6); g.add(f); }
       spots.push({ x: O.x + x, z: O.z - 5.6, food: k });
     });
-    obs.push([-11, 2, -9, -6.8]);
+    obs.push([-11, 8.6, -9, -6.8]);
     // two shelf rows
     const rows = [[-2.6, ['bread', 'croissant', 'milk', 'cheese']], [2.6, ['cookie', 'choco', 'juice', 'candy']]];
     for (const [z, foods] of rows) {
@@ -5123,6 +5151,11 @@ function lbBuildInteriors() {
       foods.forEach((k, i) => spots.push({ x: O.x - 4 - 6.5 + 13 / 4 * (i + 0.5), z: O.z + z + 1.7, food: k }));
       obs.push([-10.6, 2.6, z - 0.7, z + 0.6]);
     }
+    // a short shelf on the right, fridge goods and the catalogue kiosk
+    { const fr = ['pizza', 'burger', 'hotdog']; lbShelf(g, 6.4, -2.6, 6, fr); fr.forEach((k, i) => spots.push({ x: O.x + 6.4 - 3 + 2 * (i + 0.5), z: O.z - 2.6 + 1.7, food: k })); obs.push([3.4, 9.4, -3.3, -2]); }
+    ['soda', 'boba', 'icecream'].forEach((k, i) => spots.push({ x: O.x + 9.2, z: O.z - 6 + i * 2.2, food: k }));
+    { g.add(lbM(new THREE.BoxGeometry(2.6, 1.0, 1.0), toon('#ff9ccf'), -5, 0.5, 6.6)); const tb = lbM(new THREE.BoxGeometry(1.2, 0.8, 0.08), new THREE.MeshToonMaterial({ color: '#cfe9ff', gradientMap: lbGrad, emissive: '#5aa9ff', emissiveIntensity: 0.4 }), -5, 1.45, 6.5); tb.rotation.x = -0.4; g.add(tb);
+      const ks = lbSignPlane('🛍️ Büyük Raf', '#ff5fa2', 3.6, 0.9); ks.position.set(-5, 2.6, 6.6); ks.rotation.y = Math.PI; g.add(ks); spots.push({ x: O.x - 5, z: O.z + 5.2, catalog: true }); obs.push([-6.4, -3.6, 6, 7.2]); }
     // fridges on the right wall
     for (let i = 0; i < 3; i++) { g.add(lbM(new THREE.BoxGeometry(1.2, 3, 2), toon('#bfe3ff'), 11.3, 1.5, -6 + i * 2.2)); g.add(lbM(new THREE.BoxGeometry(0.1, 2.6, 1.8), new THREE.MeshToonMaterial({ color: '#e6f7ff', gradientMap: lbGrad, emissive: '#5aa9ff', emissiveIntensity: 0.2 }), 10.66, 1.5, -6 + i * 2.2)); }
     obs.push([10.4, 12, -7.2, -0.6]);
@@ -5204,7 +5237,8 @@ function lbNearSpot() {
 // what you can do at the spot you stand at: [label, action, colour]
 function spotActions(sp) {
   if (sp.exit) return [['🚪 Dışarı çık', lbGoOutside, '#27b36a']];
-  if (sp.food) { const [e, nm, pr, gain] = FOODS[sp.food]; return [[`🛒 ${e} ${nm} • ${rich() ? '∞' : pr + ' TL'} (+${gain} tokluk)`, () => { if (LB.basket.length >= 12) return say('Sepet doldu! Kasaya git 💳'); LB.basket.push(sp.food); sfx('pop'); part({ x: 640, y: 560, vy: -60, life: 0.9, kind: 'txt', t: `${e} sepete!`, col: '#2d7ff9' }); }, '#2d7ff9']]; }
+  if (sp.catalog) return [['🛍️ Büyük Raf • tüm ürünler', showCatalog, '#ff5fa2']];
+  if (sp.food) { const [e, nm, pr, gain] = FOODS[sp.food]; return [[`🛒 ${e} ${nm} • ${rich() ? '∞' : pr + ' TL'} (+${gain} tokluk)`, () => { if (LB.basket.length >= 24) return say('Sepet doldu! Kasaya git 💳'); LB.basket.push(sp.food); sfx('pop'); part({ x: 640, y: 560, vy: -60, life: 0.9, kind: 'txt', t: `${e} sepete!`, col: '#2d7ff9' }); }, '#2d7ff9']]; }
   if (sp.pay) {
     const total = LB.basket.reduce((a, k) => a + FOODS[k][2], 0);
     return [[LB.basket.length ? `💳 Kasada öde • ${rich() ? '∞' : total + ' TL'}` : '💳 Sepetin boş', () => {
@@ -5246,10 +5280,13 @@ function drawBag() {
   const food = Object.entries(inv.food || {}).filter(([, n]) => n > 0), things = Object.entries(inv.things || {}).filter(([, n]) => n > 0);
   text('🍎 Yiyecekler', 222, 196, 20, '#3a2340', 'left', 800);
   if (!food.length) text('Yok — 🛒 Market\'ten al', 380, 196, 16, '#6b5a70', 'left', 700);
-  food.slice(0, 12).forEach(([k, n], i) => { const [e, nm, , gain] = FOODS[k]; card(216 + (i % 6) * 142, 208 + Math.floor(i / 6) * 96, e, `${nm} ×${n}`, `+${gain} tokluk`, '😋 Ye', () => { const nd = needs(); if (nd.hunger >= 100) return say('Karnın tok! 😊'); inv.food[k]--; nd.hunger = Math.min(100, nd.hunger + gain); if (LB.me) lbHold(e, 2500); questEvent('eat'); save(); sfx('coin'); part({ x: 640, y: 300, vy: -60, life: 1, kind: 'txt', t: 'Nyam! 😋', col: '#23884f' }); }); });
+  const fPg = Math.min(LB.bagFp || 0, Math.max(0, Math.ceil(food.length / 12) - 1)), tPg = Math.min(LB.bagTp || 0, Math.max(0, Math.ceil(things.length / 12) - 1));
+  if (food.length > 12) { btn(640, 176, 44, 32, '◀', () => { LB.bagFp = Math.max(0, fPg - 1); }, { size: 16 }); btn(690, 176, 44, 32, '▶', () => { LB.bagFp = Math.min(Math.ceil(food.length / 12) - 1, fPg + 1); }, { size: 16 }); text((fPg + 1) + '/' + Math.ceil(food.length / 12), 760, 196, 16, '#6b5a70', 'left', 800); }
+  if (things.length > 12) { btn(640, 412, 44, 32, '◀', () => { LB.bagTp = Math.max(0, tPg - 1); }, { size: 16 }); btn(690, 412, 44, 32, '▶', () => { LB.bagTp = Math.min(Math.ceil(things.length / 12) - 1, tPg + 1); }, { size: 16 }); text((tPg + 1) + '/' + Math.ceil(things.length / 12), 760, 432, 16, '#6b5a70', 'left', 800); }
+  food.slice(fPg * 12, fPg * 12 + 12).forEach(([k, n], i) => { const [e, nm, , gain] = FOODS[k]; card(216 + (i % 6) * 142, 208 + Math.floor(i / 6) * 96, e, `${nm} ×${n}`, `+${gain} tokluk`, '😋 Ye', () => { const nd = needs(); if (nd.hunger >= 100) return say('Karnın tok! 😊'); inv.food[k]--; nd.hunger = Math.min(100, nd.hunger + gain); if (LB.me) lbHold(e, 2500); questEvent('eat'); save(); sfx('coin'); part({ x: 640, y: 300, vy: -60, life: 1, kind: 'txt', t: 'Nyam! 😋', col: '#23884f' }); }); });
   text('🧸 Eşyalar', 222, 432, 20, '#3a2340', 'left', 800);
   if (!things.length) text('Yok — 🛍️ Mağaza > 🎒 Çanta', 360, 432, 16, '#6b5a70', 'left', 700);
-  things.slice(0, 12).forEach(([k, n], i) => { const [e, nm, , line2] = THINGS[k]; card(216 + (i % 6) * 142, 444 + Math.floor(i / 6) * 96, e, `${nm} ×${n}`, 'Lobide kullan', '✨ Kullan', () => { LB.bag = false; if (LB.me) { lbSay(LB.me, line2); lbHold(e); } questEvent('thing'); sfx('stick'); sparkle(640, 330, 20); }); });
+  things.slice(tPg * 12, tPg * 12 + 12).forEach(([k, n], i) => { const [e, nm, , line2] = THINGS[k]; card(216 + (i % 6) * 142, 444 + Math.floor(i / 6) * 96, e, `${nm} ×${n}`, 'Lobide kullan', '✨ Kullan', () => { LB.bag = false; if (LB.me) { lbSay(LB.me, line2); lbHold(e); } questEvent('thing'); sfx('stick'); sparkle(640, 330, 20); }); });
 }
 
 // ================= beach & sea, day and night, daily quests =================

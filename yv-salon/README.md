@@ -85,3 +85,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v75 | versions/v75-tezgah-oyun.html | 🎮 Tezgâh oyunları gerçek oyun oldu: halka atma, teneke devirme ve pelüş makinesi zamanlama oyunu, önce para ödenir |
 | v76 | versions/v76-atlet-esya-dovme.html | 🎽 Etek olmayan atlet kıyafetleri (8), çantadan alınan eşya lobide elde görünür (+33 yeni eşya mağazada), kendi geçici dövmeni tasarla |
 | v77 | versions/v77-admin-hediye.html | 👑 Admin: oyuna giren herkesin adı + kaç kez girdiği + şu an online olanlar, online olanlara hediye (TL/💎) gönderme; tezgâh ve oyuncaklar admin için de paralı |
+| v78 | versions/v78-market-cok.html | 🛒 Markete 55 yeni ürün (meyve, sebze, fırın, yemek, tatlı, içecek), "Büyük Raf" kataloğu, yeni raf ve buzdolabı ürünleri, çantada sayfa sayfa gezme |
