@@ -81,3 +81,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v71 | versions/v71-makyaj-cok.html | 💄 6 yeni makyaj malzemesi (Göz simi, Renkli eyeliner, Yanak yıldızı, Güneş pudrası, Renkli kaş, Geçici dövme) hem 2D hem 3D, aletleri ve rehber halkalarıyla; ruj +4, far +4, allık +3 yeni renk |
 | v72 | versions/v72-harita.html | 🗺️ Daha güzel harita: çimen dokusu, meydanda yıldız süsü, çeşme çevresinde çiçek bahçesi, direkler arasında renkli bayrak ipleri, uzaktaki dağlar ve gökyüzünde gezen 3 sıcak hava balonu |
 | v73 | versions/v73-lunapark.html | 🎪 Güzel lunapark: kareli zemin, yanıp sönen ışıklar, oyuncaklar artık bilet parası ister, 8 yeni tezgâh (pamuk şeker, dondurma, mısır, halka atma, teneke, pelüş makinesi, fotoğraf, balon) |
+| v74 | versions/v74-allik.html | 🌸 Allık düzeltmesi: yanakların içi artık siyah değil, seçilen renkte yumuşak |

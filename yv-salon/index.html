@@ -1264,7 +1264,7 @@ function capPath(bangs) {
   }
   ctx.closePath();
 }
-const hexA = (h, a) => { const n = parseInt(String(h).replace('#', ''), 16) || 0; return 'rgba(' + (n >> 16 & 255) + ',' + (n >> 8 & 255) + ',' + (n & 255) + ',' + a + ')'; };
+const hexA = (h, a) => { const r = toRGB(h); return 'rgba(' + r[0] + ',' + r[1] + ',' + r[2] + ',' + a + ')'; };
 function drawFace(c, mood) {
   ctx.lineCap = 'round';
   ctx.fillStyle = 'rgba(255,255,255,.2)'; ell(-26, -46, 22, 9, -0.45); ell(30, -48, 12, 5, 0.5); ctx.fillStyle = 'rgba(180,100,80,.12)'; ell(0, 22, 7, 4);
