@@ -201,7 +201,7 @@ const LIP_PTS = Array.from({ length: 10 }, (_, i) => [-16 + (i % 5) * 8, i < 5 ?
 // hair dye colours, face mask + dye kit (used up), jewellery (bought once)
 const DYES = [['#ff6fb5', 'Pembe'], ['#8b5cf6', 'Mor'], ['#3b82f6', 'Mavi'], ['#1fc7c7', 'Turkuaz'], ['#e8434f', 'Kırmızı'], ['#f3d36b', 'Sarı']];
 const dyeName = c => DYES.find(d => d[0] === c)[1];
-const SUPPLIES = { mask: { name: 'Yüz maskesi', price: 18, uses: 3 }, dye: { name: 'Saç boyası', price: 35, uses: 3 } };
+const SUPPLIES = { mask: { name: 'Yüz maskesi', price: 18, uses: 3 }, dye: { name: 'Saç boyası', price: 35, uses: 3 }, wax: { name: 'Ağda seti', price: 30, uses: 3 }, footcream: { name: 'Ayak kremi', price: 12, uses: 4 } };
 const JEWELS = {
   earrings: { where: 'kulaklara', name: 'Küpe', icon: '💎', price: 20, pay: 5, spots: [[-94, 30], [94, 30]] },
   crown: { where: 'başın tepesine', name: 'Taç', icon: '👑', price: 35, pay: 8, spots: [[0, -112]] },
@@ -227,7 +227,7 @@ const THINGS = {
   teddy: ['🧸', 'Oyuncak ayı', 20, 'Ayıcığıma sarılıyorum! 🧸'], ball: ['⚽', 'Top', 10, 'Hadi top oynayalım! ⚽'], book: ['📚', 'Kitap', 15, 'Kitap okuyorum 📖'],
   balloon: ['🎈', 'Balon', 5, 'Balonum uçuyor! 🎈'], yoyo: ['🪀', 'Yoyo', 8, 'Yoyo inip çıkıyor! 🪀'], umbrella: ['☂️', 'Şemsiye', 12, 'Yağmur yağsa da olur ☂️'],
   kite: ['🪁', 'Uçurtma', 18, 'Uçurtmam uçuyor! 🪁'], guitar: ['🎸', 'Gitar', 60, '🎵 La la laa!'],
-  skates: ['🛼', 'Paten', 35, 'Vııın! Kayıyorum 🛼'], camera: ['📷', 'Fotoğraf makinesi', 80, 'Çok güzel bir kare! 📷'], drum: ['🥁', 'Davul', 45, 'Dum dum tak! 🥁'], trumpet: ['🎺', 'Trompet', 50, 'Tuuuut! 🎺'],
+  skates: ['🛼', 'Paten', 35, 'Vııın! Kayıyorum 🛼'], camera: ['📷', 'Fotoğraf makinesi', 80, 'Çok güzel bir kare! 📷'], drum: ['🥁', 'Davul', 45, 'Dum dum tak! 🥁'], trumpet: ['🎺', 'Trompet', 50, 'Tuuuut! 🎺', 'pig', 'hamster', 'mouse', 'sheep', 'cow', 'horse', 'bear', 'deer', 'squirrel', 'raccoon', 'tiger', 'hippo', 'camel', 'sloth'],
   fishing: ['🎣', 'Olta', 40, 'Balık tutuyorum 🎣'], wand: ['🪄', 'Sihirli değnek', 90, 'Abrakadabra! ✨'], binocular: ['🔭', 'Dürbün', 55, 'Uzakları görüyorum 🔭'], palette: ['🎨', 'Boya paleti', 30, 'Resim yapıyorum 🎨'],
   puzzle: ['🧩', 'Yapboz', 25, 'Parçaları birleştiriyorum 🧩'], toyrobot: ['🤖', 'Oyuncak robot', 120, 'Bip bop! Ben robotum 🤖'],
 };
@@ -263,6 +263,10 @@ const SHOP = [
   { tab: 'tools', kind: 'tools', id: 'goldScissors', name: 'Altın makas', icon: '✂️', price: 30, desc: 'Birçok tutamı birden keser' },
   { tab: 'tools', kind: 'tools', id: 'eFile', name: 'Elektrikli törpü', icon: '💅', price: 45, desc: 'Bir elin tırnaklarını birden şekillendirir' },
   { tab: 'tools', kind: 'tools', id: 'superSponge', name: 'Süper sünger', icon: '🧽', price: 25, desc: 'Tırnağı tek dokunuşta temizler' },
+  { tab: 'tools', kind: 'tools', id: 'waxWarmer', name: 'Ağda ısıtıcı', icon: '🍯', price: 35, desc: 'Ağdayı iki kat geniş sürer' },
+  { tab: 'tools', kind: 'tools', id: 'footSpa', name: 'Ayak spası', icon: '🦶', price: 40, desc: 'Ayak kremi 2 kat hızlı yumuşatır' },
+  { tab: 'tools', kind: 'tools', id: 'goldTweezers', name: 'Altın cımbız', icon: '🤏', price: 30, desc: 'Kaş kıllarını daha geniş alandan çeker' },
+  { tab: 'tools', kind: 'tools', id: 'superBrush', name: 'Süper boya fırçası', icon: '🖌️', price: 35, desc: 'Saç boyasını 2 kat hızlı sürer' },
   { tab: 'tools', kind: 'tools', id: 'magicComb', name: 'Sihirli tarak', icon: '💇', price: 20, desc: 'Düğümleri 2 kat hızlı açar' },
   ...Object.entries(MAKEUP).map(([id, m]) => ({ tab: 'makeup', kind: 'makeup', id, name: m.name, price: m.price, desc: `${m.uses} müşteride biter` })),
   ...Object.entries(SUPPLIES).map(([id, m]) => ({ tab: 'makeup', kind: 'supply', id, name: m.name, price: m.price, desc: `${m.uses} müşteride biter` })),
@@ -295,6 +299,20 @@ const SHOP = [
   { tab: 'pets', kind: 'pet', id: 'lion', name: 'Aslan', price: 15000, desc: 'Gür yeleli orman kralı' },
   { tab: 'pets', kind: 'pet', id: 'robot', name: 'Robot', price: 25000, desc: 'Gözleri parlar, antenli' },
   { tab: 'pets', kind: 'pet', id: 'dino', name: 'Dinozor', price: 40000, desc: 'Sırtında sivri pullar' },
+  { tab: 'pets', kind: 'pet', id: 'pig', name: 'Domuz', price: 120, desc: 'Hım hım, burnu pembe' },
+  { tab: 'pets', kind: 'pet', id: 'hamster', name: 'Hamster', price: 90, desc: 'Minicik yanaklı' },
+  { tab: 'pets', kind: 'pet', id: 'mouse', name: 'Fare', price: 80, desc: 'Küçücük, kıvrık kuyruklu' },
+  { tab: 'pets', kind: 'pet', id: 'sheep', name: 'Koyun', price: 220, desc: 'Pamuk gibi yünlü' },
+  { tab: 'pets', kind: 'pet', id: 'cow', name: 'İnek', price: 260, desc: 'Benekli ve sütlü' },
+  { tab: 'pets', kind: 'pet', id: 'horse', name: 'At', price: 1800, desc: 'Uzun yeleli, dörtnala' },
+  { tab: 'pets', kind: 'pet', id: 'bear', name: 'Ayı', price: 2600, desc: 'Koca ve pofuduk' },
+  { tab: 'pets', kind: 'pet', id: 'deer', name: 'Geyik', price: 3200, desc: 'Boynuzlu, benekli' },
+  { tab: 'pets', kind: 'pet', id: 'squirrel', name: 'Sincap', price: 350, desc: 'Kabarık kuyruklu' },
+  { tab: 'pets', kind: 'pet', id: 'raccoon', name: 'Rakun', price: 1200, desc: 'Maskeli sevimli' },
+  { tab: 'pets', kind: 'pet', id: 'tiger', name: 'Kaplan', price: 9500, desc: 'Çizgili ve cesur' },
+  { tab: 'pets', kind: 'pet', id: 'hippo', name: 'Su aygırı', price: 7000, desc: 'Kocaman ağızlı' },
+  { tab: 'pets', kind: 'pet', id: 'camel', name: 'Deve', price: 5200, desc: 'Uzun boyunlu çöl dostu' },
+  { tab: 'pets', kind: 'pet', id: 'sloth', name: 'Tembel hayvan', price: 1600, desc: 'Yavaş ve uykucu' },
   { tab: 'pets', kind: 'pet', id: 'phoenix', name: 'Anka Kuşu', price: 100000, desc: 'Ateşten kanatlı, uçar' },
   { tab: 'clothes', kind: 'outfit', id: 'swim', name: 'Mayo', price: 300, desc: 'Denizde yüzmek için + simit' },
   { tab: 'clothes', kind: 'outfit', id: 'chef', name: 'Aşçı Kıyafeti', price: 800, desc: 'Beyaz ceket ve aşçı şapkası' },
@@ -390,9 +408,11 @@ const STEP_INFO = {
   mask: { title: '🥒 Yüz maskesi', price: 8 },
   dye: { title: '🎨 Saç boyama', price: 10 },
   jewel: { title: '💎 Takı', price: 0 },
+  legwax: { title: '🪒 Bacak ağdası', price: 10 },
+  footcream: { title: '🦶 Ayak kremi', price: 5 },
 };
 const HAND_STEPS = new Set(['nails', 'stickers', 'cream']);
-const DEFAULT_TOOL = { nails: 'clean', stickers: null, cream: 'cream', shave: 'razor', razor: 'razor', wash: 'shampoo', comb: 'comb', dry: 'dryer', style: 'iron', cut: 'scissors', brows: 'tweezers', mask: 'maskJar', dye: 'dyeBrush' };
+const DEFAULT_TOOL = { nails: 'clean', stickers: null, cream: 'cream', shave: 'razor', razor: 'razor', wash: 'shampoo', comb: 'comb', dry: 'dryer', style: 'iron', cut: 'scissors', brows: 'tweezers', legwax: 'waxjar', footcream: 'footcream', mask: 'maskJar', dye: 'dyeBrush' };
 
 // work-view geometry
 const S = 1.3;                                              // hand scale
@@ -487,15 +507,23 @@ function makeCustomer(isFirst) {
   const cream = isFirst || Math.random() < 0.6;
   const beard = isFirst || (girl ? Math.random() < 0.15 : Math.random() < 0.7);
   const wash = isFirst || Math.random() < 0.7, comb = wash || c.look === 'frizzy' || Math.random() < 0.3;
-  c.steps = ['nails', r.sticker && 'stickers', cream && 'cream', beard && 'shave', beard && 'razor', r.brows && 'brows', r.mask && 'mask', r.dye && 'dye',
+  r.wax = !isFirst && Math.random() < (girl ? 0.25 : 0.08); r.footcream = !isFirst && Math.random() < 0.25;
+  c.steps = ['nails', r.sticker && 'stickers', cream && 'cream', r.wax && 'legwax', r.footcream && 'footcream', beard && 'shave', beard && 'razor', r.brows && 'brows', r.mask && 'mask', r.dye && 'dye',
     wash && 'wash', comb && 'comb', wash && 'dry', r.hairStyle === 'short' ? 'cut' : 'style', r.makeup.length && 'makeup', r.jewels.length && 'jewel'].filter(Boolean);
   // keep one visit short enough: drop random extras
-  const DROP = { stickers: () => { r.sticker = null; }, cream: () => { }, brows: () => { r.brows = false; }, mask: () => { r.mask = false; }, dye: () => { r.dye = null; }, makeup: () => { r.makeup = []; }, jewel: () => { r.jewels = []; } };
+  const DROP = { legwax: () => { r.wax = false; }, footcream: () => { r.footcream = false; }, stickers: () => { r.sticker = null; }, cream: () => { }, brows: () => { r.brows = false; }, mask: () => { r.mask = false; }, dye: () => { r.dye = null; }, makeup: () => { r.makeup = []; }, jewel: () => { r.jewels = []; } };
   while (c.steps.length > 10) { const k = pick(c.steps.filter(s => DROP[s])); DROP[k](); c.steps = c.steps.filter(s => s !== k); }
   c.price = c.steps.reduce((a, s) => a + STEP_INFO[s].price, 0) + (GLITTER.has(r.nailColor) ? 4 : 0) + (r.sticker === 'butterfly' ? 2 : 0) + (r.hairStyle === 'straight' ? 3 : 0) + r.makeup.reduce((a, k) => a + MAKEUP[k].pay, 0) + r.jewels.reduce((a, k) => a + JEWELS[k].pay, 0);
   c.greet = `Merhaba, ben ${c.name}! ${isFirst ? '🙈' : '😊'}`;
   c.av = normLook({ girl, outfit: isFirst ? 'dress' : pick(girl ? ['dress', 'tshirt', 'overalls', 'tutu', 'tracksuit', 'raincoat', 'jacket', 'sweater', 'gown'] : ['tshirt', 'overalls', 'tracksuit', 'raincoat', 'jacket', 'sweater', 'hero']), pattern: !isFirst && Math.random() < 0.4 ? pick(['stripes', 'dots', 'hearts', 'stars']) : 'plain' });
   // hands: dirty, broken nails and dry skin
+  // legs with hairs to wax, and dry feet to cream
+  c.legHair = [];
+  if (r.wax) {
+    const hw = y => y < 300 ? 75 - (y - 60) / 240 * 19 : y < 390 ? 56 + (y - 300) / 90 * 4 : 60 - (y - 390) / 110 * 24;
+    for (let l = 0; l < 2; l++) for (let i = 0; i < 46; i++) { const y = 110 + Math.random() * 380, w = hw(y) - 10; c.legHair.push({ l, x: (Math.random() * 2 - 1) * w, y, a: rand(-0.5, 0.5), st: 0 }); }
+  }
+  c.feet = [0, 1].map(() => ({ blobs: [], rub: 0, soft: !r.footcream, flakes: Array.from({ length: 22 }, () => [rand(-60, 60), rand(-130, 150), rand(2, 5)]) }));
   c.hands = [0, 1].map(() => ({
     nails: [0, 1, 2, 3, 4].map(() => ({ dirty: 3, len: 'short', shape: 'broken', color: null, sticker: null, scrub: 0, sp: [0, 1, 2].map(() => [rand(-7, 7), rand(-20, 0)]) })),
     blobs: [], rub: 0, soft: !c.steps.includes('cream'), flakes: Array.from({ length: 14 }, () => [rand(-55, 55), rand(-50, 150), rand(0, 6)]),
@@ -558,6 +586,8 @@ function requestLines(c) {
     if (s === 'nails') L.push(`💅 Tırnaklarım: ${colName(r.nailColor).toLowerCase()}, ${LENS[r.nailLen].toLowerCase()}, ${SHAPES[r.nailShape].toLowerCase()}`);
     else if (s === 'stickers') L.push(`${STICKERS[r.sticker][0]} 10 tırnağa ${STICKERS[r.sticker][1].toLowerCase()} stickerı`);
     else if (s === 'cream') L.push('🧴 İki elime krem');
+    else if (s === 'legwax') L.push('🪒 Bacaklarıma ağda');
+    else if (s === 'footcream') L.push('🦶 Ayaklarıma krem');
     else if (s === 'shave') L.push('🪒 Sakallarımı kes');
     else if (s === 'wash') L.push('🚿 Saçımı yıka, tara, kurut');
     else if (s === 'comb' && !c.steps.includes('wash')) L.push('💇 Saçımı tara');
@@ -591,6 +621,8 @@ function missing(c) {
   if (r.dye && !hasSup('dye')) m.push('Saç boyası');
   for (const k of r.jewels) if (!has('jewels', k)) m.push(JEWELS[k].name);
   if (c.steps.includes('cream') && inv.tube + inv.creams * 5 < 2) m.push('El kremi');
+  if (r.wax && !hasSup('wax')) m.push('Ağda seti');
+  if (r.footcream && !hasSup('footcream')) m.push('Ayak kremi');
   return m;
 }
 function startWork() {
@@ -646,6 +678,8 @@ function isDone(s) {
     case 'nails': return allNails(n => !n.dirty && n.len === r.nailLen && n.shape === r.nailShape && n.color === r.nailColor);
     case 'stickers': return allNails(n => n.sticker);
     case 'cream': return c.hands.every(h => h.soft);
+    case 'legwax': return c.legHair.every(h => h.st === 2);
+    case 'footcream': return c.feet.every(f => f.soft);
     case 'shave': return c.beard.length === 0;
     case 'razor': return razorHair <= 0;
     case 'wash': return c.specks.length === 0 && c.foam.length === 0;
@@ -675,7 +709,7 @@ function usePolish() {
   const c = cust.req.nailColor;
   inv.polish[c] = Math.max(0, (inv.polish[c] || 0) - 1);
   if (!inv.polish[c]) setTimeout(() => say(`${colName(c)} oje bitti! 🛍️ Mağazadan yenisini al`), 1200);
-  for (const m of ['mask', 'dye']) if (cust.req[m]) { inv.supplies[m] = Math.max(0, (inv.supplies[m] || 0) - 1); if (!inv.supplies[m]) setTimeout(() => say(`${SUPPLIES[m].name} bitti! 🛍️`), 5000); }
+  for (const m of ['mask', 'dye', 'wax', 'footcream']) if (cust.req[m]) { inv.supplies[m] = Math.max(0, (inv.supplies[m] || 0) - 1); if (!inv.supplies[m]) setTimeout(() => say(`${SUPPLIES[m].name} bitti! 🛍️`), 5000); }
   for (const m of cust.req.makeup) { inv.makeup[m] = Math.max(0, (inv.makeup[m] || 0) - 1); if (!inv.makeup[m]) setTimeout(() => say(`${MAKEUP[m].name} bitti! 🛍️ Mağazadan yenisini al`), 4000); }
   const k = cust.req.sticker;
   if (k) { inv.stickers[k] = Math.max(0, (inv.stickers[k] || 0) - 1); if (!inv.stickers[k]) setTimeout(() => say(`${STICKERS[k][1]} stickerları bitti! 🛍️`), 2600); }
@@ -818,11 +852,46 @@ function squeeze() {
   sfx('fis'); part({ x: ptr.x + 30, y: ptr.y - 30, vy: -60, life: 0.8, kind: 'txt', t: 'fıs!', col: '#d6337f' });
   for (let i = 0; i < 6; i++) part({ x: ptr.x, y: ptr.y, vx: rand(-80, 80), vy: rand(-80, 20), g: 300, life: 0.5, r: 3, col: '#fffaf2' });
 }
+const LEGX = [300, 700], FEET = [{ x: 290, y: 400 }, { x: 710, y: 400 }], p0 = i => FEET[i];
+function drawLegs() {
+  const c = cust, hw = y => y < 300 ? 75 - (y - 60) / 240 * 19 : y < 390 ? 56 + (y - 300) / 90 * 4 : 60 - (y - 390) / 110 * 24;
+  for (let l = 0; l < 2; l++) {
+    const cx = LEGX[l]; ctx.beginPath(); for (let y = 60; y <= 510; y += 10) ctx.lineTo(cx - hw(y), y); for (let y = 510; y >= 60; y -= 10) ctx.lineTo(cx + hw(y), y); ctx.closePath();
+    ctx.fillStyle = c.skin; ctx.fill(); ctx.strokeStyle = mix(c.skin, '#000000', 0.25); ctx.lineWidth = 4; ctx.stroke();
+    ctx.fillStyle = mix(c.skin, '#000000', 0.07); ell(cx, 305, 38, 14); ctx.fillStyle = 'rgba(255,255,255,.18)'; ell(cx - 18, 220, 9, 70);
+    ctx.fillStyle = c.skin; ctx.strokeStyle = mix(c.skin, '#000000', 0.25); ell(cx, 545, 50, 44); ctx.stroke(); for (let k = 0; k < 5; k++) { circle(cx + (l ? 1 : -1) * (-34 + k * 17), 582 + Math.abs(k - 2) * 3, 9 - Math.abs(k - 2)); ctx.stroke(); }
+  }
+  for (const h of c.legHair) { const x = LEGX[h.l] + h.x; if (h.st === 2) continue; if (h.st === 1) { ctx.fillStyle = 'rgba(255,214,90,.8)'; ctx.strokeStyle = '#d9a82a'; ctx.lineWidth = 1.5; ell(x, h.y, 17, 13); ctx.stroke(); } ctx.strokeStyle = mix(c.hairCol, '#000000', 0.2); ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x - 5, h.y + 5); ctx.quadraticCurveTo(x + h.a * 14, h.y, x + 5, h.y - 6); ctx.stroke(); }
+}
+function drawFeet() {
+  const c = cust;
+  for (let i = 0; i < 2; i++) {
+    const p = FEET[i], ft = c.feet[i], t = i ? -1 : 1; ctx.save(); ctx.translate(p.x, p.y);
+    ctx.fillStyle = ft.soft ? c.skin : mix(c.skin, '#d9c8b0', 0.35); ctx.strokeStyle = mix(c.skin, '#000000', 0.28); ctx.lineWidth = 4; ell(0, 20, 78, 150); ctx.stroke(); ell(0, 150, 60, 44); ctx.stroke();
+    for (let k = 0; k < 5; k++) { const tx = t * (46 - k * 23), ty = -150 + k * 9, r = [22, 17, 15, 13, 11][k]; ctx.fillStyle = ft.soft ? c.skin : mix(c.skin, '#d9c8b0', 0.35); circle(tx, ty, r); ctx.stroke(); ctx.fillStyle = 'rgba(255,200,200,.7)'; ell(tx, ty - r * 0.35, r * 0.55, r * 0.35); }
+    if (!ft.soft) { ctx.fillStyle = 'rgba(255,255,255,.75)'; for (const [fx, fy, fr] of ft.flakes) { ctx.save(); ctx.translate(fx, fy); ctx.rotate(fx); ctx.fillRect(-fr, -fr / 2, fr * 2, fr); ctx.restore(); } }
+    else { ctx.fillStyle = 'rgba(255,255,255,.3)'; ell(-18, 0, 12, 70); }
+    ctx.fillStyle = '#fffaf2'; ctx.strokeStyle = '#f0d9e4'; ctx.lineWidth = 2; for (const b of ft.blobs) { circle(b.x, b.y, b.r); ctx.stroke(); }
+    ctx.restore();
+  }
+}
 function work(d) {
   const s = curStep(), c = cust;
   if (s === 'nails' && tool === 'clean' && d > 0) {
     const n = nailAt(ptr.x, ptr.y);
     if (n && n.dirty > 0 && (n.scrub += d) > 45) { n.scrub = 0; n.dirty--; bubbles(ptr.x, ptr.y); sfx('scrub', 60); }
+  } else if (s === 'legwax') {
+    if (tool === 'waxjar') { let hit = false; for (const h of c.legHair) if (h.st === 0 && dist(LEGX[h.l] + h.x, h.y, ptr.x, ptr.y) < (has('tools', 'waxWarmer') ? 44 : 26)) { h.st = 1; hit = true; } if (hit) sfx('scrub', 100); }
+    else if (tool === 'strip') {
+      if (!d) return;
+      let hit = false, waxed = false; for (const h of c.legHair) if (dist(LEGX[h.l] + h.x, h.y, ptr.x, ptr.y) < 30) { if (h.st === 1) { h.st = 2; hit = true; part({ x: LEGX[h.l] + h.x, y: h.y, vx: rand(-60, 60), vy: -rand(60, 140), g: 500, life: 0.8, kind: 'hair', rot: rand(0, 6) }); } else if (h.st === 0) waxed = true; }
+      if (hit) { sfx('stick', 100); if (Math.random() < 0.12) part({ x: ptr.x + 40, y: ptr.y - 30, vy: -50, life: 0.8, kind: 'txt', t: 'Ay! 😣', col: '#d6337f' }); }
+      else if (waxed) say('Önce 🍯 ağda sür!');
+    }
+  } else if (s === 'footcream') {
+    const fi = FEET.findIndex(p => ((ptr.x - p.x) / 100) ** 2 + ((ptr.y - p.y) / 185) ** 2 < 1); if (fi < 0) return; const ft = c.feet[fi]; if (ft.soft) return;
+    if (tool === 'footcream' && !d) { if (ft.blobs.length >= 3) return say('Yeterli krem var, şimdi ✋ ile ov!'); ft.blobs.push({ x: ptr.x - p0(fi).x + rand(-10, 10), y: ptr.y - p0(fi).y + rand(-10, 10), r: rand(16, 22) }); sfx('fis'); part({ x: ptr.x + 30, y: ptr.y - 30, vy: -60, life: 0.8, kind: 'txt', t: 'fıs!', col: '#d6337f' }); }
+    else if (tool === 'rub' && d > 0) { if (!ft.blobs.length) return say('Önce krem sür! 🧴'); ft.rub += d * 0.25 * (has('tools', 'footSpa') ? 2 : 1); sfx('scrub', 90); if (ft.rub >= 100) { ft.soft = true; ft.blobs = []; sparkle(ptr.x, ptr.y, 14); sfx('stick'); } }
   } else if (s === 'cream' && tool === 'rub' && d > 0) {
     const h = handAt(ptr.x, ptr.y); if (h < 0) return;
     const hand = c.hands[h]; if (hand.soft) return;
@@ -866,7 +935,7 @@ function work(d) {
     }
     if (cut) sfx('snip', 120);
   } else if (s === 'brows') {
-    const [lx, ly] = lp(); let best = -1, bd = 12;
+    const [lx, ly] = lp(); let best = -1, bd = has('tools', 'goldTweezers') ? 24 : 12;
     c.strays.forEach((h, i) => { const d2 = dist(h.x, h.y, lx, ly); if (d2 < bd) { bd = d2; best = i; } });
     if (best >= 0) {
       const h = c.strays.splice(best, 1)[0];
@@ -892,7 +961,7 @@ function work(d) {
       if (c.maskPts.every(v => v <= 0)) { c.maskPh = 'done'; c.cucumbers = [0, 0]; sparkle(ptr.x, ptr.y, 16); }
     }
   } else if (s === 'dye') {
-    const [lx, ly] = lp(), amt = d ? d * 0.02 : 0.15; let hit = false;
+    const [lx, ly] = lp(), amt = (d ? d * 0.02 : 0.15) * (has('tools', 'superBrush') ? 2 : 1); let hit = false;
     if (ly < -30 && (lx / 100) ** 2 + ((ly + 4) / 108) ** 2 < 1) { c.capDye = Math.min(1, c.capDye + amt * 0.5); hit = true; }
     for (const st of frontStrands()) if (st.dye < 1 && minDist(st, lx, ly) < 24) { st.dye = Math.min(1, st.dye + amt); hit = true; }
     if (hit) sfx('scrub', 130);
@@ -2708,6 +2777,9 @@ function drawCursor() {
     case 'paint': drawPolish(x, y, polish); break;
     case 'cream': drawTube(x, y, 1, inv.tube); break;
     case 'rub': emoji('✋', x, y, 46); break;
+    case 'waxjar': emoji('🍯', x, y, 50); break;
+    case 'strip': ctx.fillStyle = '#fffbe6'; ctx.strokeStyle = '#d9c88a'; ctx.lineWidth = 3; rr(x - 22, y - 30, 44, 60, 6); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#d9c88a'; for (let k = 0; k < 3; k++) ctx.fillRect(x - 14, y - 16 + k * 14, 28, 3); break;
+    case 'footcream': emoji('🧴', x, y, 48); break;
     case 'razor': drawRazor(x, y, razorHair); break;
     case 'shampoo': emoji('🧴', x, y, 46); break;
     case 'shower': emoji('🚿', x, y, 50); break;
@@ -2766,6 +2838,8 @@ function instr(s) {
       `İstek:  Temiz ${ok(n => !n.dirty)}    ${colName(r.nailColor)} ${ok(n => n.color === r.nailColor)}    ${LENS[r.nailLen]} ${ok(n => n.len === r.nailLen)}    ${SHAPES[r.nailShape]} ${ok(n => n.shape === r.nailShape)}`];
     case 'stickers': return [`${STICKERS[r.sticker][0]} ${STICKERS[r.sticker][1]} stickerları`, 'Sağdaki kâğıttan bir sticker al, bir tırnağa yapıştır. 10 tırnak, 10 sticker!'];
     case 'cream': return ['🧴 El kremi', 'Tüpü elin üstüne getir ve bas: fıs! Sonra ✋ ile ov ov ov. Bir tüpte 5 fıs var.'];
+    case 'legwax': return ['🪒 Bacak ağdası', 'Önce 🍯 ağdayı kılların üstüne sür, sonra 📜 şeridi sürükleyip kılları çek!'];
+    case 'footcream': return ['🦶 Ayak kremi', 'Ayağa dokunup krem sür, sonra ✋ ile ov ov ov. İki ayak da yumuşasın!'];
     case 'shave': return ['🪒 Tıraş', 'Jileti basılı tutup sakalların üstünde gezdir, hepsini kes!'];
     case 'razor': return ['🫧 Jilet temizliği', 'Jileti sudaki kaba sok ve sağa sola salla, kıllar gitsin!'];
     case 'wash': return ['🚿 Saç yıkama', 'Önce 🧴 şampuanla köpürt, kirler gitsin. Sonra 🚿 duşla köpükleri durula.'];
@@ -2835,6 +2909,13 @@ function drawTools(s, x0, y, pw) {
   } else if (s === 'comb') {
     tb(0, 1, 0, '💇', 'Tarak', 'comb');
     pbar(x0 + 16, y + 90, pw - 32, 1 - avg('tangle'), 'Düğümsüz');
+  } else if (s === 'legwax') {
+    tb(0, 2, 0, '🍯', 'Ağda', 'waxjar'); tb(1, 2, 0, '📜', 'Şerit', 'strip');
+    const left = c.legHair.filter(h => h.st < 2).length; pbar(x0 + 16, y + 90, pw - 32, 1 - left / Math.max(1, c.legHair.length), 'Pürüzsüz');
+    text('1. Ağdayı sür  2. Şeridi çek', x0 + pw / 2, y + 156, 16, '#6b5a70', 'center', 700);
+  } else if (s === 'footcream') {
+    tb(0, 2, 0, '🧴', 'Krem sür', 'footcream'); tb(1, 2, 0, '✋', 'Ov', 'rub');
+    pbar(x0 + 16, y + 90, pw - 32, c.feet.reduce((a, f) => a + (f.soft ? 1 : Math.min(1, f.rub / 100)), 0) / 2, 'Yumuşak');
   } else if (s === 'dry') {
     tb(0, 1, 0, '💨', 'Fön', 'dryer');
     pbar(x0 + 16, y + 90, pw - 32, 1 - avg('wet'), 'Kuru');
@@ -3253,7 +3334,9 @@ function mkGuide() {
 function drawWork() {
   const s = curStep();
   ctx.save(); ctx.beginPath(); ctx.rect(0, 0, PANEL, H); ctx.clip();
-  if (HAND_STEPS.has(s)) { drawTable(); drawHand(0); drawHand(1); }
+  if (s === 'legwax') { drawTable(); drawLegs(); }
+  else if (s === 'footcream') { drawTable(); drawFeet(); }
+  else if (HAND_STEPS.has(s)) { drawTable(); drawHand(0); drawHand(1); }
   else { drawFaceBg(); drawHead(cust, FX, FY - Math.sin(hop * Math.PI) * 18, FS, { cape: true, mood: stepIdx / cust.steps.length + (stepDone ? 0.2 : 0) }); if (s === 'makeup' && !stepDone) mkGuide(); if (s === 'razor') drawBowl(); if (s === 'cut' && !stepDone) { const gy = FY + CUT_Y * FS; ctx.strokeStyle = 'rgba(214,51,127,.8)'; ctx.lineWidth = 3; ctx.setLineDash([12, 8]); line(FX - 250, gy, FX + 250, gy); ctx.setLineDash([]); text('✂️ buradan kes', FX + 170, gy - 10, 18, '#d6337f', 'left', 800); } }
   drawInstr();
   if (react) {
@@ -3713,11 +3796,11 @@ function drawDesigner() {
     y += 58 + 48;
     row('Gözlük', chips([['none', 'Yok'], ['round', 'Yuvarlak'], ['sun', '🕶️ Güneş'], ['star', '⭐ Yıldız']], 'glasses'));
     fitText('Evcil hayvan', 560, y + 28, 18, 124, '#6b5a70', 800);
-    [['none', 'Yok'], ['bunny', '🐰 Tavşan'], ['cat', '🐱 Kedi'], ['dog', '🐶 Köpek'], ['snake', '🐍 Yılan'], ['duck', '🦆 Ördek'], ['dragon', '🐉 Ejderha'], ['penguin', '🐧 Penguen'], ['unicorn', '🦄 Unicorn'], ['turtle', '🐢 Kaplumbağa'], ['owl', '🦉 Baykuş'], ['fox', '🦊 Tilki'], ['panda', '🐼 Panda'], ['axolotl', '🦎 Aksolotl'], ['wolf', '🐺 Kurt'], ['lion', '🦁 Aslan'], ['robot', '🤖 Robot'], ['dino', '🦖 Dinozor'], ['phoenix', '🔥 Anka Kuşu'], ['hedgehog', '🦔 Kirpi'], ['giraffe', '🦒 Zürafa'], ['elephant', '🐘 Fil'], ['monkey', '🐵 Maymun'], ['koala', '🐨 Koala'], ['zebra', '🦓 Zebra'], ['parrot', '🦜 Papağan'], ['butterfly', '🦋 Kelebek'], ...(rich() ? [['whitedeer', '🦌 Beyaz Geyik']] : [])].forEach(([v, t], i) => {
+    [['none', 'Yok'], ['bunny', '🐰 Tavşan'], ['cat', '🐱 Kedi'], ['dog', '🐶 Köpek'], ['snake', '🐍 Yılan'], ['duck', '🦆 Ördek'], ['dragon', '🐉 Ejderha'], ['penguin', '🐧 Penguen'], ['unicorn', '🦄 Unicorn'], ['turtle', '🐢 Kaplumbağa'], ['owl', '🦉 Baykuş'], ['fox', '🦊 Tilki'], ['panda', '🐼 Panda'], ['axolotl', '🦎 Aksolotl'], ['wolf', '🐺 Kurt'], ['lion', '🦁 Aslan'], ['robot', '🤖 Robot'], ['dino', '🦖 Dinozor'], ['phoenix', '🔥 Anka Kuşu'], ['hedgehog', '🦔 Kirpi'], ['giraffe', '🦒 Zürafa'], ['elephant', '🐘 Fil'], ['monkey', '🐵 Maymun'], ['koala', '🐨 Koala'], ['zebra', '🦓 Zebra'], ['parrot', '🦜 Papağan'], ['butterfly', '🦋 Kelebek'], ['pig', '🐷 Domuz'], ['hamster', '🐹 Hamster'], ['mouse', '🐭 Fare'], ['sheep', '🐑 Koyun'], ['cow', '🐮 İnek'], ['horse', '🐴 At'], ['bear', '🐻 Ayı'], ['deer', '🦌 Geyik'], ['squirrel', '🐿️ Sincap'], ['raccoon', '🦝 Rakun'], ['tiger', '🐯 Kaplan'], ['hippo', '🦛 Su aygırı'], ['camel', '🐫 Deve'], ['sloth', '🦥 Tembel hayvan'], ...(rich() ? [['whitedeer', '🦌 Beyaz Geyik']] : [])].forEach(([v, t], i) => {
       const lock = v !== 'none' && !inv.pets.includes(v) && v !== 'whitedeer';
       btn(690 + (i % 5) * 111, y + 2 + Math.floor(i / 5) * 38, 105, 34, lock ? '🔒 ' + t : t, () => lock ? (say(t + ' mağazada! 🐾'), openShop('pets')) : setLook('pet', v), { active: designLook.pet === v, size: 14 });
     });
-    y += 58 + (Math.ceil((27 + (rich() ? 1 : 0)) / 5) - 1) * 38;
+    y += 58 + (Math.ceil((41 + (rich() ? 1 : 0)) / 5) - 1) * 38;
     row('Takılar', (x, yy) => {
       if (!inv.jewels.length) return text('Mağazadan takı alınca burada takabilirsin 💎', x, yy + 28, 17, '#6b5a70', 'left', 700);
       inv.jewels.forEach((k, i) => {
@@ -6719,6 +6802,20 @@ const PETCFG = {
   monkey: { col: '#8a5a3a', belly: '#e9c9a0', face: '#e9c9a0', ears: 'round', tail: 'curl', head: 17, size: 0.95 },
   koala: { col: '#aab2bd', belly: '#e8ecf2', ears: 'bigRound', nose: '#2a2a38', head: 20, size: 0.95 },
   zebra: { col: '#ffffff', stripes: '#2a2a38', ears: 'pointy', mane: '#2a2a38', head: 17, neck: 22, tail: 'tuft', size: 1 },
+  pig: { col: '#ffb3c8', belly: '#ffd0de', ears: 'round', nose: '#ff8fb0', head: 17, tail: 'curl', size: 0.95 },
+  cow: { col: '#ffffff', spots: '#2a2a33', ears: 'round', nose: '#ffb3c8', head: 18, tail: 'tuft', size: 1.05 },
+  horse: { col: '#a8642a', mane: '#2a1a10', ears: 'pointy', head: 17, neck: 22, tail: 'tuft', size: 1.05 },
+  hamster: { col: '#f0c890', belly: '#fff3dc', ears: 'round', head: 15, tail: 'short', size: 0.7 },
+  mouse: { col: '#b8bcc8', belly: '#e8ebf2', ears: 'bigRound', head: 14, tail: 'curl', size: 0.65 },
+  bear: { col: '#8a5a3a', belly: '#c9a070', ears: 'round', head: 19, tail: 'short', size: 1.1 },
+  sheep: { col: '#f4f0e8', belly: '#ffffff', face: '#3a3a44', ears: 'round', head: 16, tail: 'short', size: 1 },
+  deer: { col: '#c98a4a', belly: '#f3d9b0', spots: '#ffffff', ears: 'horns', head: 15, neck: 30, tail: 'short', size: 1.05 },
+  hippo: { col: '#a89ac8', belly: '#c8bde0', ears: 'round', head: 22, tail: 'short', size: 1.15 },
+  squirrel: { col: '#c8743a', belly: '#f5e0c0', ears: 'pointy', head: 14, tail: 'curl', size: 0.7 },
+  raccoon: { col: '#8d929e', face: '#2a2a33', ears: 'round', head: 16, tail: 'tuft', size: 0.9 },
+  tiger: { col: '#ff9a2a', stripes: '#2a2a38', belly: '#fff0d0', ears: 'round', head: 18, tail: 'tuft', size: 1.05 },
+  camel: { col: '#d9b070', belly: '#ecd2a0', ears: 'round', head: 16, neck: 55, tail: 'short', size: 1.1 },
+  sloth: { col: '#8a7058', face: '#d9c8a8', ears: 'round', head: 16, tail: 'short', size: 0.9 },
 };
 let last = performance.now();
 function frame(now) {
