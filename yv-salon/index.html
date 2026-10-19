@@ -231,6 +231,26 @@ const THINGS = {
   fishing: ['🎣', 'Olta', 40, 'Balık tutuyorum 🎣'], wand: ['🪄', 'Sihirli değnek', 90, 'Abrakadabra! ✨'], binocular: ['🔭', 'Dürbün', 55, 'Uzakları görüyorum 🔭'], palette: ['🎨', 'Boya paleti', 30, 'Resim yapıyorum 🎨'],
   puzzle: ['🧩', 'Yapboz', 25, 'Parçaları birleştiriyorum 🧩'], toyrobot: ['🤖', 'Oyuncak robot', 120, 'Bip bop! Ben robotum 🤖'],
 };
+Object.assign(THINGS, {
+  scooter: ['🛴', 'Scooter', 70, 'Vızzz! Scooter sürüyorum 🛴'], bike: ['🚲', 'Bisiklet', 95, 'Pedal çeviriyorum 🚲'], bubble: ['🫧', 'Sabun köpüğü', 6, 'Baloncuklar uçuyor! 🫧'],
+  rose: ['🌹', 'Gül', 8, 'Ne güzel kokuyor 🌹'], bouquet: ['💐', 'Çiçek buketi', 15, 'Sana çiçek getirdim 💐'], mic: ['🎤', 'Mikrofon', 40, '🎶 Şarkı söylüyorum!'],
+  flute: ['🪈', 'Flüt', 30, 'Tiyyyt! 🪈'], piano: ['🎹', 'Piyano', 85, 'Do re mi fa sol 🎹'], violin: ['🎻', 'Keman', 75, 'Çok güzel bir melodi 🎻'], sax: ['🎷', 'Saksafon', 70, 'Cazz cazz 🎷'],
+  sparkler: ['🎇', 'Maytap', 12, 'Işıl ışıl! 🎇'], lantern: ['🏮', 'Fener', 14, 'Fenerim parlıyor 🏮'], microscope: ['🔬', 'Mikroskop', 65, 'Minik şeyleri inceliyorum 🔬'],
+  brush: ['🖌️', 'Fırça', 12, 'Boyuyorum! 🖌️'], crayon: ['🖍️', 'Pastel boya', 6, 'Çizgi çiziyorum 🖍️'], dice: ['🎲', 'Zar', 9, 'Zar atıyorum 🎲'], chess: ['♟️', 'Satranç', 28, 'Şah mat! ♟️'],
+  bowling: ['🎳', 'Bowling', 32, 'Strike! 🎳'], tennis: ['🎾', 'Tenis topu', 14, 'Tenis oynayalım 🎾'], basket: ['🏀', 'Basketbol', 16, 'Pota! 🏀'], frisbee: ['🥏', 'Frizbi', 10, 'Frizbi atıyorum 🥏'],
+  trophy: ['🏆', 'Kupa', 100, 'Şampiyon benim! 🏆'], gem: ['💎', 'Mücevher', 150, 'Pırıl pırıl 💎'], map: ['🗺️', 'Harita', 18, 'Hazine nerede? 🗺️'], compass: ['🧭', 'Pusula', 22, 'Yönümü buldum 🧭'],
+  flashlight: ['🔦', 'El feneri', 20, 'Karanlığı aydınlatıyorum 🔦'], globe: ['🌍', 'Dünya küresi', 35, 'Dünyayı geziyorum 🌍'], rocket: ['🚀', 'Roket', 110, '3-2-1 Ateş! 🚀'],
+  dinotoy: ['🦖', 'Dinozor oyuncak', 45, 'Rooar! 🦖'], unicorntoy: ['🦄', 'Unicorn oyuncak', 60, 'Sihirli unicorn 🦄'], duck: ['🦆', 'Lastik ördek', 12, 'Vak vak! 🦆'], blocks: ['🧱', 'Lego', 20, 'Kule yapıyorum 🧱'],
+  icecream: ['🍦', 'Oyuncak dondurma', 7, 'Dondurmam çok güzel 🍦'], cupcake: ['🧁', 'Kek', 9, 'Minik kek 🧁'], lollipop: ['🍭', 'Lolipop', 5, 'Şekerleme zamanı 🍭'], wandstar: ['🌟', 'Yıldız asa', 55, 'Dilek tut! 🌟'],
+});
+// hold what you took from the bag in your hand in the lobby
+function lbUnhold() { const me = LB.me, A = me && me.userData && me.userData.A; if (A && A.heldSpr) { if (A.heldSpr.parent) A.heldSpr.parent.remove(A.heldSpr); A.heldSpr = null; } LB.heldE = null; }
+function lbHold(e, ms) {
+  const me = LB.me, A = me && me.userData && me.userData.A; if (!A || !A.arms || !A.arms[1]) return; lbUnhold();
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: lbTex(128, 128, (g, w, h) => { g.font = '100px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(e, w / 2, h / 2 + 6); }), transparent: true, depthWrite: false }));
+  spr.scale.set(0.8, 0.8, 1); spr.position.set(0, -0.8, 0.2); A.arms[1].add(spr); A.heldSpr = spr; LB.heldE = e;
+  if (ms) setTimeout(() => { if (A.heldSpr === spr) lbUnhold(); }, ms);
+}
 const SHOP_TABS = [['sale', '🏷️ İndirim'], ['clothes', '👗 Kıyafet'], ['polish', '💅 Ojeler'], ['makeup', '💄 Makyaj'], ['care', '🧴 Krem'], ['tools', '🧰 Aletler'], ['jewels', '💍 Takılar'], ['decor', '🪄 Süsler'], ['pets', '🐾 Hayvanlar'], ['bags', '🎒 Çanta'], ['new', '🆕 Yeni'], ['special', '👑 Özel']];
 const SHOP = [
   ...NAIL_COLS.map(([id]) => ({ tab: 'polish', kind: 'polish', id, price: POLISH_PRICE })),
@@ -1324,7 +1344,7 @@ function drawFace(c, mood) {
   if (mk && mk.colorliner) [-1, 1].forEach((s, i) => { const a = mk.colorliner[i]; if (a > 0) { const ex = s * 34, ey = 6; ctx.save(); ctx.globalAlpha = Math.min(1, 0.4 + a); ctx.strokeStyle = '#2f9bff'; ctx.lineCap = 'round'; ctx.lineWidth = 4.2; ctx.beginPath(); ctx.ellipse(ex, ey, 16.5, 19.5, 0, Math.PI * 1.06, Math.PI * 1.94); ctx.stroke(); ctx.fillStyle = '#2f9bff'; ctx.beginPath(); ctx.moveTo(ex + s * 14, ey - 11); ctx.quadraticCurveTo(ex + s * 24, ey - 15, ex + s * 31, ey - 24 * (0.5 + 0.5 * a)); ctx.quadraticCurveTo(ex + s * 22, ey - 12, ex + s * 12, ey - 8); ctx.closePath(); ctx.fill(); ctx.strokeStyle = '#1fc7c7'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.ellipse(ex, ey - 1, 18.5, 21.5, 0, Math.PI * 1.2, Math.PI * 1.8); ctx.stroke(); ctx.restore(); } });
   if (mk && mk.eyeglow) [-1, 1].forEach((s, i) => { const a = mk.eyeglow[i]; if (a > 0) { const ex = s * 34, ey = 6; ctx.save(); for (let k = 0; k < 10; k++) { const an = Math.PI * (1.08 + k * 0.09), rr0 = 21 + (k % 3) * 2.5; ctx.globalAlpha = a * (0.55 + 0.45 * Math.sin(T * 5 + k * 1.3 + i)); ctx.fillStyle = k % 2 ? '#ffd23f' : '#ff9ccf'; circle(ex + Math.cos(an) * rr0, ey + Math.sin(an) * rr0 * 1.05, 1.5 + (k % 3) * 0.6); } ctx.fillStyle = '#ffffff'; for (let k = 0; k < 3; k++) { ctx.globalAlpha = a * (0.5 + 0.5 * Math.sin(T * 6 + k * 2 + i)); star4(ex + s * (k * 9 - 6), ey - 24 - (k % 2) * 4, 3.2); } ctx.restore(); } });
   if (mk && mk.cheekstar) [-1, 1].forEach((s, i) => { const a = mk.cheekstar[i]; if (a > 0) { ctx.save(); ctx.translate(s * 54, 33); ctx.scale(0.4 + 0.6 * a, 0.4 + 0.6 * a); ctx.rotate(s * 0.2); ctx.fillStyle = '#ffd23f'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.beginPath(); for (let k = 0; k < 10; k++) { const aa = -Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? 5.5 : 12.5; ctx.lineTo(Math.cos(aa) * r, Math.sin(aa) * r); } ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.fillStyle = 'rgba(255,255,255,.75)'; circle(-3, -3, 1.8); ctx.restore(); ctx.fillStyle = '#ff9ccf'; ctx.globalAlpha = a; star4(s * 70, 20, 3.5); ctx.globalAlpha = 1; } });
-  if (mk && mk.tattoo) [-1, 1].forEach((s, i) => { const a = mk.tattoo[i]; if (a > 0) { ctx.save(); ctx.translate(s * 58, 30); ctx.scale(0.4 + 0.6 * a, 0.4 + 0.6 * a); ctx.rotate(s * 0.25); ctx.globalAlpha = Math.min(1, 0.45 + a); ctx.strokeStyle = '#3a2a6a'; ctx.lineWidth = 1.4; ctx.fillStyle = '#8b5cf6'; ell(-7, -5, 7, 9, -0.5); ctx.stroke(); ell(7, -5, 7, 9, 0.5); ctx.stroke(); ctx.fillStyle = '#5ac8ff'; ell(-5, 6, 5, 6.5, 0.5); ctx.stroke(); ell(5, 6, 5, 6.5, -0.5); ctx.stroke(); ctx.fillStyle = '#2a1f2e'; rr(-1.2, -9, 2.4, 20, 1.2); ctx.fill(); ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 1; line(-1, -9, -5, -15); line(1, -9, 5, -15); ctx.restore(); } });
+  if (mk && mk.tattoo) [-1, 1].forEach((s, i) => { const a = mk.tattoo[i]; if (a > 0 && c.fromLook && tatG()) drawTat2D(s, a); else if (a > 0) { ctx.save(); ctx.translate(s * 58, 30); ctx.scale(0.4 + 0.6 * a, 0.4 + 0.6 * a); ctx.rotate(s * 0.25); ctx.globalAlpha = Math.min(1, 0.45 + a); ctx.strokeStyle = '#3a2a6a'; ctx.lineWidth = 1.4; ctx.fillStyle = '#8b5cf6'; ell(-7, -5, 7, 9, -0.5); ctx.stroke(); ell(7, -5, 7, 9, 0.5); ctx.stroke(); ctx.fillStyle = '#5ac8ff'; ell(-5, 6, 5, 6.5, 0.5); ctx.stroke(); ell(5, 6, 5, 6.5, -0.5); ctx.stroke(); ctx.fillStyle = '#2a1f2e'; rr(-1.2, -9, 2.4, 20, 1.2); ctx.fill(); ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 1; line(-1, -9, -5, -15); line(1, -9, 5, -15); ctx.restore(); } });
   // nose
   ctx.strokeStyle = mix(c.skin, '#8a4a3a', 0.45); ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(0, 27, 3.6, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
   { const ch = ctx.createRadialGradient(0, 74, 2, 0, 74, 28); ch.addColorStop(0, 'rgba(255,255,255,.12)'); ch.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = ch; ell(0, 74, 28, 14); }
@@ -1444,6 +1464,45 @@ function drawCape() {
   ctx.fillStyle = 'rgba(255,255,255,.45)'; for (let x = -160; x <= 160; x += 40) for (let y = 170; y < 420; y += 40) circle(x + (Math.floor(y / 40) % 2) * 20, y, 5);
   ctx.fillStyle = '#ffffff'; rr(-46, 108, 92, 20, 10); ctx.fill();
 }
+// tank tops with trousers or shorts (no skirt): [bottom colour, shorts?]
+const ATL = { atl_kot: ['#4a6fa5', 0], atl_sort: ['#4a6fa5', 1], atl_tayt: ['#2a2a33', 0], atl_spor: ['#ff5fa2', 0], atl_bermuda: ['#7ed957', 1], atl_beyaz: ['#ffffff', 0], atl_kamuf: ['#6b7f4a', 0], atl_sari: ['#ffd23f', 1] };
+const ATL_LABELS = [['atl_kot', '🎽 Atlet+Kot'], ['atl_sort', '🎽 Atlet+Şort'], ['atl_tayt', '🎽 Atlet+Tayt'], ['atl_spor', '🎽 Atlet+Spor'], ['atl_bermuda', '🎽 Bermuda'], ['atl_beyaz', '🎽 Beyaz pantolon'], ['atl_kamuf', '🎽 Kamuflaj'], ['atl_sari', '🎽 Sarı şort']];
+// your own temporary tattoo: a 10x10 pixel picture (digits 0-8 = colours), shown on the cheeks instead of the butterfly
+const TAT_COLS = ['', '#ff4f8b', '#8b5cf6', '#5ac8ff', '#ffd23f', '#2fd27a', '#ff8a3d', '#2a1f2e', '#ffffff'];
+const tatG = () => (profile && typeof profile.tat === 'string' && /^[0-8]{100}$/.test(profile.tat) && /[1-8]/.test(profile.tat)) ? profile.tat : null;
+let TAT_TEX = null;
+function drawTat2D(s, a) {
+  const g = tatG(); ctx.save(); ctx.translate(s * 58, 30); ctx.scale(0.4 + 0.6 * a, 0.4 + 0.6 * a); ctx.rotate(s * 0.2); ctx.globalAlpha = Math.min(1, 0.5 + a);
+  for (let i = 0; i < 100; i++) { const k = +g[i]; if (!k) continue; ctx.fillStyle = TAT_COLS[k]; ctx.fillRect(-13 + (i % 10) * 2.6, -13 + Math.floor(i / 10) * 2.6, 2.8, 2.8); }
+  ctx.restore();
+}
+function tatTex() {
+  if (TAT_TEX) return TAT_TEX; const g = tatG();
+  const c = document.createElement('canvas'); c.width = c.height = 80; const x = c.getContext('2d');
+  for (let i = 0; i < 100; i++) { const k = +g[i]; if (!k) continue; x.fillStyle = TAT_COLS[k]; x.fillRect((i % 10) * 8, Math.floor(i / 10) * 8, 8, 8); }
+  TAT_TEX = new THREE.CanvasTexture(c); TAT_TEX.magFilter = THREE.NearestFilter; return TAT_TEX;
+}
+function openTatEditor() {
+  let cur = 1, grid = tatG() || '0'.repeat(100); grid = grid.split('');
+  const cell = i => grid[i] === '0' ? '#ffffff' : TAT_COLS[+grid[i]];
+  openModal(`<h2>🎨 Dövmeni tasarla</h2><p>Bir renk seç, kutulara dokun ya da sürükle</p><div id="tpal" style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:6px 0"></div><div id="tgrid" style="display:grid;grid-template-columns:repeat(10,1fr);gap:2px;width:290px;margin:8px auto;touch-action:none;user-select:none"></div><button class="mb g" id="tsave">💾 Kaydet</button><button class="mb y" id="tclear">🧽 Temizle</button><button class="mb y" id="tbf">🦋 Kelebeğe dön</button><button class="mb s" id="tclose">Kapat</button>`);
+  const gr = $('tgrid'), pal = $('tpal');
+  const paint = i => { grid[i] = cur === 0 ? '0' : String(cur); gr.children[i].style.background = cell(i); };
+  for (let i = 0; i < 100; i++) { const d = document.createElement('div'); d.style.cssText = 'aspect-ratio:1;border:1px solid #ecc6dc;border-radius:3px;background:' + cell(i); d.dataset.i = i; gr.appendChild(d); }
+  let down = false; const at = e => { const t = document.elementFromPoint(e.clientX, e.clientY); if (t && t.parentNode === gr) paint(+t.dataset.i); };
+  gr.addEventListener('pointerdown', e => { down = true; at(e); e.preventDefault(); }); gr.addEventListener('pointermove', e => { if (down) at(e); }); window.addEventListener('pointerup', () => { down = false; });
+  const drawPal = () => { pal.innerHTML = ''; TAT_COLS.forEach((col, k) => { const b = document.createElement('div'); b.style.cssText = 'width:34px;height:34px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;border:' + (cur === k ? '4px solid #ff5fa2' : '2px solid #d8c6d2') + ';background:' + (col || '#ffffff'); if (!k) b.textContent = '🧽'; b.onclick = () => { cur = k; drawPal(); }; pal.appendChild(b); }); };
+  drawPal();
+  $('tsave').onclick = () => {
+    const str = grid.join(''); if (!/[1-8]/.test(str)) return say('Önce bir şeyler çiz! ✏️');
+    profile.tat = str; TAT_TEX = null; save(); sfx('done');
+    if (designLook && !designLook.makeup.includes('tattoo')) setLook('makeup', [...designLook.makeup, 'tattoo']); else if (designLook) designChar = buildChar(designLook, profile.name);
+    closeModal(); say('🎨 Dövmen hazır! Yanaklarında görünür');
+  };
+  $('tclear').onclick = () => { grid = '0'.repeat(100).split(''); for (let i = 0; i < 100; i++) gr.children[i].style.background = '#ffffff'; };
+  $('tbf').onclick = () => { delete profile.tat; TAT_TEX = null; save(); if (designLook) designChar = buildChar(designLook, profile.name); closeModal(); say('🦋 Kelebek dövmeye döndün'); };
+  $('tclose').onclick = closeModal;
+}
 const NFD = {
   fox: { c1: '#ff8a2a', c2: '#ffffff', deco: 'belly', hat: 'foxears' },
   panda: { c1: '#f4f4f4', c2: '#2a2a33', deco: 'band', hat: 'pandaears' },
@@ -1464,6 +1523,7 @@ function drawBody(c, walk, mood) {
   // how each outfit is built: torso shape, leg / bottom colours, long sleeves, extras
   const O = {
     dress: { shape: 'dress' }, gown: { shape: 'gown' }, tutu: { shape: 'shirt', legs: '#fff0f6', tutu: 1 },
+    ...Object.fromEntries(Object.entries(ATL).map(([k, v]) => [k, { shape: 'shirt', legs: v[1] ? c.skin : v[0], bottom: v[0] }])),
     tshirt: { shape: 'shirt' }, overalls: { shape: 'shirt', legs: DENIM, bottom: DENIM }, apron: { shape: c.girl ? 'dress' : 'shirt' },
     tracksuit: { shape: 'shirt', legs: dark, bottom: dark, long: 1 }, pajamas: { shape: 'shirt', legs: c.cloth, bottom: c.cloth, long: 1 },
     raincoat: { shape: 'coat', long: 1 }, hero: { shape: 'shirt', legs: dark, bottom: dark, cape: 1 },
@@ -1581,8 +1641,8 @@ function drawBody(c, walk, mood) {
     else ctx.fillRect(-10, 194, 20, 16);
     ctx.strokeStyle = mix(c.skin, '#000000', 0.16); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-s * 9, 226); ctx.quadraticCurveTo(-s * 3, 231, s * 6, 228); ctx.stroke();
     for (let k = 0; k < 4; k++) { const fx = -10.5 + k * 7, ty = 222 + fl[k] + 3; ctx.fillStyle = done || mix(c.skin, '#ff8a9a', 0.3); ell(fx, ty + 0.5, 2.6, 3.2); ctx.fillStyle = 'rgba(255,255,255,.7)'; ell(fx - 0.7, ty - 0.6, 0.8, 1.2); }
-    ctx.fillStyle = sleeveCol; ctx.strokeStyle = mix(sleeveCol, '#000000', 0.25); ctx.lineWidth = 4; ell(0, 22, O.long ? 23 : 27, O.long ? 30 : 36); ctx.stroke();
-    if (!O.long) { ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(0, 22, 20, 28, 0, 0.3 * Math.PI, 0.7 * Math.PI); ctx.stroke(); }
+    const tk = /^atl_/.test(outfit); ctx.fillStyle = tk ? c.skin : sleeveCol; ctx.strokeStyle = mix(tk ? c.skin : sleeveCol, '#000000', 0.25); ctx.lineWidth = 4; ell(0, 22, tk ? 19 : O.long ? 23 : 27, tk ? 26 : O.long ? 30 : 36); ctx.stroke();
+    if (!O.long && !tk) { ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(0, 22, 20, 28, 0, 0.3 * Math.PI, 0.7 * Math.PI); ctx.stroke(); }
     if (outfit === 'tracksuit') { ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 4; line(s * 8, 30, s * 6, 184); }
     ctx.strokeStyle = 'rgba(0,0,0,.16)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-12, 110); ctx.quadraticCurveTo(0, 114, 12, 110); ctx.stroke(); ctx.setLineDash([4, 4]); ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.beginPath(); ctx.moveTo(-14, 190); ctx.lineTo(14, 190); ctx.stroke(); ctx.setLineDash([]);
     ctx.restore();
@@ -3247,7 +3307,7 @@ const AV = {
   bangs: ['scallop', 'straight', 'side', 'none'], eyes: ['#5b3a1e', '#2d7ff9', '#2fa35a', '#1c1c1c', '#8b5cf6'],
   cloth: ['#ff5fa2', '#8b5cf6', '#2fd27a', '#ff8a1f', '#3b82f6', '#e8434f', '#1fc7c7', '#2a1f2e'],
   eyeStyle: ['normal', 'heart', 'star', 'happy', 'cat'], tip: ['none', '#ff6fb5', '#8b5cf6', '#3b82f6', '#1fc7c7', '#ffd23f', '#ffffff', '#e8434f', '#2fd27a'],
-  hairdo: ['none', 'buns', 'topknot', 'pigtails', 'spiky', 'mohawk', 'sidepart', 'quiff', 'bowl', 'afro', 'bald', 'undercut', 'buzz', 'crop'], outfit: ['dress', 'tshirt', 'overalls', 'apron', 'gown', 'tutu', 'tracksuit', 'pajamas', 'raincoat', 'hero', 'jacket', 'sweater', 'galaxy', 'rainbow', 'mermaid', 'fairy', 'winter', 'swim', 'chef', 'cowgirl', 'astronaut', 'football', 'suit', 'police', 'firefighter', 'pirate', 'ninja', 'royal', 'knight', 'wizard', 'vampire', 'samurai', 'angel', 'diamond', 'cosmic', 'dragonarmor', 'whitedeer', 'cloud', 'farmer', 'doctor', 'bunny', 'tiger', 'witch', 'ball', 'sunking', 'icequeen', 'elf', 'robotsuit', 'pharaoh', 'unicornsuit', 'snowman', 'pumpkin', 'candy', 'crystal', 'lava', 'poseidon', 'fox', 'panda', 'frog', 'bee', 'ladybug', 'rocker', 'ballet', 'scientist', 'racer', 'dino', 'kimono', 'sailor'], pattern: ['plain', 'stripes', 'dots', 'hearts', 'stars'],
+  hairdo: ['none', 'buns', 'topknot', 'pigtails', 'spiky', 'mohawk', 'sidepart', 'quiff', 'bowl', 'afro', 'bald', 'undercut', 'buzz', 'crop'], outfit: ['dress', 'tshirt', 'overalls', 'apron', 'gown', 'tutu', 'tracksuit', 'pajamas', 'raincoat', 'hero', 'jacket', 'sweater', 'galaxy', 'rainbow', 'mermaid', 'fairy', 'winter', 'swim', 'chef', 'cowgirl', 'astronaut', 'football', 'suit', 'police', 'firefighter', 'pirate', 'ninja', 'royal', 'knight', 'wizard', 'vampire', 'samurai', 'angel', 'diamond', 'cosmic', 'dragonarmor', 'whitedeer', 'cloud', 'farmer', 'doctor', 'bunny', 'tiger', 'witch', 'ball', 'sunking', 'icequeen', 'elf', 'robotsuit', 'pharaoh', 'unicornsuit', 'snowman', 'pumpkin', 'candy', 'crystal', 'lava', 'poseidon', 'fox', 'panda', 'frog', 'bee', 'ladybug', 'rocker', 'ballet', 'scientist', 'racer', 'dino', 'kimono', 'sailor', 'atl_kot', 'atl_sort', 'atl_tayt', 'atl_spor', 'atl_bermuda', 'atl_beyaz', 'atl_kamuf', 'atl_sari'], pattern: ['plain', 'stripes', 'dots', 'hearts', 'stars'],
   shoe: ['#ff5fa2', '#1c1c1c', '#ffffff', '#e8434f', '#3b82f6', '#ffd23f'], hat: ['none', 'cap', 'beanie', 'sunhat', 'party', 'backcap', 'headphones'], glasses: ['none', 'round', 'sun', 'star'],
   pet: ['none', 'cat', 'dog', 'bunny', 'snake', 'duck', 'dragon', 'penguin', 'unicorn', 'turtle', 'owl', 'fox', 'panda', 'axolotl', 'wolf', 'lion', 'robot', 'dino', 'phoenix', 'whitedeer', 'hedgehog', 'giraffe', 'elephant', 'monkey', 'koala', 'zebra', 'parrot', 'butterfly'], nail: ['none', ...NAIL_COLS.map(e => e[0])],
   lipc: ['#e0245e', '#ff6fa5', '#9b1b4b', '#d98a7a', '#ff6a2a', '#7a1fa2', '#ff2a2a', '#ffb6c8', '#5a1230', '#c43a8f'], shadc: ['#9b6bff', '#3b82f6', '#ff7ac6', '#ffc83d', '#2fd27a', '#1fc7c7', '#e8434f', '#8a5a34', '#c9cfd8', '#1e2f6b'], blushc: ['#ff7fa8', '#ff9a6b', '#e85a8a', '#c97bff', '#ffb3c8', '#ff6a5a', '#ffd0a0', '#9ad0ff'],
@@ -3298,7 +3358,7 @@ function buildChar(look, name) {
   Object.assign(c, { name: name || c.name, girl: L.girl, skin: L.skin, hairCol: L.hair, eyes: L.eyes, cloth: L.cloth, short: L.len === 'short' || L.len === 'zero' || ['bald', 'undercut', 'buzz', 'crop'].includes(L.hairdo), bangs: L.bangs,
     beard: [], greasy: 0, specks: [], foam: [], strays: [], capDye: 0, cucumbers: [0, 0], maskPts: MASK_PTS.map(() => 0) });
   c.req = { ...c.req, dye: null, makeup: [], jewels: [] };
-  c.av = L; c.shoe = L.shoe; c.lipCol = L.lipc; c.shadCol = L.shadc; c.blushCol = L.blushc;
+  c.av = L; c.fromLook = 1; c.shoe = L.shoe; c.lipCol = L.lipc; c.shadCol = L.shadc; c.blushCol = L.blushc;
   const on = k => L.makeup.includes(k) ? 1 : 0;
   c.mk = { lip: LIP_PTS.map(() => on('lip')), lash: [on('lash'), on('lash')], blush: [on('blush'), on('blush')], shadow: [on('shadow'), on('shadow')], glitter: [on('glitter'), on('glitter')], gloss: LIP_PTS.map(() => 0), liner: [on('liner'), on('liner')], mascara: [on('mascara'), on('mascara')], highlighter: [on('highlighter'), on('highlighter')], foundation: [on('foundation'), on('foundation')], facepaint: [on('facepaint'), on('facepaint')], eyebrow: [on('eyebrow'), on('eyebrow')], contour: [on('contour'), on('contour')], facegems: [on('facegems'), on('facegems')], freckles: [on('freckles'), on('freckles')], falselash: [on('falselash'), on('falselash')], spray: [on('spray'), on('spray')], eyeglow: [on('eyeglow'), on('eyeglow')], colorliner: [on('colorliner'), on('colorliner')], cheekstar: [on('cheekstar'), on('cheekstar')], sunkiss: [on('sunkiss'), on('sunkiss')], colorbrow: [on('colorbrow'), on('colorbrow')], tattoo: [on('tattoo'), on('tattoo')] };
   const [w0, freq] = { straight: [0.04, 24], wavy: [0.75, 24], curly: [1, 11] }[L.style];
@@ -3625,6 +3685,7 @@ function drawDesigner() {
     row('Makyaj 4', toggles([['freckles', '🔸 Çil'], ['falselash', '🪭 T.kirpik'], ['spray', '💦 Sprey']], 'makeup', 124));
     row('Makyaj 5', toggles([['eyeglow', '✨ Göz simi'], ['colorliner', '🩵 R.liner'], ['cheekstar', '⭐ Yanak']], 'makeup', 124));
     row('Makyaj 6', toggles([['sunkiss', '☀️ Güneş'], ['colorbrow', '🌈 R.kaş'], ['tattoo', '🦋 Dövme']], 'makeup', 124));
+    row('Dövmem', (x, yy) => btn(x, yy + 4, 250, 42, '🎨 Dövmeni tasarla', openTatEditor, { size: 15 }));
     row('Yüz', toggles([['freckles', 'Çiller'], ['mole', 'Ben']], 'face', 124));
   } else if (designTab === 'hair') {
     row('Saç rengi', swatches(AV.hair, 'hair'));
@@ -3640,9 +3701,9 @@ function drawDesigner() {
     { const mine = Object.entries(inv.custom || {}); if (mine.length) { fitText('Yeni kıyafetlerim', 560, y + 28, 18, 124, '#6b5a70', 800); mine.slice(0, 8).forEach(([id, v], i) => { const o = sxParse(sxPack({ ...DEFAULT_LOOK, ...v.o })); if (o) btn(690 + (i % 4) * 138, y + Math.floor(i / 4) * 40, 132, 36, '🆕 ' + v.n, () => { designLook = { ...designLook, ...o }; designChar = buildChar(designLook, profile.name); sfx('pop'); }, { size: 14, col: '#d6f5e3' }); }); y += 28 + Math.ceil(Math.min(8, mine.length) / 4) * 40; } }
     fitText('Kıyafet', 560, y + 28, 18, 124, '#6b5a70', 800);
     [['dress', '👗 Elbise'], ['gown', '👸 Prenses'], ['tutu', '🩰 Balerin'], ['tshirt', '👕 Tişört'], ['overalls', '👖 Tulum'], ['apron', '💅 Önlük'],
-      ['tracksuit', '🏃 Eşofman'], ['pajamas', '🌙 Pijama'], ['raincoat', '☔ Yağmurluk'], ['hero', '🦸 Kahraman'], ['jacket', '🧥 Kot ceket'], ['sweater', '🧶 Kazak'], ['galaxy', '👑 Yıldız Prensesi'], ['rainbow', '🌈 Gökkuşağı'], ['mermaid', '🧜 Deniz Kızı'], ['fairy', '🧚 Peri'], ['winter', '❄️ Kış Prensesi'], ['swim', '👙 Mayo'], ['chef', '🍳 Aşçı'], ['cowgirl', '🤠 Kovboy'], ['astronaut', '🚀 Astronot'], ['football', '⚽ Futbolcu'], ['suit', '🤵 Takım'], ['police', '👮 Polis'], ['firefighter', '🚒 İtfaiyeci'], ['pirate', '🏴‍☠️ Korsan'], ['ninja', '🥷 Ninja'], ['royal', '👑 Altın Hükümdar'], ['knight', '🛡️ Şövalye'], ['wizard', '🧙 Büyücü'], ['vampire', '🧛 Vampir'], ['samurai', '⚔️ Samuray'], ['angel', '😇 Melek'], ['diamond', '💎 Elmas'], ['farmer', '🧑‍🌾 Çiftçi'], ['doctor', '🩺 Doktor'], ['bunny', '🐰 Tavşan'], ['tiger', '🐯 Kaplan'], ['witch', '🧙‍♀️ Cadı'], ['ball', '👸 Balo'], ['sunking', '☀️ Güneş'], ['icequeen', '❄️ Buz Kraliçesi'], ['elf', '🧝 Elf'], ['robotsuit', '🤖 Robot'], ['pharaoh', '🔱 Firavun'], ['unicornsuit', '🦄 Tek Boynuz'], ['snowman', '⛄ Kardan Adam'], ['pumpkin', '🎃 Balkabağı'], ['candy', '🍭 Şeker'], ['crystal', '💎 Kristal'], ['lava', '🌋 Lav Ruhu'], ['poseidon', '🔱 Okyanus'], ['fox', '🦊 Tilki'], ['panda', '🐼 Panda'], ['frog', '🐸 Kurbağa'], ['bee', '🐝 Arı'], ['ladybug', '🐞 Uğur Böceği'], ['rocker', '🎸 Rockçı'], ['ballet', '🩰 Balerin'], ['scientist', '🔬 Bilim İnsanı'], ['racer', '🏎️ Yarışçı'], ['dino', '🦖 Dinozor'], ['kimono', '🎎 Kimono'], ['sailor', '⚓ Denizci'], ...(rich() ? [['cosmic', '🌌 Kozmik Admin'], ['dragonarmor', '🐲 Ejderha Zırhı'], ['whitedeer', '🦌 Beyaz Geyik']] : []), ...(canCloud() ? [['cloud', '☁️ Bulut']] : [])]
+      ['tracksuit', '🏃 Eşofman'], ['pajamas', '🌙 Pijama'], ['raincoat', '☔ Yağmurluk'], ['hero', '🦸 Kahraman'], ['jacket', '🧥 Kot ceket'], ['sweater', '🧶 Kazak'], ['galaxy', '👑 Yıldız Prensesi'], ['rainbow', '🌈 Gökkuşağı'], ['mermaid', '🧜 Deniz Kızı'], ['fairy', '🧚 Peri'], ['winter', '❄️ Kış Prensesi'], ['swim', '👙 Mayo'], ['chef', '🍳 Aşçı'], ['cowgirl', '🤠 Kovboy'], ['astronaut', '🚀 Astronot'], ['football', '⚽ Futbolcu'], ['suit', '🤵 Takım'], ['police', '👮 Polis'], ['firefighter', '🚒 İtfaiyeci'], ['pirate', '🏴‍☠️ Korsan'], ['ninja', '🥷 Ninja'], ['royal', '👑 Altın Hükümdar'], ['knight', '🛡️ Şövalye'], ['wizard', '🧙 Büyücü'], ['vampire', '🧛 Vampir'], ['samurai', '⚔️ Samuray'], ['angel', '😇 Melek'], ['diamond', '💎 Elmas'], ['farmer', '🧑‍🌾 Çiftçi'], ['doctor', '🩺 Doktor'], ['bunny', '🐰 Tavşan'], ['tiger', '🐯 Kaplan'], ['witch', '🧙‍♀️ Cadı'], ['ball', '👸 Balo'], ['sunking', '☀️ Güneş'], ['icequeen', '❄️ Buz Kraliçesi'], ['elf', '🧝 Elf'], ['robotsuit', '🤖 Robot'], ['pharaoh', '🔱 Firavun'], ['unicornsuit', '🦄 Tek Boynuz'], ['snowman', '⛄ Kardan Adam'], ['pumpkin', '🎃 Balkabağı'], ['candy', '🍭 Şeker'], ['crystal', '💎 Kristal'], ['lava', '🌋 Lav Ruhu'], ['poseidon', '🔱 Okyanus'], ['fox', '🦊 Tilki'], ['panda', '🐼 Panda'], ['frog', '🐸 Kurbağa'], ['bee', '🐝 Arı'], ['ladybug', '🐞 Uğur Böceği'], ['rocker', '🎸 Rockçı'], ['ballet', '🩰 Balerin'], ['scientist', '🔬 Bilim İnsanı'], ['racer', '🏎️ Yarışçı'], ['dino', '🦖 Dinozor'], ['kimono', '🎎 Kimono'], ['sailor', '⚓ Denizci'], ...(rich() ? [['cosmic', '🌌 Kozmik Admin'], ['dragonarmor', '🐲 Ejderha Zırhı'], ['whitedeer', '🦌 Beyaz Geyik']] : []), ...(canCloud() ? [['cloud', '☁️ Bulut']] : []), ...ATL_LABELS]
       .forEach(([v, t], i) => { const special = ['galaxy', 'rainbow', 'mermaid', 'fairy', 'winter', 'swim', 'chef', 'cowgirl', 'astronaut', ...BOY_OUTFITS].includes(v), lock = special && !inv.outfits.includes(v) && !ADMIN_OUTFITS.includes(v) && v !== 'cloud'; btn(690 + (i % 5) * 111, y + 2 + Math.floor(i / 5) * 38, 105, 34, lock ? '🔒 ' + t.split(' ').slice(1).join(' ') : t, () => lock ? (say(t + ' mağazada! 🛍️'), openShop(['wizard', 'vampire', 'samurai', 'angel', 'icequeen', 'elf', 'robotsuit', 'pharaoh', 'unicornsuit', 'snowman', 'pumpkin', 'candy', 'frog', 'dino'].includes(v) ? 'sale' : ['galaxy', 'royal', 'sunking', 'crystal', 'lava', 'poseidon'].includes(v) ? (specialPick = v, 'special') : ['swim', 'chef', 'cowgirl', 'astronaut', ...BOY_OUTFITS].includes(v) ? 'clothes' : 'sale')) : setLook('outfit', v), { active: designLook.outfit === v, col: special ? '#ffe68a' : undefined, size: lock ? 13 : 15 }); });
-    y += 58 + (Math.ceil((64 + (rich() ? ADMIN_OUTFITS.length : 0) + (canCloud() ? 1 : 0)) / 5) - 1) * 38;
+    y += 58 + (Math.ceil((72 + (rich() ? ADMIN_OUTFITS.length : 0) + (canCloud() ? 1 : 0)) / 5) - 1) * 38;
     row('Desen', chips([['plain', 'Düz'], ['stripes', 'Çizgili'], ['dots', 'Puantiye'], ['hearts', 'Kalpli'], ['stars', 'Yıldızlı']], 'pattern', 104));
     row('Kıyafet rengi', swatches(AV.cloth, 'cloth'));
     row('Ayakkabı', swatches(AV.shoe, 'shoe'));
@@ -3994,7 +4055,7 @@ function lbAvatar(look, name, tagCol) {
   const dark = toon(mix(L.cloth, '#000000', 0.25)), pants = toon('#3b5b8f'), denim = toon('#4a6fa5');
   const o = sp2 ? { swim: 'tshirt', chef: 'raincoat', cowgirl: 'tshirt', astronaut: 'raincoat', football: 'tshirt', suit: 'sweater', police: 'sweater', firefighter: 'raincoat', pirate: 'sweater', ninja: 'sweater', royal: 'raincoat', knight: 'raincoat', wizard: 'gown', vampire: 'raincoat', samurai: 'raincoat', angel: 'gown', diamond: 'gown', cosmic: 'raincoat', dragonarmor: 'raincoat', whitedeer: 'gown', cloud: 'gown', farmer: 'sweater', doctor: 'raincoat', bunny: 'raincoat', tiger: 'raincoat', witch: 'dress', ball: 'gown', sunking: 'gown', icequeen: 'gown', elf: 'dress', robotsuit: 'raincoat', pharaoh: 'gown', unicornsuit: 'gown', snowman: 'raincoat', pumpkin: 'dress', candy: 'dress', crystal: 'gown', lava: 'gown', poseidon: 'gown', fox: 'raincoat', panda: 'raincoat', frog: 'raincoat', bee: 'dress', ladybug: 'dress', rocker: 'raincoat', ballet: 'gown', scientist: 'raincoat', racer: 'raincoat', dino: 'raincoat', kimono: 'gown', sailor: 'raincoat' }[L.outfit] : galaxy ? (L.girl ? 'gown' : 'hero') : sp === 'fairy' ? 'dress' : sp === 'winter' ? 'raincoat' : sp ? (L.girl || sp === 'mermaid' ? 'gown' : 'tshirt') : L.outfit, dressy = ['dress', 'gown'].includes(o) || (o === 'apron' && L.girl), longSl = ['tracksuit', 'pajamas', 'raincoat', 'jacket', 'sweater'].includes(o);
   const boyLeg = { suit: '#2a2f45', police: '#1f2f55', firefighter: '#3a3a46', pirate: '#3a2a20', ninja: '#2a2a38', royal: '#7a1f2b', knight: '#8d97a6', vampire: '#1a1424', samurai: '#3a2a20', cosmic: '#14122e', dragonarmor: '#2a0a0e', farmer: '#4a6fa5', tiger: '#ff9a2a', bunny: '#ffffff', doctor: '#5aa9ff' }[L.outfit];
-  const legM = boyLeg ? toon(boyLeg) : L.outfit === 'football' ? skin : L.outfit === 'astronaut' ? cloth : L.outfit === 'swim' ? skin : o === 'overalls' ? denim : ['tracksuit', 'hero'].includes(o) ? dark : o === 'pajamas' ? cloth : o === 'tutu' ? toon('#fff0f6') : dressy || L.girl ? skin : pants;
+  const legM = ATL[L.outfit] ? (ATL[L.outfit][1] ? skin : toon(ATL[L.outfit][0])) : boyLeg ? toon(boyLeg) : L.outfit === 'football' ? skin : L.outfit === 'astronaut' ? cloth : L.outfit === 'swim' ? skin : o === 'overalls' ? denim : ['tracksuit', 'hero'].includes(o) ? dark : o === 'pajamas' ? cloth : o === 'tutu' ? toon('#fff0f6') : dressy || L.girl ? skin : pants;
   const body = new THREE.Group(); g.add(body); A.body = body;
   // legs pivot at the hip
   for (const s of [-1, 1]) {
@@ -4011,7 +4072,7 @@ function lbAvatar(look, name, tagCol) {
     body.add(lbM(new THREE.CylinderGeometry(0.28, 0.31, 0.72, 24), cloth, 0, 1.08, 0));
     if (o === 'tutu') { const tt = lbM(new THREE.CylinderGeometry(0.34, 0.62, 0.16, 28), toon(mix(L.cloth, '#ffffff', 0.55)), 0, 0.74, 0); body.add(tt); }
     else if (L.girl && o === 'tshirt' && L.outfit !== 'football') body.add(lbM(new THREE.CylinderGeometry(0.3, 0.46, 0.32, 24), dark, 0, 0.72, 0));
-    else body.add(lbM(new THREE.CylinderGeometry(0.31, 0.31, 0.16, 24), boyLeg ? toon(boyLeg) : L.outfit === 'football' ? toon('#ffffff') : o === 'overalls' ? denim : ['tracksuit', 'hero'].includes(o) ? dark : o === 'pajamas' ? cloth : pants, 0, 0.72, 0));
+    else body.add(lbM(new THREE.CylinderGeometry(0.31, 0.31, 0.16, 24), ATL[L.outfit] ? toon(ATL[L.outfit][0]) : boyLeg ? toon(boyLeg) : L.outfit === 'football' ? toon('#ffffff') : o === 'overalls' ? denim : ['tracksuit', 'hero'].includes(o) ? dark : o === 'pajamas' ? cloth : pants, 0, 0.72, 0));
   }
   if (o === 'apron') body.add(lbM(new THREE.BoxGeometry(0.4, 0.62, 0.04), toon('#ffffff'), 0, 1.02, 0.29));
   if (o === 'overalls') body.add(lbM(new THREE.BoxGeometry(0.36, 0.34, 0.04), denim, 0, 1.0, 0.3));
@@ -4020,7 +4081,7 @@ function lbAvatar(look, name, tagCol) {
   // arms pivot at the shoulder
   for (const s of [-1, 1]) {
     const ag = new THREE.Group(); ag.position.set(s * 0.34, 1.4, 0); ag.rotation.z = s * 0.12; body.add(ag); A.arms.push(ag);
-    ag.add(lbM(new THREE.SphereGeometry(0.12, 12, 10), o === 'jacket' ? denim : cloth, 0, -0.04, 0));
+    ag.add(lbM(new THREE.SphereGeometry(0.12, 12, 10), ATL[L.outfit] ? skin : o === 'jacket' ? denim : cloth, 0, -0.04, 0));
     ag.add(lbM(new THREE.CylinderGeometry(0.075, 0.065, 0.55, 10), longSl ? (o === 'jacket' ? denim : cloth) : skin, 0, -0.3, 0));
     for (let k = -1.5; k <= 1.5; k++) { const fg = lbM(new THREE.CylinderGeometry(0.026, 0.023, 0.12, 6), skin, k * 0.04, -0.7, 0.025); ag.add(fg); ag.add(lbM(new THREE.SphereGeometry(0.022, 8, 6), skin, k * 0.04, -0.745, 0.025)); if (!(L.nail && L.nail !== 'none')) ag.add(lbM(new THREE.SphereGeometry(0.014, 6, 5), toon('#ffc4cc'), k * 0.04, -0.752, 0.04)); }
     ag.add(lbM(new THREE.SphereGeometry(0.09, 12, 10), skin, 0, -0.6, 0)); if (L.nail && L.nail !== 'none') for (let k = -1; k <= 1; k++) ag.add(lbM(new THREE.SphereGeometry(0.026, 8, 6), toon(L.nail, { emissive: L.nail, emissiveIntensity: 0.25 }), k * 0.045, -0.675, 0.04)); { const th = lbM(new THREE.SphereGeometry(0.04, 8, 6), skin, -s * 0.085, -0.6, 0.04); th.scale.set(0.8, 1.7, 0.9); th.rotation.z = -s * 0.35; ag.add(th); }
@@ -4053,7 +4114,8 @@ function lbAvatar(look, name, tagCol) {
   if (L.makeup.includes('cheekstar')) for (const s of [-1, 1]) { const cs = lbM(new THREE.OctahedronGeometry(0.04), new THREE.MeshBasicMaterial({ color: '#ffd23f' }), s * 0.3, -0.1, 0.36); cs.scale.set(1, 1, 0.35); head.add(cs); }
   if (L.makeup.includes('sunkiss')) for (const s of [-1, 1]) { const sk = lbM(new THREE.SphereGeometry(0.1, 10, 8), new THREE.MeshBasicMaterial({ color: '#ff9a3f', transparent: true, opacity: 0.28 }), s * 0.2, -0.06, 0.37); sk.scale.set(1.8, 1.1, 0.3); sk.userData.noOutline = true; head.add(sk); }
   if (L.makeup.includes('colorbrow')) for (const s of [-1, 1]) { const cb = lbM(new THREE.CylinderGeometry(0.026, 0.026, 0.17, 6), new THREE.MeshBasicMaterial({ color: s < 0 ? '#ff6fb5' : '#8b5cf6' }), s * 0.17, 0.165, 0.415); cb.rotation.z = Math.PI / 2 + s * 0.12; cb.rotation.x = 0.2; head.add(cb); }
-  if (L.makeup.includes('tattoo')) for (const s of [-1, 1]) { const wm = new THREE.MeshBasicMaterial({ color: '#8b5cf6' }); for (const w of [-1, 1]) { const wl = lbM(new THREE.SphereGeometry(0.032, 8, 6), wm, s * 0.34 + w * 0.03, -0.06, 0.33); wl.scale.set(1, 1.2, 0.3); head.add(wl); } head.add(lbM(new THREE.SphereGeometry(0.012, 6, 5), new THREE.MeshBasicMaterial({ color: '#2a1f2e' }), s * 0.34, -0.06, 0.34)); }
+  if (L.makeup.includes('tattoo') && tatG()) for (const s of [-1, 1]) { const pl = new THREE.Mesh(new THREE.PlaneGeometry(0.15, 0.15), new THREE.MeshBasicMaterial({ map: tatTex(), transparent: true, depthWrite: false })); pl.position.set(s * 0.33, -0.06, 0.34); pl.rotation.set(0, s * 0.8, s * 0.2); head.add(pl); }
+  else if (L.makeup.includes('tattoo')) for (const s of [-1, 1]) { const wm = new THREE.MeshBasicMaterial({ color: '#8b5cf6' }); for (const w of [-1, 1]) { const wl = lbM(new THREE.SphereGeometry(0.032, 8, 6), wm, s * 0.34 + w * 0.03, -0.06, 0.33); wl.scale.set(1, 1.2, 0.3); head.add(wl); } head.add(lbM(new THREE.SphereGeometry(0.012, 6, 5), new THREE.MeshBasicMaterial({ color: '#2a1f2e' }), s * 0.34, -0.06, 0.34)); }
   if (L.makeup.includes('eyebrow')) for (const s of [-1, 1]) { const eb = lbM(new THREE.CylinderGeometry(0.03, 0.03, 0.17, 6), toon(mix(L.hair, '#000000', 0.55)), s * 0.17, 0.165, 0.41); eb.rotation.z = Math.PI / 2 + s * 0.12; eb.rotation.x = 0.2; head.add(eb); }
   if (L.makeup.includes('contour')) for (const s of [-1, 1]) { const ct = lbM(new THREE.SphereGeometry(0.07, 10, 8), new THREE.MeshBasicMaterial({ color: '#8c502d', transparent: true, opacity: 0.4 }), s * 0.37, -0.08, 0.26); ct.scale.set(0.5, 1.5, 0.4); head.add(ct); }
   if (L.makeup.includes('freckles')) { const fk = new THREE.MeshBasicMaterial({ color: '#a05a2d' }); for (const s of [-1, 1]) for (let k = 0; k < 6; k++) head.add(lbM(new THREE.SphereGeometry(0.011, 6, 5), fk, s * (0.1 + (k % 3) * 0.05), -0.07 - Math.floor(k / 3) * 0.03, 0.43 - (k % 3) * 0.02)); }
@@ -4547,7 +4609,7 @@ function lbPopulate() {
     av.position.set(Math.sin(a) * R, 0, Math.cos(a) * R); av.userData.info = p.info; sc.add(av);
     return { av, target: null, wait: Math.random() * 3, speed: 0 };
   });
-  LB.yaw = 0; LB.target = null; LB.where = 'town'; LB.basket = [];
+  LB.yaw = 0; LB.target = null; LB.where = 'town'; LB.basket = []; LB.heldE = null;
 }
 function enterLobby() {
   if (!lbInit()) { sfx('no'); return say('3D lobi açılamadı 😕 (lib klasörü ya da internet gerekli)'); }
@@ -4720,6 +4782,7 @@ function drawLobby() {
       text(`Toplam: ${LB.basket.reduce((a, k) => a + FOODS[k][2], 0)} TL`, 1078, 176 + Math.max(1, Object.keys(cnt).length) * 24 + 12, 15, '#23884f', 'left', 800);
     }
     btn(1132, 650, 130, 52, `🎒 ${bagUsed()}/${bagCap()}`, () => { LB.bag = !LB.bag; }, { active: LB.bag, size: 19 });
+    if (LB.heldE) btn(930, 650, 190, 52, '✋ Bırak ' + LB.heldE, lbUnhold, { size: 18 });
     if (LB.bag) drawBag();
     if (LB.near) btn(470, 600, 340, 64, `🚪 ${LB.near.icon} ${LB.near.name}`, () => lbEnter(LB.near), { col: '#27b36a', fg: '#ffffff', size: 22 });
     if (LB.tipT > 0) { ctx.globalAlpha = Math.min(1, LB.tipT); ctx.fillStyle = 'rgba(58,35,64,.85)'; rr(340, 16, 600, 64, 20); ctx.fill(); text(TOUCH ? 'Yürümek için joystick ya da yere dokun • ⬆️ Zıpla' : 'Yürü: W A S D / ok tuşları • Zıpla: Boşluk tuşu', 640, 42, 19, '#ffffff', 'center', 800); text('Sürükle: etrafa bak • Birine dokun: profilini gör 👆', 640, 68, 16, '#ffd6ea', 'center', 700); ctx.globalAlpha = 1; }
@@ -5183,10 +5246,10 @@ function drawBag() {
   const food = Object.entries(inv.food || {}).filter(([, n]) => n > 0), things = Object.entries(inv.things || {}).filter(([, n]) => n > 0);
   text('🍎 Yiyecekler', 222, 196, 20, '#3a2340', 'left', 800);
   if (!food.length) text('Yok — 🛒 Market\'ten al', 380, 196, 16, '#6b5a70', 'left', 700);
-  food.slice(0, 12).forEach(([k, n], i) => { const [e, nm, , gain] = FOODS[k]; card(216 + (i % 6) * 142, 208 + Math.floor(i / 6) * 96, e, `${nm} ×${n}`, `+${gain} tokluk`, '😋 Ye', () => { const nd = needs(); if (nd.hunger >= 100) return say('Karnın tok! 😊'); inv.food[k]--; nd.hunger = Math.min(100, nd.hunger + gain); questEvent('eat'); save(); sfx('coin'); part({ x: 640, y: 300, vy: -60, life: 1, kind: 'txt', t: 'Nyam! 😋', col: '#23884f' }); }); });
+  food.slice(0, 12).forEach(([k, n], i) => { const [e, nm, , gain] = FOODS[k]; card(216 + (i % 6) * 142, 208 + Math.floor(i / 6) * 96, e, `${nm} ×${n}`, `+${gain} tokluk`, '😋 Ye', () => { const nd = needs(); if (nd.hunger >= 100) return say('Karnın tok! 😊'); inv.food[k]--; nd.hunger = Math.min(100, nd.hunger + gain); if (LB.me) lbHold(e, 2500); questEvent('eat'); save(); sfx('coin'); part({ x: 640, y: 300, vy: -60, life: 1, kind: 'txt', t: 'Nyam! 😋', col: '#23884f' }); }); });
   text('🧸 Eşyalar', 222, 432, 20, '#3a2340', 'left', 800);
   if (!things.length) text('Yok — 🛍️ Mağaza > 🎒 Çanta', 360, 432, 16, '#6b5a70', 'left', 700);
-  things.slice(0, 12).forEach(([k, n], i) => { const [e, nm, , line2] = THINGS[k]; card(216 + (i % 6) * 142, 444 + Math.floor(i / 6) * 96, e, `${nm} ×${n}`, 'Lobide kullan', '✨ Kullan', () => { LB.bag = false; if (LB.me) lbSay(LB.me, line2); questEvent('thing'); sfx('stick'); sparkle(640, 330, 20); }); });
+  things.slice(0, 12).forEach(([k, n], i) => { const [e, nm, , line2] = THINGS[k]; card(216 + (i % 6) * 142, 444 + Math.floor(i / 6) * 96, e, `${nm} ×${n}`, 'Lobide kullan', '✨ Kullan', () => { LB.bag = false; if (LB.me) { lbSay(LB.me, line2); lbHold(e); } questEvent('thing'); sfx('stick'); sparkle(640, 330, 20); }); });
 }
 
 // ================= beach & sea, day and night, daily quests =================

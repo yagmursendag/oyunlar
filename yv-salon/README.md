@@ -83,3 +83,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v73 | versions/v73-lunapark.html | 🎪 Güzel lunapark: kareli zemin, yanıp sönen ışıklar, oyuncaklar artık bilet parası ister, 8 yeni tezgâh (pamuk şeker, dondurma, mısır, halka atma, teneke, pelüş makinesi, fotoğraf, balon) |
 | v74 | versions/v74-allik.html | 🌸 Allık düzeltmesi: yanakların içi artık siyah değil, seçilen renkte yumuşak |
 | v75 | versions/v75-tezgah-oyun.html | 🎮 Tezgâh oyunları gerçek oyun oldu: halka atma, teneke devirme ve pelüş makinesi zamanlama oyunu, önce para ödenir |
+| v76 | versions/v76-atlet-esya-dovme.html | 🎽 Etek olmayan atlet kıyafetleri (8), çantadan alınan eşya lobide elde görünür (+33 yeni eşya mağazada), kendi geçici dövmeni tasarla |
