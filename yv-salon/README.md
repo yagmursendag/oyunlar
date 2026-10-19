@@ -89,3 +89,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v79 | versions/v79-agda-hayvan-alet.html | 🪒 Yeni müşteri istekleri: bacak ağdası ve ayak kremi (ağda seti / ayak kremi mağazada), 14 yeni hayvan, 4 yeni alet |
 | v80 | versions/v80-makyaj-yeni.html | 💄 6 yeni makyaj eşyası: dudak kalemi, alın taşı, kedi bıyığı, pırıltılı damla, palyaço burnu, şakak yıldızları |
 | v81 | versions/v81-ic-mekan.html | 🏬 Market ve hastane içleri çok daha güzel: karo zemin, pencereler, sarkıt lambalar, tabelalar, posterler, sepetler, kasa bandı, serum standları, ilaç dolabı, çocuk köşesi |
+| v82 | versions/v82-inek-kaplan.html | 🐮🐯 İnek ve kaplan baştan çizildi (2D ve 3D): benekli inek, memeli, boynuzlu, çanlı; çizgili, uzun kuyruklu kaplan |

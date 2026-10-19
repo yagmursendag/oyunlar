@@ -2400,9 +2400,42 @@ function petEye(x, y, r, col) {
   ctx.strokeStyle = '#1a1020'; ctx.lineWidth = Math.max(1.6, r * 0.3); ctx.beginPath(); ctx.arc(x, y, r * 1.05, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
   ctx.restore();
 }
+// hand-drawn cow and tiger (side view, facing right)
+function drawCowTiger(kind, x, y, s) {
+  const cow = kind === 'cow', col = cow ? '#ffffff' : '#ff9a2a', ol = cow ? '#8a8a96' : '#a8570c', dk = '#2a2a33', lh = 30, by0 = -(lh + 14), sw = Math.sin(T * 5) * 2;
+  ctx.save(); ctx.translate(x, y); ctx.scale(s * 1.05, s * 1.05); ctx.lineWidth = 3; ctx.strokeStyle = ol; ctx.lineCap = 'round';
+  if (cow) { ctx.strokeStyle = ol; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-44, by0 - 6); ctx.quadraticCurveTo(-64, by0 + 4 + sw, -60, by0 + 30); ctx.stroke(); ctx.fillStyle = dk; ell(-60, by0 + 34, 6, 9); ctx.lineWidth = 3; }
+  else { const tp = () => { ctx.beginPath(); ctx.moveTo(-42, by0 + 2); ctx.bezierCurveTo(-80, by0 + 10, -88, by0 - 34 + sw, -62, by0 - 52); }; tp(); ctx.strokeStyle = ol; ctx.lineWidth = 13; ctx.stroke(); tp(); ctx.strokeStyle = col; ctx.lineWidth = 8; ctx.stroke(); tp(); ctx.strokeStyle = dk; ctx.lineWidth = 8; ctx.setLineDash([5, 11]); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = dk; circle(-61, by0 - 53, 5); ctx.lineWidth = 3; ctx.strokeStyle = ol; }
+  for (const lx of [-28, -10, 20, 36]) { ctx.fillStyle = col; rr(lx - 6, -lh, 13, lh, 5); ctx.fill(); ctx.stroke(); ctx.fillStyle = cow ? dk : '#fff3dc'; rr(lx - 6, -9, 13, 9, 4); ctx.fill(); if (!cow) { ctx.fillStyle = dk; ctx.fillRect(lx - 5, -lh + 7, 11, 4); } }
+  ctx.fillStyle = col; ell(0, by0, 46, 25); ctx.stroke();
+  ctx.save(); ctx.beginPath(); ctx.ellipse(0, by0, 46, 25, 0, 0, 7); ctx.clip();
+  if (cow) { ctx.fillStyle = dk; ell(-24, by0 - 8, 15, 11); ell(10, by0 + 6, 13, 9); ell(30, by0 - 12, 11, 8); ell(-6, by0 - 22, 9, 6); ell(-36, by0 + 12, 8, 7); }
+  else { ctx.fillStyle = '#fff0d0'; ell(4, by0 + 18, 38, 12); ctx.fillStyle = dk; for (let k = -3; k <= 3; k++) { const kx = k * 12; ctx.beginPath(); ctx.moveTo(kx - 5, by0 - 26); ctx.lineTo(kx + 4, by0 - 26); ctx.lineTo(kx + 1, by0 + 4 + (k % 2 ? 7 : 0)); ctx.closePath(); ctx.fill(); } }
+  ctx.restore(); ctx.strokeStyle = ol; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(0, by0, 46, 25, 0, 0, 7); ctx.stroke();
+  if (cow) { ctx.fillStyle = '#ffb3c8'; ell(-22, by0 + 25, 11, 7); ctx.stroke(); ctx.fillStyle = '#ff8fb0'; for (const tx of [-26, -18]) rr(tx - 1.5, by0 + 28, 3, 6, 1.5), ctx.fill(); }
+  const hx = 48, hy = by0 - 16;
+  if (cow) {
+    ctx.fillStyle = '#f3e6c0'; for (const dx of [-3, 9]) { ctx.beginPath(); ctx.moveTo(hx + dx - 4, hy - 16); ctx.quadraticCurveTo(hx + dx - 5, hy - 28, hx + dx + 2, hy - 29); ctx.quadraticCurveTo(hx + dx + 1, hy - 22, hx + dx + 4, hy - 16); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+    ctx.fillStyle = dk; ell(hx - 9, hy - 12, 13, 6.5, -0.55); ctx.stroke(); ell(hx + 15, hy - 14, 9, 5.5, 0.4); ctx.stroke();
+    ctx.fillStyle = col; ell(hx, hy, 22, 19); ctx.stroke(); ctx.fillStyle = dk; ell(hx - 6, hy - 7, 10, 9);
+    ctx.fillStyle = '#ffb3c8'; ell(hx + 13, hy + 8, 13, 10); ctx.stroke(); ctx.fillStyle = '#c8607e'; circle(hx + 17, hy + 6, 1.9); circle(hx + 10, hy + 8, 1.9);
+    ctx.fillStyle = '#ffd23f'; ctx.strokeStyle = '#b88a00'; ctx.lineWidth = 2; circle(hx - 4, hy + 22, 4.5); ctx.stroke();
+    petEye(hx + 3, hy - 6, 6.2, '#4a2f1e'); ctx.fillStyle = 'rgba(255,120,150,.5)'; circle(hx - 1, hy + 6, 4);
+  } else {
+    ctx.fillStyle = col; for (const dx of [-12, 12]) { circle(hx + dx - 2, hy - 18, 9); ctx.stroke(); ctx.fillStyle = '#fff3dc'; circle(hx + dx - 2, hy - 18, 4.8); ctx.fillStyle = col; }
+    ell(hx, hy, 23, 20); ctx.stroke(); ctx.fillStyle = '#fff3dc'; ell(hx + 5, hy + 10, 16, 10); ell(hx - 13, hy + 7, 8, 7);
+    ctx.fillStyle = dk; for (let k = -1; k <= 1; k++) { ctx.beginPath(); ctx.moveTo(hx + k * 8 - 2.5, hy - 20); ctx.lineTo(hx + k * 8 + 2.5, hy - 20); ctx.lineTo(hx + k * 8, hy - 9); ctx.closePath(); ctx.fill(); }
+    ctx.strokeStyle = dk; ctx.lineWidth = 3; line(hx - 22, hy - 2, hx - 13, hy + 1); line(hx - 22, hy + 7, hx - 14, hy + 8); line(hx + 20, hy - 6, hx + 14, hy - 3);
+    ctx.fillStyle = '#ff8fa3'; ell(hx + 21, hy + 3, 5, 3.6); ctx.strokeStyle = '#6a3a2a'; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.arc(hx + 14, hy + 11, 5, 0.2, Math.PI * 0.85); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 1.4; line(hx + 18, hy + 8, hx + 38, hy + 3); line(hx + 18, hy + 11, hx + 38, hy + 12);
+    petEye(hx + 4, hy - 4, 6.4, '#7fc23a'); ctx.fillStyle = 'rgba(255,120,150,.45)'; circle(hx - 1, hy + 7, 4);
+  }
+  ctx.restore();
+}
 function drawPet(kind, x, y, s) {
   if (!kind || kind === 'none') return;
   if (kind === 'cat' || kind === 'dog') return drawDecor(kind, x, y, s);
+  if (kind === 'cow' || kind === 'tiger') return drawCowTiger(kind, x, y, s);
   if (PETCFG[kind]) { const c = PETCFG[kind]; ctx.save(); ctx.translate(x, y); ctx.scale(s * (c.size || 1), s * (c.size || 1));
     const ol = mix(c.col, '#000000', 0.32), lh = c.neck > 50 ? 46 : 30, by0 = -(lh + 14), sw = Math.sin(T * 5) * 2;
     ctx.fillStyle = c.col; ctx.strokeStyle = ol; ctx.lineWidth = 3;
@@ -4380,7 +4413,34 @@ function lbPetEyes(g) {
   g.userData.eyes = eyes; g.userData.eyeBs = Math.random() * 4; return g;
 }
 function lbPet(kind) { return lbPetEyes(lbPet0(kind)); }
+// hand-built 3D cow and tiger
+function lbCowTiger(kind) {
+  const cow = kind === 'cow', g = new THREE.Group(), col = cow ? '#ffffff' : '#ff9a2a', m = toon(col), dk = toon('#2a2a33'), lh = 0.4, by = lh + 0.12;
+  const body = lbM(new THREE.SphereGeometry(0.3, 14, 10), m, 0, by, 0); body.scale.set(0.8, 0.8, 1.35); g.add(body);
+  for (const [lx, lz] of [[-0.13, 0.25], [0.13, 0.25], [-0.13, -0.25], [0.13, -0.25]]) { g.add(lbM(new THREE.CylinderGeometry(0.06, 0.05, lh, 8), m, lx, lh / 2, lz)); g.add(lbM(new THREE.CylinderGeometry(0.062, 0.062, 0.09, 8), cow ? dk : toon('#fff3dc'), lx, 0.045, lz)); }
+  if (cow) {
+    for (const [px, py, pz, sc] of [[0.2, 0.12, 0.1, 0.1], [-0.21, 0.1, -0.1, 0.09], [0.17, 0.2, -0.25, 0.08], [-0.16, 0.22, 0.2, 0.09], [0, 0.26, 0.32, 0.08], [0.0, 0.3, -0.05, 0.08]]) { const sp = lbM(new THREE.SphereGeometry(sc, 8, 6), dk, px, by + py, pz); sp.scale.set(1, 0.7, 1); g.add(sp); }
+    const ud = lbM(new THREE.SphereGeometry(0.1, 10, 8), toon('#ffb3c8'), 0, by - 0.26, -0.17); g.add(ud);
+  } else {
+    const bl = lbM(new THREE.SphereGeometry(0.24, 12, 8), toon('#fff0d0'), 0, by - 0.1, 0.02); bl.scale.set(0.8, 0.6, 1.2); g.add(bl);
+    for (let k = 0; k < 6; k++) { const st = lbM(new THREE.TorusGeometry(0.245, 0.02, 6, 20, Math.PI), dk, 0, by - 0.02, -0.4 + k * 0.16); st.rotation.y = Math.PI / 2; g.add(st); }
+  }
+  const hr = 0.27, hy = by + 0.22, hz = 0.42; g.add(lbM(new THREE.SphereGeometry(hr, 14, 10), m, 0, hy, hz));
+  for (const s of [-1, 1]) { g.add(lbM(new THREE.SphereGeometry(0.035, 8, 6), toon('#ffffff'), s * 0.1, hy + 0.06, hz + hr * 0.8)); g.add(lbM(new THREE.SphereGeometry(0.02, 8, 6), toon('#1a1020'), s * 0.1, hy + 0.06, hz + hr * 0.8 + 0.025)); }
+  if (cow) {
+    const mz = lbM(new THREE.SphereGeometry(0.15, 12, 8), toon('#ffb3c8'), 0, hy - 0.09, hz + hr * 0.62); mz.scale.set(1.1, 0.8, 0.9); g.add(mz);
+    for (const s of [-1, 1]) { g.add(lbM(new THREE.SphereGeometry(0.014, 6, 5), toon('#c8607e'), s * 0.05, hy - 0.08, hz + hr * 0.62 + 0.13)); const hn = lbM(new THREE.ConeGeometry(0.035, 0.14, 6), toon('#f3e6c0'), s * 0.12, hy + hr + 0.03, hz - 0.02); hn.rotation.z = -s * 0.35; g.add(hn); const ea = lbM(new THREE.SphereGeometry(0.1, 10, 8), dk, s * (hr + 0.06), hy + 0.1, hz - 0.04); ea.scale.set(0.35, 0.5, 1); ea.rotation.z = -s * 0.5; g.add(ea); }
+    const tl = lbM(new THREE.CylinderGeometry(0.015, 0.02, 0.4, 5), toon('#8a8a96'), 0, by - 0.05, -0.46); tl.rotation.x = 0.3; g.add(tl); g.add(lbM(new THREE.SphereGeometry(0.05, 8, 6), dk, 0, by - 0.25, -0.5));
+    g.add(lbM(new THREE.SphereGeometry(0.04, 8, 6), toon('#ffd23f'), 0, hy - 0.26, hz - 0.02));
+  } else {
+    for (const s of [-1, 1]) { const ch = lbM(new THREE.SphereGeometry(0.11, 10, 8), toon('#fff3dc'), s * 0.14, hy - 0.08, hz + hr * 0.55); ch.scale.set(1, 0.8, 0.9); g.add(ch); g.add(lbM(new THREE.SphereGeometry(0.075, 8, 6), m, s * 0.15, hy + hr * 0.85, hz - 0.03)); g.add(lbM(new THREE.SphereGeometry(0.045, 8, 6), toon('#fff3dc'), s * 0.15, hy + hr * 0.85, hz + 0.01)); const fs0 = lbM(new THREE.BoxGeometry(0.02, 0.09, 0.02), dk, s * 0.06, hy + hr * 0.82, hz + hr * 0.5); fs0.rotation.x = -0.4; g.add(fs0); }
+    const mz = lbM(new THREE.SphereGeometry(0.1, 10, 8), toon('#fff3dc'), 0, hy - 0.08, hz + hr * 0.78); g.add(mz); g.add(lbM(new THREE.SphereGeometry(0.035, 8, 6), toon('#ff8fa3'), 0, hy - 0.04, hz + hr * 0.78 + 0.08));
+    for (let k = 0; k < 7; k++) g.add(lbM(new THREE.SphereGeometry(0.045 - k * 0.002, 8, 6), k % 2 ? dk : m, 0, by + 0.02 + k * 0.075 * (k > 3 ? 1 : 0.6), -0.42 - Math.sin(k * 0.55) * 0.14 - k * 0.03));
+  }
+  g.scale.setScalar(1.05); return g;
+}
 function lbPet0(kind) {
+  if (kind === 'cow' || kind === 'tiger') return lbCowTiger(kind);
   if (PETCFG[kind]) { const c = PETCFG[kind], g = new THREE.Group(), m = toon(c.col), dk = toon(mix(c.col, '#000000', 0.4)), lh = c.neck > 50 ? 0.85 : 0.4, by = lh + 0.12;
     const b = lbM(new THREE.SphereGeometry(0.3, 14, 10), m, 0, by, 0); b.scale.set(0.8, 0.8, 1.35); g.add(b);
     for (const [lx, lz] of [[-0.13, 0.25], [0.13, 0.25], [-0.13, -0.25], [0.13, -0.25]]) g.add(lbM(new THREE.CylinderGeometry(0.06, 0.05, lh, 8), c.stripes ? toon(c.col) : m, lx, lh / 2, lz));
