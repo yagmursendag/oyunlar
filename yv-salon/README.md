@@ -82,3 +82,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v72 | versions/v72-harita.html | 🗺️ Daha güzel harita: çimen dokusu, meydanda yıldız süsü, çeşme çevresinde çiçek bahçesi, direkler arasında renkli bayrak ipleri, uzaktaki dağlar ve gökyüzünde gezen 3 sıcak hava balonu |
 | v73 | versions/v73-lunapark.html | 🎪 Güzel lunapark: kareli zemin, yanıp sönen ışıklar, oyuncaklar artık bilet parası ister, 8 yeni tezgâh (pamuk şeker, dondurma, mısır, halka atma, teneke, pelüş makinesi, fotoğraf, balon) |
 | v74 | versions/v74-allik.html | 🌸 Allık düzeltmesi: yanakların içi artık siyah değil, seçilen renkte yumuşak |
+| v75 | versions/v75-tezgah-oyun.html | 🎮 Tezgâh oyunları gerçek oyun oldu: halka atma, teneke devirme ve pelüş makinesi zamanlama oyunu, önce para ödenir |

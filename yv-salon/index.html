@@ -6365,6 +6365,7 @@ function lbLunaStart(kind) {
   LB.fly = false; LB.target = null; LB.jumpV = 0; lbUndisguise(me.userData.A); LB.ride = { kind, i, t: 0 }; lbAction(me, 'sit'); questEvent('park'); sfx('done'); say(`${LUNA_NAME[kind]}! İyi eğlenceler 🎉`);
 }
 function drawLunaUi() {
+  if (FG && scene === 'lobby') return fgDraw();
   if (LB.lunaNear && !LB.ride && scene === 'lobby') btn(430, 530, 420, 60, `${LUNA_NAME[LB.lunaNear]} • ${rich() ? 'bedava' : LUNA_PRICE[LB.lunaNear] + ' TL'}`, () => lbLunaStart(LB.lunaNear), { col: '#ff5fa2', fg: '#ffffff', size: 21 });
 }
 
@@ -6439,6 +6440,62 @@ function lbFairAnim() {
   if (!LB.fairBulbs) return; const st = Math.floor(T * 3); if (LB._fairStep === st) return; LB._fairStep = st; const pal = ['#ff4f8b', '#ffd23f', '#5ac8ff', '#8be07e', '#b18cff', '#ff8a3d'], c = new THREE.Color();
   for (const b of LB.fairBulbs) { for (let i = 0; i < b.n; i++) b.im.setColorAt(i, c.set(pal[(i + st) % 6])); b.im.instanceColor.needsUpdate = true; }
 }
+// ---------- real stall games: ring toss, can knock-down and the plush claw (timing games, paid up front) ----------
+let FG = null;
+function fgStart(kind) {
+  FG = { kind, t: 0, ph: 'play', a: 0, tries: kind === 'ring' ? 5 : kind === 'cans' ? 3 : 2, hits: 0, down: 0, msg: '', taken: {}, last: performance.now(), shot: null };
+  if (kind === 'claw') FG.plush = [0, 1, 2, 3, 4, 5, 6].map(i => ({ x: 470 + i * 56 + (i % 2) * 6, e: FAIR_PRIZES[i % FAIR_PRIZES.length] }));
+}
+function fgEnd(ok, tl, text) {
+  const S = STALLS['st_' + FG.kind];
+  if (ok) { const pr = FAIR_PRIZES[Math.floor(Math.random() * (FG.kind === 'claw' ? FAIR_PRIZES.length : 4))]; inv.fair = inv.fair || {}; inv.fair[pr] = (inv.fair[pr] || 0) + 1; money += tl; save(); sparkle(640, 300, 30); sfx('done'); FG.msg = S.name + ': ' + pr + ' kazandın! +' + tl + ' TL 🎉'; }
+  else { sfx('no'); FG.msg = text || 'Olmadı, bir daha dene! 🍀'; }
+  FG.ph = 'end';
+}
+function fgThrow() {
+  if (!FG || FG.ph !== 'play') return; const F = FG;
+  if (F.kind === 'ring') { const x = 640 + Math.sin(F.t * (1.8 + F.hits * 0.25)) * 140, hit = [-100, 0, 100].some(d => Math.abs(x + d - 640) < 22); F.shot = { hit, x: 640 }; F.tries--; if (hit) { F.hits++; sfx('coin'); } else sfx('pop'); F.ph = 'anim'; F.a = 0.7; }
+  else if (F.kind === 'cans') { const x = 640 + Math.sin(F.t * 2.6) * 220, d = Math.abs(x - 640) / 220, k = d < 0.12 ? 3 : d < 0.3 ? 2 : d < 0.6 ? 1 : 0, n = Math.min(6 - F.down, k); F.shot = { k: n, x }; F.down += n; F.tries--; sfx(n ? 'coin' : 'pop'); F.ph = 'anim'; F.a = 0.8; }
+  else { F.cx = 640 + Math.sin(F.t * 1.5) * 230; F.tries--; F.ph = 'anim'; F.a = 1.3; }
+}
+function fgDraw() {
+  const F = FG, now = performance.now(), dt = Math.min(0.05, (now - F.last) / 1000); F.last = now; F.t += dt;
+  const S = STALLS['st_' + F.kind];
+  ctx.fillStyle = 'rgba(30,10,40,.55)'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#fff7fb'; rr(300, 70, 680, 480, 28); ctx.fill(); ctx.strokeStyle = S.col; ctx.lineWidth = 8; ctx.stroke();
+  text(S.name, 640, 112, 34, '#3a2340', 'center', 800);
+  text(F.kind === 'ring' ? 'Halka kuklaya geçince tut! Kalan halka: ' + F.tries + ' • Tuttu: ' + F.hits + '/3' : F.kind === 'cans' ? 'Hedef ortadayken fırlat! Kalan top: ' + F.tries + ' • Devrilen: ' + F.down + '/6' : 'Pençe pelüşün üstündeyken indir! Kalan hak: ' + F.tries, 640, 150, 20, '#6b5a70', 'center', 700);
+  // play field
+  ctx.fillStyle = '#ffe3f1'; rr(380, 180, 520, 250, 20); ctx.fill();
+  if (F.kind === 'ring') {
+    const sp = 1.8 + F.hits * 0.25, x = 640 + Math.sin(F.t * sp) * 140;
+    for (const d of [-100, 0, 100]) { ctx.fillStyle = '#4fc46a'; rr(x + d - 9, 300, 18, 90, 8); ctx.fill(); ctx.fillStyle = '#2f8f4a'; rr(x + d - 15, 380, 30, 14, 6); ctx.fill(); }
+    const a = F.ph === 'anim' ? 1 - F.a / 0.7 : 0, ry = 410 - a * 100 - (F.shot && F.shot.hit ? 0 : a * 0 );
+    ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 8; ctx.beginPath(); ctx.ellipse(640, F.ph === 'anim' ? 410 - Math.sin(a * Math.PI) * 70 - (F.shot.hit ? 0 : -a * 0) : 410, 30, 12, 0, 0, 7); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(640, 200); ctx.lineTo(640, 300); ctx.stroke();
+    ctx.fillStyle = 'rgba(214,51,127,.35)'; ctx.fillRect(630, 300, 20, 6);
+  } else if (F.kind === 'cans') {
+    const rows = [3, 2, 1]; let n = 0; const standing = 6 - F.down;
+    for (let r = 0; r < 3; r++) for (let i = 0; i < rows[r]; i++) { const cx = 640 + (i - (rows[r] - 1) / 2) * 62, cy = 372 - r * 52, idx = n++; const gone = idx >= standing; ctx.save(); ctx.globalAlpha = gone ? 0.25 : 1; ctx.fillStyle = ['#e8434f', '#ffd23f', '#5ac8ff'][r]; rr(cx - 24, cy - 24, 48, 48, 8); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.fillRect(cx - 24, cy - 6, 48, 10); ctx.restore(); }
+    const x = 640 + Math.sin(F.t * 2.6) * 220; ctx.fillStyle = '#d8c2d0'; rr(420, 400, 440, 14, 7); ctx.fill(); ctx.fillStyle = '#7ed957'; rr(640 - 26, 400, 52, 14, 7); ctx.fill();
+    ctx.fillStyle = '#ff5fa2'; circle(x, 407, 14);
+    if (F.ph === 'anim') { const a = 1 - F.a / 0.8; ctx.fillStyle = '#ff8a3d'; circle(F.shot.x + (640 - F.shot.x) * a, 400 - a * 150, 18 - a * 8); }
+    else { ctx.fillStyle = '#ff8a3d'; circle(640, 215, 14); }
+  } else {
+    const cxp = F.ph === 'anim' ? F.cx : 640 + Math.sin(F.t * 1.5) * 230, a = F.ph === 'anim' ? 1.3 - F.a : 0, dy = a < 0.4 ? a / 0.4 : a < 0.7 ? 1 : a < 1.1 ? 1 - (a - 0.7) / 0.4 : 0;
+    for (const p of F.plush) if (!F.taken[p.x]) emoji(p.e, p.x, 395, 38);
+    ctx.strokeStyle = '#8a8a8a'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(cxp, 190); ctx.lineTo(cxp, 220 + dy * 130); ctx.stroke();
+    ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(cxp, 226 + dy * 130, 18, 0.1 * Math.PI, 0.9 * Math.PI); ctx.lineTo(cxp, 214 + dy * 130); ctx.fill();
+    ctx.fillStyle = 'rgba(180,220,255,.25)'; rr(380, 180, 520, 250, 20); ctx.fill();
+  }
+  if (F.ph === 'anim') { F.a -= dt; if (F.a <= 0) {
+    if (F.kind === 'ring') { if (F.tries <= 0) F.hits >= 3 ? fgEnd(true, 10 + (F.hits - 3) * 5) : fgEnd(false, 0, 'Sadece ' + F.hits + ' halka tuttu, 3 lazım! 🍀'); else F.ph = 'play'; }
+    else if (F.kind === 'cans') { if (F.down >= 5) fgEnd(true, 9); else if (F.tries <= 0) fgEnd(false, 0, F.down + ' teneke devrildi, 5 lazım! 🍀'); else F.ph = 'play'; }
+    else { const p = F.plush.find(q => !F.taken[q.x] && Math.abs(q.x - F.cx) < 30); if (p) { F.taken[p.x] = 1; fgEnd(true, 25); } else if (F.tries <= 0) fgEnd(false, 0, 'Pelüşü kaçırdın! 🍀'); else F.ph = 'play'; }
+  } }
+  if (F.ph === 'end') { text(F.msg, 640, 470, 24, '#3a2340', 'center', 800); btn(540, 490, 200, 52, 'Tamam', () => { FG = null; }, { col: '#7ed957', fg: '#ffffff', size: 22 }); }
+  else { btn(470, 465, 340, 66, F.kind === 'claw' ? '⬇️ İndir!' : F.kind === 'cans' ? '⚾ Fırlat!' : '🎯 At!', fgThrow, { col: F.ph === 'play' ? '#ff5fa2' : '#d9c2d0', fg: '#ffffff', size: 28 }); btn(860, 76, 110, 40, '✖', () => { FG = null; }, { col: '#ffffff', size: 20 }); }
+}
 function lbStallBuy(kind) {
   const S = STALLS[kind]; if (!S || LB.ride) return; const price = S.price;
   if (!rich() && money < price) { sfx('no'); return say(price + ' TL lazım 💸'); }
@@ -6447,8 +6504,7 @@ function lbStallBuy(kind) {
   if (!rich()) money -= price;
   if (S.type === 'photo') { inv.fair = inv.fair || {}; inv.fair['📸'] = (inv.fair['📸'] || 0) + 1; save(); sparkle(640, 300, 40); sfx('done'); return say('📸 Çok güzel çıktın! Fotoğraf albümüne eklendi. Ödüllerin: ' + prizeText()); }
   if (S.type === 'balloon') { inv.fair = inv.fair || {}; inv.fair['🎈'] = (inv.fair['🎈'] || 0) + 1; save(); sparkle(640, 300, 20); sfx('coin'); return say('🎈 Balonun hazır! Ödüllerin: ' + prizeText()); }
-  if (Math.random() < S.win) { const pr = FAIR_PRIZES[Math.floor(Math.random() * (S.type === 'claw' ? FAIR_PRIZES.length : 4))]; win(pr, S.tl); }
-  else { save(); sfx('no'); say(S.name + ': ıskaladın, bir daha dene! 🍀'); }
+  save(); fgStart(S.type);
 }
 
 // visiting the outer places counts for quests (once each time you walk in)
