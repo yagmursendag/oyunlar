@@ -5680,7 +5680,7 @@ async function mpInit() {
       MP.fb = fb; MP.db = fb.database();
       const cred = await Promise.race([fb.auth().signInAnonymously(), new Promise((_, no) => setTimeout(() => no(new Error('timeout')), 15000))]);
       MP.uid = cred.user.uid; MP.state = 'ready'; return true;
-    } catch (e) { MP.state = 'offline'; say('İnternet yok, ortak lobi kapalı'); return false; }
+    } catch (e) { MP.state = 'offline'; if (!MP.quiet) say('İnternet yok, ortak lobi kapalı'); return false; }
     finally { MP.busy = null; }
   })();
   return MP.busy;
@@ -6217,8 +6217,33 @@ function lbPetFollow(pet, o, dt) {
 function mpLogVisit() {
   try {
     const now = Date.now(); if (MP.visitAt && now - MP.visitAt < 600000) return; MP.visitAt = now;
-    Promise.resolve(MP.db.ref('visits/' + MP.uid).set({ n: String(profile.name || '').slice(0, 20), id: String(profile.id || '').slice(0, 6), t: MP.fb.database.ServerValue.TIMESTAMP })).catch(() => { });
+    profile.visitN = (profile.visitN || 0) + 1; save();
+    Promise.resolve(MP.db.ref('visits/' + MP.uid).set({ n: String(profile.name || '').slice(0, 20), id: String(profile.id || '').slice(0, 6), t: MP.fb.database.ServerValue.TIMESTAMP, c: Math.min(profile.visitN, 1000000) })).catch(() => { });
   } catch (e) { }
+}
+// at game start: log the visit, show up as online, and listen for gifts from the admin
+async function mpBoot() {
+  MP.quiet = true; const ok = await mpInit(); MP.quiet = false; if (!ok) return;
+  mpLogVisit();
+  try { const r = MP.db.ref('online/' + MP.uid); r.onDisconnect().remove(); r.set({ n: String(profile.name || '').slice(0, 20), t: MP.fb.database.ServerValue.TIMESTAMP }); } catch (e) { }
+  try { MP.db.ref('gift').on('value', sn => {
+    const g = sn.val(); if (!g || !g.id || !profile || profile.giftSeen === g.id) return; profile.giftSeen = g.id;
+    if (rich() || typeof g.t !== 'number' || Date.now() - g.t > 900000) { save(); return; } // only people who are online now
+    const tl = Math.max(0, Math.min(100000, +g.tl || 0)), gem = Math.max(0, Math.min(1000, +g.gem || 0)); money += tl; inv.gems = (inv.gems || 0) + gem; save();
+    sfx('done'); sparkle(640, 300, 40); say('🎁 Admin hediye gönderdi!' + (tl ? ' +' + tl + ' TL' : '') + (gem ? ' +' + gem + ' 💎' : ''));
+  }); } catch (e) { }
+}
+setInterval(() => { if (profile && !MP.boot && mpCfg() && navigator.onLine !== false) { MP.boot = 1; mpBoot(); } }, 4000);
+function showGiftAdmin() {
+  if (!rich()) return;
+  const opts = [[50, 0, '50 TL'], [200, 0, '200 TL'], [1000, 0, '1000 TL'], [0, 1, '1 💎'], [0, 5, '5 💎']];
+  openModal('<h2>🎁 Online olanlara hediye</h2><p>Şu an oyunda olan herkese (15 dk içinde) gider. Hediyeyi seç:</p>' + opts.map((o, i) => '<button class="mb y" id="gf' + i + '">' + o[2] + '</button>').join('') + '<button class="mb s" id="gclose">Kapat</button>');
+  $('gclose').onclick = closeModal;
+  opts.forEach((o, i) => { $('gf' + i).onclick = async () => {
+    if (!(await mpInit())) return say('İnternet yok');
+    try { await MP.db.ref('gift').set({ id: Date.now().toString(36), tl: o[0], gem: o[1], t: MP.fb.database.ServerValue.TIMESTAMP }); sfx('done'); say('🎁 Hediye gönderildi: ' + o[2]); closeModal(); }
+    catch (e) { say('Gönderilemedi: Firebase kuralları güncel değil'); }
+  }; });
 }
 const agoText = t => { const s = Math.max(0, (Date.now() - t) / 1000); return s < 60 ? 'az önce' : s < 3600 ? Math.floor(s / 60) + ' dk önce' : s < 86400 ? Math.floor(s / 3600) + ' saat önce' : Math.floor(s / 86400) + ' gün önce'; };
 async function showVisits() {
@@ -6230,9 +6255,10 @@ async function showVisits() {
     openModal(`<h2>👑 Son girenler</h2><p>Listeyi okuyamadım. Firebase'de kuralları güncelle ve <b>adminuid</b> değerine şu kimliği yaz:</p><textarea readonly id="vuid">${esc(MP.uid || '')}</textarea><button class="mb y" id="vcopy">📋 Kopyala</button><button class="mb s" id="vclose">Kapat</button>`);
     $('vclose').onclick = closeModal; $('vcopy').onclick = () => { $('vuid').select(); try { navigator.clipboard.writeText(MP.uid); } catch (e) { document.execCommand('copy'); } $('vcopy').textContent = '✅ Kopyalandı'; }; return;
   }
-  const rows = Object.values(data).filter(v => v && typeof v.t === 'number').sort((a, b) => b.t - a.t).slice(0, 40);
-  openModal(`<h2>👑 Son girenler</h2><p>${rows.length} kişi, en son giren en üstte</p><div id="flist">${rows.length ? rows.map(v => `<div class="fr"><b>${esc(String(v.n || '?'))} <small>#${esc(String(v.id || ''))}</small><br><small>🕐 ${agoText(v.t)}</small></b></div>`).join('') : '<p>Henüz kimse girmedi.</p>'}</div><button class="mb s" id="vclose">Kapat</button>`);
-  $('vclose').onclick = closeModal;
+  const all = Object.values(data).filter(v => v && typeof v.t === 'number').sort((a, b) => b.t - a.t), rows = all.slice(0, 100), total = all.reduce((a, v) => a + (v.c || 1), 0);
+  let on = null; try { on = Object.values((await MP.db.ref('online').once('value')).val() || {}); } catch (e) { }
+  openModal(`<h2>👑 Girenler</h2><p>${all.length} kişi • toplam ${total} giriş${on ? ' • 🟢 şu an online: <b>' + on.length + '</b>' + (on.length ? ' (' + on.map(v => esc(String(v.n || '?'))).join(', ') + ')' : '') : ''}</p><button class="mb g" id="vgift">🎁 Online olanlara hediye ver</button><div id="flist">${rows.length ? rows.map(v => `<div class="fr"><b>${esc(String(v.n || '?'))} <small>#${esc(String(v.id || ''))}</small><br><small>🔢 ${v.c || 1} kez girdi • 🕐 ${agoText(v.t)}</small></b></div>`).join('') : '<p>Henüz kimse girmedi.</p>'}</div><button class="mb s" id="vclose">Kapat</button>`);
+  $('vclose').onclick = closeModal; $('vgift').onclick = showGiftAdmin;
 }
 
 // ================= 🎡 funfair: ferris wheel, carousel and chair swings =================
@@ -6422,14 +6448,14 @@ function lbLunaUpdate(me) {
 function lbLunaStart(kind) {
   if (LB.ride || scene !== 'lobby' || !LB.me) return;
   if (STALLS[kind]) return lbStallBuy(kind);
-  { const price = LUNA_PRICE[kind]; if (!rich() && money < price) { sfx('no'); return say('💸 ' + LUNA_NAME[kind] + ' için ' + price + ' TL lazım'); } if (!rich()) { money -= price; save(); } }
+  { const price = LUNA_PRICE[kind]; if (money < price) { sfx('no'); return say('💸 ' + LUNA_NAME[kind] + ' için ' + price + ' TL lazım'); } money -= price; save(); }
   const me = LB.me, v = tv3(); let i = 0, best = 1e9;
   lbLunaSeats(kind).forEach((o, k) => { o.getWorldPosition(v); const d = kind === 'wheel' ? v.y : Math.hypot(v.x - me.position.x, v.z - me.position.z); if (d < best) { best = d; i = k; } });
   LB.fly = false; LB.target = null; LB.jumpV = 0; lbUndisguise(me.userData.A); LB.ride = { kind, i, t: 0 }; lbAction(me, 'sit'); questEvent('park'); sfx('done'); say(`${LUNA_NAME[kind]}! İyi eğlenceler 🎉`);
 }
 function drawLunaUi() {
   if (FG && scene === 'lobby') return fgDraw();
-  if (LB.lunaNear && !LB.ride && scene === 'lobby') btn(430, 530, 420, 60, `${LUNA_NAME[LB.lunaNear]} • ${rich() ? 'bedava' : LUNA_PRICE[LB.lunaNear] + ' TL'}`, () => lbLunaStart(LB.lunaNear), { col: '#ff5fa2', fg: '#ffffff', size: 21 });
+  if (LB.lunaNear && !LB.ride && scene === 'lobby') btn(430, 530, 420, 60, `${LUNA_NAME[LB.lunaNear]} • ${LUNA_PRICE[LB.lunaNear]} TL`, () => lbLunaStart(LB.lunaNear), { col: '#ff5fa2', fg: '#ffffff', size: 21 });
 }
 
 // ================= 🎪 prettier funfair: spend-money stalls and games, lights, checker floor =================
@@ -6561,10 +6587,10 @@ function fgDraw() {
 }
 function lbStallBuy(kind) {
   const S = STALLS[kind]; if (!S || LB.ride) return; const price = S.price;
-  if (!rich() && money < price) { sfx('no'); return say(price + ' TL lazım 💸'); }
+  if (money < price) { sfx('no'); return say(price + ' TL lazım 💸'); }
   const win = (e, tl) => { inv.fair = inv.fair || {}; inv.fair[e] = (inv.fair[e] || 0) + 1; money += tl; save(); sparkle(640, 300, 26); sfx('done'); say(S.name + ': ' + e + ' kazandın! +' + tl + ' TL 🎉 Ödüllerin: ' + prizeText()); };
-  if (S.food) { const nd = needs(); if (nd.hunger >= 100) { sfx('no'); return say('Karnın tok! 😊'); } if (!rich()) money -= price; nd.hunger = Math.min(100, nd.hunger + S.food); questEvent('eat'); save(); sfx('coin'); part({ x: 640, y: 300, vy: -60, life: 1, kind: 'txt', t: 'Nyam! 😋', col: '#23884f' }); return; }
-  if (!rich()) money -= price;
+  if (S.food) { const nd = needs(); if (nd.hunger >= 100) { sfx('no'); return say('Karnın tok! 😊'); } money -= price; nd.hunger = Math.min(100, nd.hunger + S.food); questEvent('eat'); save(); sfx('coin'); part({ x: 640, y: 300, vy: -60, life: 1, kind: 'txt', t: 'Nyam! 😋', col: '#23884f' }); return; }
+  money -= price;
   if (S.type === 'photo') { inv.fair = inv.fair || {}; inv.fair['📸'] = (inv.fair['📸'] || 0) + 1; save(); sparkle(640, 300, 40); sfx('done'); return say('📸 Çok güzel çıktın! Fotoğraf albümüne eklendi. Ödüllerin: ' + prizeText()); }
   if (S.type === 'balloon') { inv.fair = inv.fair || {}; inv.fair['🎈'] = (inv.fair['🎈'] || 0) + 1; save(); sparkle(640, 300, 20); sfx('coin'); return say('🎈 Balonun hazır! Ödüllerin: ' + prizeText()); }
   save(); fgStart(S.type);

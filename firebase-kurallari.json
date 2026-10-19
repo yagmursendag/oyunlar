@@ -63,6 +63,9 @@
         },
         "$other": {
           ".validate": false
+        },
+        "c": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000"
         }
       }
     },
@@ -122,6 +125,42 @@
       "$uid": {
         ".write": "auth != null && auth.uid === $uid",
         ".validate": "newData.isString() && newData.val().matches(/^[0-9a-f]{256}$/)"
+      }
+    },
+    "online": {
+      ".read": "auth != null && root.child('adminuid').val() === auth.uid",
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.hasChildren(['n', 't'])",
+        "n": {
+          ".validate": "newData.isString() && newData.val().length <= 20"
+        },
+        "t": {
+          ".validate": "newData.val() === now"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "gift": {
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('adminuid').val() === auth.uid",
+      ".validate": "newData.hasChildren(['id', 'tl', 'gem', 't'])",
+      "id": {
+        ".validate": "newData.isString() && newData.val().length <= 20"
+      },
+      "tl": {
+        ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000"
+      },
+      "gem": {
+        ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000"
+      },
+      "t": {
+        ".validate": "newData.val() === now"
+      },
+      "$other": {
+        ".validate": false
       }
     }
   }
