@@ -4798,7 +4798,7 @@ function enterLobby() {
 function lbPlaceById(id) { return LB.places.find(p => p.id === id); }
 function lbEnter(p) {
   if (p.id === 'salon') { go('title'); newCustomer(served === 0); return; }
-  if (p.id === 'market' || p.id === 'hospital') return lbGoInside(p.id);
+  if (p.id === 'market' || p.id === 'hospital' || p.id === 'home') return lbGoInside(p.id);
   LB.place = p; scene = 'place'; fade = 0.6; sfx('pop');
 }
 // keep a point out of the fountain and the buildings, inside the town
@@ -5379,6 +5379,112 @@ function lbDecorRooms() {
     // blue guide stripe from the door to the reception
     const gs = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 6), new THREE.MeshBasicMaterial({ color: '#7fb8ff', transparent: true, opacity: 0.55 })); gs.rotation.x = -Math.PI / 2; gs.position.set(0, 0.07, 4.9); g.add(gs); }
 }
+// ================= 🏠 your house: kitchen, living room and bedroom; some foods must be cooked =================
+const RAW = new Set(['egg', 'potato', 'rice', 'pasta', 'nuggets', 'corn', 'mushroom', 'eggplant']);
+FOODS.rice[1] = 'Pirinç'; FOODS.nuggets[1] = 'Çiğ tavuk'; FOODS.pasta[1] = 'Makarna (çiğ)';
+Object.assign(FOODS, {
+  c_omelet: ['🍳', 'Omlet', 0, 30], c_fries: ['🍟', 'Evde patates', 0, 26], c_rice: ['🍚', 'Pilav', 0, 28], c_pasta: ['🍝', 'Domatesli makarna', 0, 38], c_pancake: ['🥞', 'Ev pankeki', 0, 34], c_pizza: ['🍕', 'Ev pizzası', 0, 45],
+  c_chicken: ['🍗', 'Fırın tavuk', 0, 48], c_soup: ['🍲', 'Sebze çorbası', 0, 36], c_corn: ['🌽', 'Közlenmiş mısır', 0, 22], c_saute: ['🍄', 'Mantar sote', 0, 26], c_cake: ['🍰', 'Ev keki', 0, 40], c_eggplant: ['🍆', 'Patlıcan yemeği', 0, 30],
+});
+const RECIPES = [
+  { out: 'c_omelet', need: { egg: 2 } }, { out: 'c_fries', need: { potato: 2 } }, { out: 'c_rice', need: { rice: 1 } }, { out: 'c_pasta', need: { pasta: 1, tomato: 1 } },
+  { out: 'c_pancake', need: { egg: 1, milk: 1 } }, { out: 'c_pizza', need: { bread: 1, cheese: 1, tomato: 1 } }, { out: 'c_chicken', need: { nuggets: 1, potato: 1 } }, { out: 'c_soup', need: { tomato: 1, potato: 1, onion: 1 } },
+  { out: 'c_corn', need: { corn: 1 } }, { out: 'c_saute', need: { mushroom: 1, onion: 1 } }, { out: 'c_cake', need: { egg: 1, milk: 1, choco: 1 } }, { out: 'c_eggplant', need: { eggplant: 1, tomato: 1 } },
+];
+let CK = null;
+const ckHave = r => Object.entries(r.need).every(([k, n]) => ((inv.food || {})[k] || 0) >= n);
+function openCook() { CK = { ph: 'pick', last: performance.now(), t: 0 }; }
+function ckStart(r) {
+  if (!ckHave(r)) { sfx('no'); return say('Malzemen eksik! 🛒 Marketten al'); }
+  const take = Object.values(r.need).reduce((a, v) => a + v, 0);
+  if (bagUsed() - take + 2 > bagCap()) { sfx('no'); return say('Çantan dolu olabilir! Önce bir şey ye 🎒'); }
+  CK = { ph: 'cook', r, t: 0, hits: 0, tries: 3, zone: 0.5, msg: '', a: 0, last: performance.now() }; sfx('pop');
+}
+function ckTurn() {
+  const K = CK; if (!K || K.ph !== 'cook' || K.a > 0) return;
+  const x = 0.5 + Math.sin(K.t * 2.6) * 0.5, hit = Math.abs(x - K.zone) < 0.12; K.tries--; K.msg = hit ? 'Harika! 🔥' : 'Kaçırdın! 💨'; if (hit) { K.hits++; sfx('coin'); } else sfx('pop'); K.a = 0.9;
+}
+function ckFinish() {
+  const K = CK, r = K.r; for (const [k, n] of Object.entries(r.need)) inv.food[k] = Math.max(0, (inv.food[k] || 0) - n);
+  if (K.hits >= 1) { const n = K.hits >= 3 ? 2 : 1; inv.food[r.out] = (inv.food[r.out] || 0) + n; questEvent('cook'); save(); sparkle(640, 300, 30); sfx('done'); K.msg = K.hits >= 3 ? 'Mükemmel! ' + FOODS[r.out][0] + ' ×2 pişti!' : FOODS[r.out][0] + ' ' + FOODS[r.out][1] + ' hazır!'; }
+  else { save(); sfx('no'); K.msg = 'Yandı! 🔥 Bir dahaki sefere daha dikkatli ol'; }
+  K.ph = 'done';
+}
+function ckDraw() {
+  const K = CK, now = performance.now(), dt = Math.min(0.05, (now - K.last) / 1000); K.last = now; K.t += dt;
+  ctx.fillStyle = 'rgba(30,10,40,.55)'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#fff7fb'; rr(250, 60, 780, 560, 28); ctx.fill(); ctx.strokeStyle = '#ff8a3d'; ctx.lineWidth = 8; ctx.stroke();
+  text('🍳 Mutfak', 640, 108, 36, '#3a2340', 'center', 800);
+  btn(900, 72, 110, 40, '✖', () => { CK = null; }, { col: '#ffffff', size: 20 });
+  if (K.ph === 'pick') {
+    text('Ne pişirmek istiyorsun? Malzemeler çantanda olmalı', 640, 148, 18, '#6b5a70', 'center', 700);
+    RECIPES.forEach((r, i) => {
+      const x = 275 + (i % 4) * 185, y = 175 + Math.floor(i / 4) * 140, ok = ckHave(r), o = FOODS[r.out];
+      ctx.fillStyle = ok ? '#fff0f7' : '#f1ecef'; rr(x, y, 175, 128, 16); ctx.fill(); emoji(o[0], x + 30, y + 30, 36); fitText(o[1], x + 54, y + 26, 14, 114, '#3a2340', 800);
+      fitText(Object.entries(r.need).map(([k, n]) => FOODS[k][0] + '×' + n).join(' '), x + 10, y + 62, 16, 156, ok ? '#23884f' : '#a06a7a', 800);
+      btn(x + 10, y + 78, 155, 40, ok ? '🔥 Pişir' : '🛒 Eksik', () => ckStart(r), { col: ok ? '#ff8a3d' : '#d8c6d2', fg: '#ffffff', size: 16 });
+    });
+    text('Çiğ yiyecekler (yumurta, patates, pirinç, makarna, tavuk…) pişmeden yenmez!', 640, 600, 16, '#a06a7a', 'center', 700);
+    return;
+  }
+  const o = FOODS[K.r.out];
+  emoji(o[0], 640, 190, 80); text(o[1], 640, 262, 26, '#3a2340', 'center', 800);
+  if (K.ph === 'cook') {
+    if (K.a > 0) { K.a -= dt; if (K.a <= 0) { if (K.tries <= 0) ckFinish(); else K.zone = 0.2 + Math.random() * 0.6; } }
+    text('Çubuk yeşil bölgedeyken "Çevir!" de • Kalan: ' + K.tries + ' • Doğru: ' + K.hits, 640, 304, 18, '#6b5a70', 'center', 700);
+    ctx.fillStyle = '#f1d6e4'; rr(340, 340, 600, 40, 20); ctx.fill(); ctx.fillStyle = '#7ed957'; rr(340 + (K.zone - 0.12) * 600, 340, 0.24 * 600, 40, 20); ctx.fill();
+    const x = 0.5 + Math.sin(K.t * 2.6) * 0.5; ctx.fillStyle = '#ff5fa2'; rr(340 + x * 600 - 7, 330, 14, 60, 7); ctx.fill();
+    emoji('🍲', 640, 450, 70); for (let i = 0; i < 3; i++) emoji('♨️', 610 + i * 30, 395 - ((K.t * 40 + i * 14) % 30), 24);
+    if (K.msg && K.a > 0) text(K.msg, 640, 540, 26, '#d6337f', 'center', 800);
+    btn(480, 540, 320, 60, '🥄 Çevir!', ckTurn, { col: '#ff5fa2', fg: '#ffffff', size: 26 });
+  } else {
+    text(K.msg, 640, 380, 26, '#d6337f', 'center', 800); btn(540, 460, 200, 56, 'Tamam', () => { CK = null; }, { col: '#7ed957', fg: '#ffffff', size: 22 });
+  }
+}
+function lbBuildHome() {
+  const O = new THREE.Vector3(0, 0, 130), g = lbRoom(O, 26, 20, '#fff0d8', '#e0b985', '#d4a870'), spots = [], obs = [];
+  const T3 = THREE, bx = (w, h, d, col, x, y, z, ry) => { const m = lbM(new T3.BoxGeometry(w, h, d), typeof col === 'string' ? toon(col) : col, x, y, z); if (ry) m.rotation.y = ry; g.add(m); return m; };
+  const sign = lbSignPlane('🏠 Evim', '#8b5cf6', 3.2, 0.9); sign.position.set(0, 5.6, -9.74); g.add(sign);
+  // kitchen along the back wall: counter, sink, stove with a pot, fridge
+  bx(10, 1, 1.3, '#f4ede2', -7, 0.5, -9.3); bx(10.2, 0.14, 1.45, '#8d97a6', -7, 1.07, -9.3);
+  for (let i = 0; i < 5; i++) bx(1.9, 0.8, 0.05, '#c98b5a', -11.6 + i * 2.1, 0.5, -8.63);
+  bx(1.6, 0.1, 0.9, '#cfd6e2', -10.2, 1.16, -9.3); bx(1.3, 0.06, 0.6, '#5a6070', -10.2, 1.2, -9.3); { const tp = lbM(new T3.CylinderGeometry(0.04, 0.04, 0.5, 6), toon('#cfd6e2'), -10.2, 1.4, -9.7); g.add(tp); bx(0.4, 0.05, 0.05, '#cfd6e2', -10.2, 1.65, -9.55); }
+  bx(2.2, 1.02, 1.3, '#e8434f', -5.5, 0.51, -9.3); bx(2.1, 0.1, 1.25, '#2a2f3a', -5.5, 1.07, -9.3); for (const [dx, dz] of [[-0.5, -0.3], [0.5, -0.3], [-0.5, 0.3], [0.5, 0.3]]) { const bn = lbM(new T3.TorusGeometry(0.2, 0.03, 6, 14), toon('#5a6070'), -5.5 + dx, 1.14, -9.3 + dz); bn.rotation.x = Math.PI / 2; g.add(bn); }
+  bx(1.6, 0.6, 0.06, '#2a2f3a', -5.5, 0.5, -8.62); for (const dx of [-0.6, 0, 0.6]) bx(0.12, 0.12, 0.08, '#ffd23f', -5.5 + dx, 0.92, -8.62);
+  g.add(lbM(new T3.CylinderGeometry(0.32, 0.28, 0.4, 14), toon('#9aa3b5'), -5.9, 1.32, -9.5)); g.add(lbM(new T3.TorusGeometry(0.34, 0.03, 6, 14), toon('#4a3a5a'), -5.9, 1.5, -9.5)).rotation;
+  g.add(lbM(new T3.CylinderGeometry(0.25, 0.25, 0.32, 14), toon('#ff8a3d'), -5.1, 1.28, -9.0));
+  bx(1.7, 3.5, 1.5, '#f4f6fb', -1.5, 1.75, -9.2); bx(1.7, 0.06, 1.52, '#cfd6e2', -1.5, 2.6, -9.2); bx(0.08, 0.9, 0.1, '#9aa3b5', -0.72, 3.1, -8.45); bx(0.08, 1.2, 0.1, '#9aa3b5', -0.72, 1.7, -8.45);
+  bx(0.8, 0.05, 0.4, '#c98b5a', -8.3, 1.17, -9.3); for (const [dx, col] of [[-0.2, '#e8434f'], [0, '#ff8a3d'], [0.2, '#4fb35a']]) g.add(lbM(new T3.SphereGeometry(0.1, 8, 6), toon(col), -8.3 + dx, 1.28, -9.3));
+  bx(8.6, 0.06, 0.05, '#4a3a5a', -7, 3.4, -9.6); for (let i = 0; i < 4; i++) { g.add(lbM(new T3.CylinderGeometry(0.014, 0.014, 0.35, 4), toon('#4a3a5a'), -9.5 + i * 1.7, 3.2, -9.6)); g.add(lbM(new T3.CylinderGeometry(0.22, 0.2, 0.2, 12), toon(['#ff8a3d', '#8b5cf6', '#5ac8ff', '#ff6fb5'][i]), -9.5 + i * 1.7, 2.95, -9.6)); }
+  obs.push([-12.4, -0.6, -10, -8.3]); spots.push({ x: O.x - 5.5, z: O.z - 7.2, cook: true });
+  // dining table with plates
+  bx(3.4, 0.14, 1.9, '#c98b5a', -7.2, 1.0, -3.2); for (const [dx, dz] of [[-1.5, -0.8], [1.5, -0.8], [-1.5, 0.8], [1.5, 0.8]]) bx(0.14, 1.0, 0.14, '#a8703c', -7.2 + dx, 0.5, -3.2 + dz);
+  for (const [dx, dz] of [[-0.9, 0.3], [0.9, 0.3], [-0.9, -0.3], [0.9, -0.3]]) g.add(lbM(new T3.CylinderGeometry(0.28, 0.25, 0.04, 14), toon('#ffffff'), -7.2 + dx, 1.09, -3.2 + dz));
+  g.add(lbM(new T3.CylinderGeometry(0.22, 0.16, 0.18, 12), toon('#ff6fb5'), -7.2, 1.17, -3.2)); for (let i = 0; i < 3; i++) g.add(lbM(new T3.SphereGeometry(0.09, 8, 6), toon(['#e8434f', '#ffd23f', '#8be07e'][i]), -7.2 + (i - 1) * 0.1, 1.33, -3.2));
+  for (const [cx, cz, ry] of [[-8.6, -3.2, 0], [-5.8, -3.2, Math.PI], [-7.2, -4.7, Math.PI / 2], [-7.2, -1.7, -Math.PI / 2]]) { bx(0.7, 0.12, 0.7, '#e8434f', cx, 0.6, cz); for (const [dx, dz] of [[-0.28, -0.28], [0.28, -0.28], [-0.28, 0.28], [0.28, 0.28]]) bx(0.07, 0.6, 0.07, '#a8703c', cx + dx, 0.3, cz + dz); }
+  obs.push([-9.3, -5.1, -5.4, -1.0]);
+  // living room: TV, sofa, coffee table, rug, bookshelf, lamp
+  const rug = new THREE.Mesh(new T3.CircleGeometry(3.4, 32), new THREE.MeshToonMaterial({ map: lbTex(128, 128, (c, ww, hh) => { for (let i = 5; i >= 0; i--) { c.fillStyle = ['#ff9ccf', '#ffe3f1', '#b18cff', '#ffe3f1', '#5ac8ff', '#ffffff'][i]; c.beginPath(); c.arc(64, 64, 10 + i * 10.5, 0, 7); c.fill(); } }), gradientMap: lbGrad })); rug.rotation.x = -Math.PI / 2; rug.position.set(7.5, 0.07, -4.6); g.add(rug);
+  bx(3.6, 0.9, 1.1, '#a8703c', 7.5, 0.45, -9.3); bx(3.2, 1.9, 0.18, '#1c1c24', 7.5, 2.0, -9.5); { const scr = new THREE.Mesh(new T3.PlaneGeometry(2.9, 1.6), new THREE.MeshBasicMaterial({ map: lbTex(128, 72, (c, ww, hh) => { const gr = c.createLinearGradient(0, 0, ww, hh); gr.addColorStop(0, '#7fd0ff'); gr.addColorStop(1, '#ffb3d6'); c.fillStyle = gr; c.fillRect(0, 0, ww, hh); c.fillStyle = '#fff'; c.font = '40px sans-serif'; c.textAlign = 'center'; c.fillText('🌈 🐱 ⭐', ww / 2, 48); }) })); scr.position.set(7.5, 2.0, -9.4); g.add(scr); }
+  obs.push([5.5, 9.5, -10, -8.6]);
+  bx(3.6, 0.8, 1.4, '#8b5cf6', 7.5, 0.4, -1.6); bx(3.6, 0.9, 0.35, '#7a4de0', 7.5, 1.05, -0.95); for (const sx of [-1, 1]) bx(0.4, 1.1, 1.4, '#7a4de0', 7.5 + sx * 1.9, 0.55, -1.6); for (const [dx, col] of [[-1, '#ffd23f'], [1, '#ff6fb5']]) { const cu = bx(0.7, 0.7, 0.18, col, 7.5 + dx, 1.05, -1.5); cu.rotation.z = dx * 0.2; }
+  obs.push([5.4, 9.6, -2.6, -0.4]);
+  bx(2, 0.12, 1.1, '#e8d2b0', 7.5, 0.55, -5.3); for (const [dx, dz] of [[-0.9, -0.45], [0.9, -0.45], [-0.9, 0.45], [0.9, 0.45]]) bx(0.1, 0.5, 0.1, '#c98b5a', 7.5 + dx, 0.25, -5.3 + dz); g.add(lbM(new T3.CylinderGeometry(0.2, 0.15, 0.3, 10), toon('#5ac8ff'), 7.5, 0.76, -5.3)); for (let i = 0; i < 3; i++) g.add(lbM(new T3.SphereGeometry(0.08, 8, 6), toon(['#ff6fb5', '#ffd23f', '#ffffff'][i]), 7.5 + (i - 1) * 0.07, 1.0 + (i === 1 ? 0.05 : 0), -5.3));
+  obs.push([6.4, 8.6, -5.9, -4.7]);
+  bx(0.7, 3.4, 2.8, '#c98b5a', 12.3, 1.7, 1.2); for (let r = 0; r < 4; r++) { bx(0.55, 0.05, 2.6, '#e8d2b0', 12.0, 0.45 + r * 0.8, 1.2); for (let k = 0; k < 6; k++) bx(0.35, 0.5 + (k % 3) * 0.1, 0.22, ['#ff6fb5', '#5ac8ff', '#ffd23f', '#8be07e', '#b18cff', '#ff8a3d'][(k + r) % 6], 11.95, 0.72 + r * 0.8, 0.3 + k * 0.4); }
+  obs.push([11.6, 12.7, -0.4, 2.8]);
+  g.add(lbM(new T3.CylinderGeometry(0.06, 0.1, 2.3, 8), toon('#4a3a5a'), 11.2, 1.15, -7.5)); g.add(lbM(new T3.ConeGeometry(0.5, 0.6, 12, 1, true), new THREE.MeshToonMaterial({ color: '#ffd23f', gradientMap: lbGrad, side: THREE.DoubleSide }), 11.2, 2.5, -7.5)); obs.push([10.8, 11.6, -7.9, -7.1]);
+  // bedroom corner: bed, nightstand, wardrobe
+  bx(2.8, 0.5, 4.6, '#c98b5a', -10.4, 0.25, 4.6); bx(2.6, 0.4, 4.3, '#ffffff', -10.4, 0.7, 4.6); bx(2.6, 0.3, 2.9, normLook(profile.look).cloth, -10.4, 0.95, 5.5); bx(2.8, 1.5, 0.2, '#a8703c', -10.4, 1.0, 2.4);
+  for (const sx of [-0.65, 0.65]) { const pl = lbM(new T3.SphereGeometry(0.45, 10, 8), toon('#ffe3f1'), -10.4 + sx, 1.0, 3.2); pl.scale.set(1.1, 0.5, 0.8); g.add(pl); }
+  bx(0.8, 0.8, 0.8, '#c98b5a', -12.2, 0.4, 1.4); g.add(lbM(new T3.CylinderGeometry(0.05, 0.12, 0.5, 8), toon('#ffd23f'), -12.2, 1.05, 1.4)); g.add(lbM(new T3.SphereGeometry(0.2, 10, 8), new THREE.MeshBasicMaterial({ color: '#fff6c8' }), -12.2, 1.45, 1.4));
+  bx(2.2, 3.8, 1.0, '#e8d2b0', -11.8, 1.9, 8.6); bx(0.06, 3.4, 0.9, '#c98b5a', -11.8, 1.9, 8.6); obs.push([-12.4, -8.9, 2.2, 7.1], [-12.9, -10.6, 8, 9.1]);
+  spots.push({ x: O.x - 8.2, z: O.z + 4.6, sleep: true });
+  // a few frames on the wall
+  for (const [x, col, t] of [[-2.6, '#ff6fb5', '🌸'], [2.8, '#5ac8ff', '🏖️']]) { const fr = lbSignPlane(t, col, 1.4, 1.0); fr.position.set(x, 3.6, -9.72); g.add(fr); }
+  spots.push({ x: O.x, z: O.z + 9.1, exit: 'home' });
+  LB.rooms.home = { O, w: 26, d: 20, g, spots, obs, spawn: new THREE.Vector3(O.x, 0, O.z + 7.4) };
+}
 // ---- the two walk-in buildings ----
 function lbBuildInteriors() {
   LB.rooms = {};
@@ -5445,7 +5551,7 @@ function lbBuildInteriors() {
     spots.push({ x: O.x, z: O.z + 7.1, exit: 'hospital' });
     LB.rooms.hospital = { O, w: 22, d: 16, g, spots, obs, spawn: new THREE.Vector3(O.x, 0, O.z + 5.6) };
   }
-  lbDecorRooms();
+  lbDecorRooms(); lbBuildHome();
 }
 function lbGoInside(id) {
   const R = LB.rooms[id];
@@ -5454,6 +5560,7 @@ function lbGoInside(id) {
   if (LB.pet) LB.pet.position.set(R.spawn.x + 1, 0, R.spawn.z + 1);
   LB.cam.position.set(R.spawn.x, 5.2, R.spawn.z + 7);
   if (id === 'market') say('Raflardan istediğini sepete at, kasada öde 🛒');
+  else if (id === 'home') say('Evine hoş geldin! 🏠 Ocakta yemek pişir, yatakta uyu');
   else say('Hastaneye hoş geldin! Danışmaya uğra 🏥');
 }
 function lbGoOutside() {
@@ -5489,6 +5596,8 @@ function lbNearSpot() {
 function spotActions(sp) {
   if (sp.exit) return [['🚪 Dışarı çık', lbGoOutside, '#27b36a']];
   if (sp.catalog) return [['🛍️ Büyük Raf • tüm ürünler', showCatalog, '#ff5fa2']];
+  if (sp.cook) return [['🍳 Yemek pişir', openCook, '#ff8a3d']];
+  if (sp.sleep) return [['😴 Yat ve uyu', () => { const nn = needs(); if (nn.sleep >= 100) return say('Hiç uykun yok! 😊'); LB.sleepT = 4; sfx('pop'); }, '#8b5cf6']];
   if (sp.food) { const [e, nm, pr, gain] = FOODS[sp.food]; return [[`🛒 ${e} ${nm} • ${rich() ? '∞' : pr + ' TL'} (+${gain} tokluk)`, () => { if (LB.basket.length >= 24) return say('Sepet doldu! Kasaya git 💳'); LB.basket.push(sp.food); sfx('pop'); part({ x: 640, y: 560, vy: -60, life: 0.9, kind: 'txt', t: `${e} sepete!`, col: '#2d7ff9' }); }, '#2d7ff9']]; }
   if (sp.pay) {
     const total = LB.basket.reduce((a, k) => a + FOODS[k][2], 0);
@@ -5534,7 +5643,7 @@ function drawBag() {
   const fPg = Math.min(LB.bagFp || 0, Math.max(0, Math.ceil(food.length / 12) - 1)), tPg = Math.min(LB.bagTp || 0, Math.max(0, Math.ceil(things.length / 12) - 1));
   if (food.length > 12) { btn(640, 176, 44, 32, '◀', () => { LB.bagFp = Math.max(0, fPg - 1); }, { size: 16 }); btn(690, 176, 44, 32, '▶', () => { LB.bagFp = Math.min(Math.ceil(food.length / 12) - 1, fPg + 1); }, { size: 16 }); text((fPg + 1) + '/' + Math.ceil(food.length / 12), 760, 196, 16, '#6b5a70', 'left', 800); }
   if (things.length > 12) { btn(640, 412, 44, 32, '◀', () => { LB.bagTp = Math.max(0, tPg - 1); }, { size: 16 }); btn(690, 412, 44, 32, '▶', () => { LB.bagTp = Math.min(Math.ceil(things.length / 12) - 1, tPg + 1); }, { size: 16 }); text((tPg + 1) + '/' + Math.ceil(things.length / 12), 760, 432, 16, '#6b5a70', 'left', 800); }
-  food.slice(fPg * 12, fPg * 12 + 12).forEach(([k, n], i) => { const [e, nm, , gain] = FOODS[k]; card(216 + (i % 6) * 142, 208 + Math.floor(i / 6) * 96, e, `${nm} ×${n}`, `+${gain} tokluk`, '😋 Ye', () => { const nd = needs(); if (nd.hunger >= 100) return say('Karnın tok! 😊'); inv.food[k]--; nd.hunger = Math.min(100, nd.hunger + gain); if (LB.me) lbHold(e, 2500); questEvent('eat'); save(); sfx('coin'); part({ x: 640, y: 300, vy: -60, life: 1, kind: 'txt', t: 'Nyam! 😋', col: '#23884f' }); }); });
+  food.slice(fPg * 12, fPg * 12 + 12).forEach(([k, n], i) => { const [e, nm, , gain] = FOODS[k]; card(216 + (i % 6) * 142, 208 + Math.floor(i / 6) * 96, e, `${nm} ×${n}`, RAW.has(k) ? 'Çiğ: evde pişir' : `+${gain} tokluk`, '😋 Ye', () => { if (RAW.has(k)) { sfx('no'); return say('Bu çiğ! 🍳 Önce evde pişir'); } const nd = needs(); if (nd.hunger >= 100) return say('Karnın tok! 😊'); inv.food[k]--; nd.hunger = Math.min(100, nd.hunger + gain); if (LB.me) lbHold(e, 2500); questEvent('eat'); save(); sfx('coin'); part({ x: 640, y: 300, vy: -60, life: 1, kind: 'txt', t: 'Nyam! 😋', col: '#23884f' }); }); });
   text('🧸 Eşyalar', 222, 432, 20, '#3a2340', 'left', 800);
   if (!things.length) text('Yok — 🛍️ Mağaza > 🎒 Çanta', 360, 432, 16, '#6b5a70', 'left', 700);
   things.slice(tPg * 12, tPg * 12 + 12).forEach(([k, n], i) => { const [e, nm, , line2] = THINGS[k]; card(216 + (i % 6) * 142, 444 + Math.floor(i / 6) * 96, e, `${nm} ×${n}`, 'Lobide kullan', '✨ Kullan', () => { LB.bag = false; if (LB.me) { lbSay(LB.me, line2); lbHold(e); } questEvent('thing'); sfx('stick'); sparkle(640, 330, 20); }); });
@@ -5645,6 +5754,8 @@ const QUEST_POOL = [
   { id: 'job', text: 'Lobideki işinde 2 sipariş tamamla 💼', goal: 2, reward: 30 },
   { id: 'market', text: 'Market\'ten 3 şey al 🛒', goal: 3, reward: 20 },
   { id: 'eat', text: 'Çantandan 2 yiyecek ye 😋', goal: 2, reward: 15 },
+  { id: 'cook', text: 'Evde bir yemek pişir 🍳', goal: 1, reward: 20 },
+  { id: 'cook4', text: 'Evde 4 yemek pişir 🍳', goal: 4, reward: 70 },
   { id: 'swim', text: 'Denizde 30 saniye yüz 🏊', goal: 30, reward: 25 },
   { id: 'sleep', text: 'Evinde uyu 😴', goal: 1, reward: 15 },
   { id: 'thing', text: 'Çantandan bir eşya kullan 🧸', goal: 1, reward: 10 },
@@ -5736,6 +5847,7 @@ function quests() {
 }
 const QUEST_ALIAS = { walk: ['walk800'], jump: ['jump50'], emote: ['emote15'], swim: ['swim90'], serve: ['serve8'], luna: ['luna4'], goal: ['goal6'], volley: ['volley6'], eat: ['eat5'], lobbytime: ['lobby10'], mynails: ['mynails3'] };
 Object.entries({ walk: 'walk2000', jump: 'jump100', emote: 'emote30', swim: 'swim180', serve: 'serve12', luna: 'luna6', goal: 'goal10', volley: 'volley10', eat: 'eat8', lobbytime: 'lobby20', park: 'park8', market: 'market6', job: 'job5', artdraw: 'artdraw100', shop: 'shop5' }).forEach(([k, v]) => { (QUEST_ALIAS[k] = QUEST_ALIAS[k] || []).push(v); });
+(QUEST_ALIAS.cook = QUEST_ALIAS.cook || []).push('cook4');
 function questEvent(id, amt = 1) {
   if (!profile) return;
   if (QUEST_ALIAS[id] && !questEvent.busy) { questEvent.busy = 1; QUEST_ALIAS[id].forEach(a => questEvent(a, amt)); questEvent.busy = 0; }
@@ -6742,6 +6854,8 @@ function lbLunaStart(kind) {
   LB.fly = false; LB.target = null; LB.jumpV = 0; lbUndisguise(me.userData.A); LB.ride = { kind, i, t: 0 }; lbAction(me, 'sit'); questEvent('park'); sfx('done'); say(`${LUNA_NAME[kind]}! İyi eğlenceler 🎉`);
 }
 function drawLunaUi() {
+  if (LB.sleepT > 0 && scene === 'lobby') { ctx.fillStyle = `rgba(20,20,60,${Math.min(0.85, 0.3 + (4 - LB.sleepT) * 0.2)})`; ctx.fillRect(0, 0, W, H); for (let i = 0; i < 3; i++) text('Z', 640 + i * 40 + Math.sin(T * 2 + i) * 10, 360 - i * 40 - ((T * 30) % 40), 40 + i * 12, '#ffffff', 'center', 800); text('😴 Uyuyorsun...', 640, 470, 30, '#ffffff', 'center', 800); return; }
+  if (CK && scene === 'lobby') return ckDraw();
   if (FG && scene === 'lobby') return fgDraw();
   if (LB.lunaNear && !LB.ride && scene === 'lobby') btn(430, 530, 420, 60, `${LUNA_NAME[LB.lunaNear]} • ${LUNA_PRICE[LB.lunaNear]} TL`, () => lbLunaStart(LB.lunaNear), { col: '#ff5fa2', fg: '#ffffff', size: 21 });
 }
