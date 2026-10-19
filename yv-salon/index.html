@@ -5202,15 +5202,44 @@ function jobButtons(k, y) {
 // ---- building blocks for rooms ----
 function lbRoom(O, w, d, wallCol, floorA, floorB) {
   const g = new THREE.Group(); g.position.copy(O); LB.scene.add(g);
-  const tex = lbTex(128, 128, (c, ww, hh) => { for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { c.fillStyle = (i + j) % 2 ? floorA : floorB; c.fillRect(i * 32, j * 32, 32, 32); } });
+  let sd = 11; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  const tex = lbTex(256, 256, (c, ww, hh) => {
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { c.fillStyle = (i + j) % 2 ? floorA : floorB; c.fillRect(i * 64, j * 64, 64, 64); c.fillStyle = 'rgba(255,255,255,.2)'; c.fillRect(i * 64 + 4, j * 64 + 4, 56, 7); }
+    for (let k = 0; k < 140; k++) { c.fillStyle = rnd() < 0.5 ? 'rgba(0,0,0,.045)' : 'rgba(255,255,255,.08)'; c.beginPath(); c.arc(rnd() * 256, rnd() * 256, 1 + rnd() * 3, 0, 7); c.fill(); }
+    c.strokeStyle = 'rgba(0,0,0,.14)'; c.lineWidth = 3; for (let i = 0; i <= 4; i++) { c.beginPath(); c.moveTo(i * 64, 0); c.lineTo(i * 64, 256); c.stroke(); c.beginPath(); c.moveTo(0, i * 64); c.lineTo(256, i * 64); c.stroke(); }
+  });
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(w / 4, d / 4);
-  const fl = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshToonMaterial({ map: tex, gradientMap: lbGrad })); fl.rotation.x = -Math.PI / 2; fl.receiveShadow = true; g.add(fl);
-  const wm = toon(wallCol), trim = toon('#ffffff'), H = 6.5;
+  const fl = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshToonMaterial({ map: tex, gradientMap: lbGrad })); fl.rotation.x = -Math.PI / 2; fl.position.y = 0.03; fl.receiveShadow = true; g.add(fl);
+  const wm = toon(wallCol), trim = toon('#ffffff'), lower = toon(mix(wallCol, '#000000', 0.12)), H = 6.5;
   const wall = (x, z, ww, dd) => { g.add(lbM(new THREE.BoxGeometry(ww, H, dd), wm, x, H / 2, z)); g.add(lbM(new THREE.BoxGeometry(ww + 0.05, 0.3, dd + 0.05), trim, x, 0.15, z)); };
   wall(0, -d / 2, w, 0.4); wall(-w / 2, 0, 0.4, d); wall(w / 2, 0, 0.4, d);
   wall(-(w / 4 + 1), d / 2, w / 2 - 2, 0.4); wall(w / 4 + 1, d / 2, w / 2 - 2, 0.4);
-  // door mat at the entrance
-  g.add(lbM(new THREE.BoxGeometry(3, 0.04, 1.4), toon('#ff9ccf'), 0, 0.02, d / 2 - 1));
+  // wainscot panels, chair rail and crown moulding on the three inner walls
+  const inner = [[0, -d / 2 + 0.25, w - 0.4, 0.1, 0], [-w / 2 + 0.25, 0, 0.1, d - 0.4, 1], [w / 2 - 0.25, 0, 0.1, d - 0.4, 1]];
+  for (const [x, z, ww, dd, side] of inner) {
+    g.add(lbM(new THREE.BoxGeometry(ww, 1.4, dd), lower, x, 0.95, z)); g.add(lbM(new THREE.BoxGeometry(side ? 0.16 : ww, 0.12, side ? dd : 0.16), trim, x, 1.68, z));
+    g.add(lbM(new THREE.BoxGeometry(side ? 0.3 : ww, 0.25, side ? dd : 0.3), trim, x, 6.35, z));
+    for (let k = 0; k < 6; k++) { const o = (k - 2.5) * ((side ? d : w) / 6); g.add(lbM(new THREE.BoxGeometry(side ? 0.04 : 0.08, 1.1, side ? 0.08 : 0.04), trim, x + (side ? (x < 0 ? 0.06 : -0.06) : o), 0.95, z + (side ? o : 0.06))); }
+  }
+  // windows with a sky, a sun glow and curtains
+  const sky = lbTex(128, 128, (c, ww, hh) => { const gr = c.createLinearGradient(0, 0, 0, hh); gr.addColorStop(0, '#8fd0ff'); gr.addColorStop(1, '#e6f6ff'); c.fillStyle = gr; c.fillRect(0, 0, ww, hh); c.fillStyle = 'rgba(255,255,255,.9)'; for (const [cx, cy, r] of [[34, 40, 14], [50, 38, 18], [86, 70, 12], [98, 66, 15]]) { c.beginPath(); c.arc(cx, cy, r, 0, 7); c.fill(); } c.fillStyle = '#fff2a8'; c.beginPath(); c.arc(100, 22, 12, 0, 7); c.fill(); });
+  const win = (x, y, z, ry) => {
+    const wg = new THREE.Group(); wg.position.set(x, y, z); wg.rotation.y = ry; g.add(wg);
+    wg.add(lbM(new THREE.BoxGeometry(2.7, 2.1, 0.12), trim, 0, 0, 0)); const gl = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 1.7), new THREE.MeshBasicMaterial({ map: sky })); gl.position.z = 0.07; wg.add(gl);
+    wg.add(lbM(new THREE.BoxGeometry(0.08, 1.7, 0.1), trim, 0, 0, 0.09)); wg.add(lbM(new THREE.BoxGeometry(2.3, 0.08, 0.1), trim, 0, 0, 0.09)); wg.add(lbM(new THREE.BoxGeometry(2.9, 0.12, 0.3), trim, 0, -1.1, 0.12));
+    for (const sx of [-1, 1]) wg.add(lbM(new THREE.BoxGeometry(0.55, 2.2, 0.1), toon(sx < 0 ? '#ffb3d6' : '#ffd6a8'), sx * 1.45, 0.05, 0.18));
+  };
+  const wx = w / 2 - 2.8; win(-wx, 4.1, -d / 2 + 0.26, 0); win(wx, 4.1, -d / 2 + 0.26, 0);
+  for (const z of [-d / 4 + 0.5, d / 4 + 0.5]) { win(-w / 2 + 0.26, 4.1, z, Math.PI / 2); win(w / 2 - 0.26, 4.1, z, -Math.PI / 2); }
+  // hanging pendant lamps
+  const lampCols = ['#ff9ccf', '#ffd23f', '#5ac8ff', '#8be07e'];
+  for (let k = 0; k < 6; k++) { const lx = (k % 3 - 1) * (w / 3), lz = (Math.floor(k / 3) - 0.5) * (d / 2.2) - 0.5, y = 4.9;
+    g.add(lbM(new THREE.CylinderGeometry(0.02, 0.02, 1.7, 4), toon('#4a3a5a'), lx, y + 0.95, lz)); g.add(lbM(new THREE.ConeGeometry(0.62, 0.45, 14, 1, true), new THREE.MeshToonMaterial({ color: lampCols[k % 4], gradientMap: lbGrad, side: THREE.DoubleSide }), lx, y, lz));
+    g.add(lbM(new THREE.SphereGeometry(0.2, 10, 8), new THREE.MeshBasicMaterial({ color: '#fff6c8' }), lx, y - 0.12, lz));
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: lbGlowTex(), transparent: true, opacity: 0.45, depthWrite: false, blending: THREE.AdditiveBlending })); halo.scale.set(3.2, 3.2, 1); halo.position.set(lx, y - 0.1, lz); g.add(halo); }
+  // door mat and big corner plants
+  g.add(lbM(new THREE.BoxGeometry(3, 0.04, 1.4), toon('#ff9ccf'), 0, 0.06, d / 2 - 1));
+  for (const sx of [-1, 1]) { const px = sx * (w / 2 - 0.9), pz = d / 2 - 0.9; g.add(lbM(new THREE.CylinderGeometry(0.55, 0.42, 0.8, 12), toon('#d9713f'), px, 0.4, pz)); for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2, lf = lbM(new THREE.SphereGeometry(0.42, 8, 6), toon(k % 2 ? '#4fb35a' : '#6cc070'), px + Math.cos(a) * 0.3, 1.25 + (k % 3) * 0.3, pz + Math.sin(a) * 0.3); lf.scale.set(0.8, 1.4, 0.8); g.add(lf); } }
   return g;
 }
 function lbSignPlane(txt, col, w = 6, h = 1.2) {
@@ -5243,6 +5272,52 @@ function lbShelf(g, x, z, len, foods, wood = '#e8d2b0') {
   g.add(lbM(new THREE.BoxGeometry(len, 1.9, 0.9), toon(mix(wood, '#000000', 0.12)), x, 0.95, z - 0.1));
   for (const y of [0.35, 0.95, 1.55]) g.add(lbM(new THREE.BoxGeometry(len + 0.1, 0.08, 1.0), w, x, y, z));
   foods.forEach((k, i) => { const sx = x - len / 2 + len / foods.length * (i + 0.5); for (const y of [0.39, 0.99, 1.59]) for (let n = -1; n <= 1; n++) { const f = lbFood(k); f.scale.setScalar(1.8); f.position.set(sx + n * (len / foods.length) * 0.28, y, z + 0.15); g.add(f); } });
+}
+// ---------- extra decoration inside the market and the hospital ----------
+function lbDecorRooms() {
+  const hang = (g, x, y, z, ry, txt, col, w = 2.6, h = 0.8) => { const sg = lbSignPlane(txt, col, w, h); sg.position.set(x, y, z); sg.rotation.y = ry; g.add(sg); for (const dx of [-w / 2 + 0.2, w / 2 - 0.2]) { const c = lbM(new THREE.CylinderGeometry(0.015, 0.015, 6.5 - y, 4), toon('#4a3a5a'), 0, 0, 0); c.position.set(x + Math.cos(ry) * dx, (y + 6.5) / 2, z - Math.sin(ry) * dx); g.add(c); } };
+  const poster = (g, x, y, z, ry, txt, col) => { const p = lbSignPlane(txt, col, 2.8, 0.9); p.position.set(x, y, z); p.rotation.y = ry; g.add(p); };
+  // 🛒 market
+  { const R = LB.rooms.market, g = R.g, red = toon('#e8434f');
+    // runner rug at the entrance
+    const rug = lbTex(128, 256, (c, ww, hh) => { for (let i = 0; i < 8; i++) { c.fillStyle = i % 2 ? '#ffe3f1' : '#ff9ccf'; c.fillRect(0, i * 32, ww, 32); } c.strokeStyle = '#ffffff'; c.lineWidth = 8; c.strokeRect(4, 4, ww - 8, hh - 8); });
+    const rg = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 5.5), new THREE.MeshToonMaterial({ map: rug, gradientMap: lbGrad })); rg.rotation.x = -Math.PI / 2; rg.position.set(0, 0.07, 5.6); rg.receiveShadow = true; g.add(rg);
+    // two shopping carts and a stack of baskets
+    for (const [cx, cz, ry] of [[-9.8, 7.6, 0.25], [-8.3, 7.9, -0.1]]) { const c = new THREE.Group(); c.position.set(cx, 0, cz); c.rotation.y = ry; g.add(c); const wire = new THREE.MeshToonMaterial({ color: '#cfd6e2', gradientMap: lbGrad, transparent: true, opacity: 0.6 });
+      c.add(lbM(new THREE.BoxGeometry(1.2, 0.7, 0.8), wire, 0, 0.75, 0)); c.add(lbM(new THREE.BoxGeometry(1.1, 0.06, 0.7), toon('#8d97a6'), 0, 0.3, 0)); const hd = lbM(new THREE.BoxGeometry(1.2, 0.08, 0.08), red, 0, 1.25, -0.5); c.add(hd);
+      for (const [wx, wz] of [[-0.5, -0.3], [0.5, -0.3], [-0.5, 0.3], [0.5, 0.3]]) c.add(lbM(new THREE.SphereGeometry(0.1, 8, 6), toon('#2a2a33'), wx, 0.12, wz)); }
+    for (let i = 0; i < 3; i++) { g.add(lbM(new THREE.BoxGeometry(1.1, 0.3, 0.8), red, 9.6, 0.15 + i * 0.3, 7.6)); g.add(lbM(new THREE.BoxGeometry(0.9, 0.05, 0.6), toon('#ffffff'), 9.6, 0.32 + i * 0.3, 7.6)); }
+    R.obs.push([-10.6, -7.6, 7, 8.4], [8.9, 10.3, 7.1, 8.1]);
+    // checkout: conveyor belt, card terminal, sign
+    g.add(lbM(new THREE.BoxGeometry(2.6, 0.12, 0.9), toon('#2a2f3a'), 6.9, 1.17, 3.1)); for (let i = 0; i < 4; i++) g.add(lbM(new THREE.BoxGeometry(0.1, 0.13, 0.9), toon('#5a6070'), 5.9 + i * 0.7, 1.18, 3.1));
+    ['apple', 'milk', 'cookie'].forEach((k, i) => { const fd = lbFood(k); fd.scale.setScalar(1.6); fd.position.set(6.1 + i * 0.7, 1.23, 3.1); g.add(fd); });
+    g.add(lbM(new THREE.BoxGeometry(0.5, 0.12, 0.35), toon('#e8ebf2'), 8.9, 1.22, 3.6)); g.add(lbM(new THREE.BoxGeometry(0.4, 0.04, 0.2), new THREE.MeshBasicMaterial({ color: '#7fe08a' }), 8.9, 1.3, 3.6));
+    for (let i = 0; i < 6; i++) g.add(lbM(new THREE.CylinderGeometry(0.05, 0.05, 0.28, 6), toon(['#ff6fb5', '#ffd23f', '#5ac8ff'][i % 3]), 5.8 + i * 0.15, 1.38, 3.75));
+    hang(g, 7.5, 3.4, 3.2, 0, '💳 Kasa', '#27b36a', 2.2, 0.7);
+    // hanging aisle signs and wall posters
+    hang(g, -4, 3.4, -2.6, 0, '🥖 Fırın & Süt', '#d49a58'); hang(g, -4, 3.4, 2.6, 0, '🍪 Atıştırmalık', '#e8434f'); hang(g, 6.4, 3.4, -2.6, 0, '🍕 Hazır yemek', '#ff8a3d'); hang(g, 10.2, 3.6, -3.6, -Math.PI / 2, '🥤 Soğuk içecek', '#5aa9ff', 2.4, 0.7);
+    poster(g, -11.75, 3.3, -5.5, Math.PI / 2, '🔥 İNDİRİM!', '#e8434f'); poster(g, -11.75, 3.3, -1, Math.PI / 2, '🍎 Taze meyve', '#4fb35a'); poster(g, -11.75, 3.3, 3.5, Math.PI / 2, '⭐ Haftanın ürünü', '#ffd23f');
+    // price tags on the shelves
+    for (const [x, z] of [[-6.5, -2.0], [-2.5, -2.0], [-6.5, 3.2], [-2.5, 3.2]]) { const t = lbM(new THREE.BoxGeometry(0.5, 0.18, 0.04), toon('#ffffff'), x, 0.3, z + 0.52); g.add(t); g.add(lbM(new THREE.BoxGeometry(0.4, 0.06, 0.05), red, x, 0.3, z + 0.54)); } }
+  // 🏥 hospital
+  { const R = LB.rooms.hospital, g = R.g, white = toon('#ffffff'), red = toon('#e8434f');
+    // IV stands by the beds
+    [-2, 3, 8].forEach(x => { const px = x - 1.25, pz = -3.9; g.add(lbM(new THREE.CylinderGeometry(0.04, 0.04, 2.4, 6), toon('#9aa3b5'), px, 1.2, pz)); g.add(lbM(new THREE.CylinderGeometry(0.3, 0.3, 0.05, 10), toon('#9aa3b5'), px, 0.03, pz)); g.add(lbM(new THREE.BoxGeometry(0.3, 0.45, 0.12), new THREE.MeshToonMaterial({ color: '#bfe9ff', gradientMap: lbGrad, transparent: true, opacity: 0.85 }), px, 2.35, pz)); g.add(lbM(new THREE.BoxGeometry(0.28, 0.2, 0.13), toon('#5aa9ff'), px, 2.25, pz)); });
+    // medicine cabinet and water cooler on the right wall
+    g.add(lbM(new THREE.BoxGeometry(0.7, 2.6, 1.9), white, 10.5, 1.3, -1.6)); g.add(lbM(new THREE.BoxGeometry(0.06, 1.9, 1.5), new THREE.MeshToonMaterial({ color: '#d9f3ff', gradientMap: lbGrad, emissive: '#5aa9ff', emissiveIntensity: 0.15 }), 10.12, 1.5, -1.6));
+    g.add(lbM(new THREE.BoxGeometry(0.08, 0.7, 0.2), red, 10.1, 2.8, -1.6)); g.add(lbM(new THREE.BoxGeometry(0.08, 0.2, 0.7), red, 10.1, 2.8, -1.6));
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) g.add(lbM(new THREE.CylinderGeometry(0.07, 0.07, 0.22, 8), toon(['#ff6fb5', '#ffd23f', '#5aa9ff'][(i + j) % 3]), 10.1, 0.9 + i * 0.5, -2.1 + j * 0.5));
+    g.add(lbM(new THREE.CylinderGeometry(0.35, 0.35, 1.0, 12), white, 10.3, 0.5, 1.6)); g.add(lbM(new THREE.CylinderGeometry(0.28, 0.28, 0.6, 12), new THREE.MeshToonMaterial({ color: '#7fd0ff', gradientMap: lbGrad, transparent: true, opacity: 0.7 }), 10.3, 1.3, 1.6)); R.obs.push([9.9, 11, -2.6, -0.5], [9.8, 10.9, 1.1, 2.1]);
+    // waiting table with magazines, kids' corner with a rug and toys
+    g.add(lbM(new THREE.BoxGeometry(1.1, 0.45, 1.1), toon('#e8d2b0'), -8.4, 0.25, -0.9)); for (let i = 0; i < 3; i++) g.add(lbM(new THREE.BoxGeometry(0.5, 0.03, 0.38), toon(['#ff6fb5', '#5ac8ff', '#ffd23f'][i]), -8.4 + (i - 1) * 0.08, 0.5 + i * 0.03, -0.9 + (i - 1) * 0.1));
+    const kr = new THREE.Mesh(new THREE.CircleGeometry(2.4, 32), new THREE.MeshToonMaterial({ map: lbTex(128, 128, (c, ww, hh) => { for (let i = 0; i < 6; i++) { c.fillStyle = ['#ff9ccf', '#ffd23f', '#5ac8ff', '#8be07e', '#b18cff', '#ff8a3d'][i]; c.beginPath(); c.moveTo(64, 64); c.arc(64, 64, 64, i * Math.PI / 3, (i + 1) * Math.PI / 3); c.fill(); } c.fillStyle = '#ffffff'; c.beginPath(); c.arc(64, 64, 22, 0, 7); c.fill(); }), gradientMap: lbGrad })); kr.rotation.x = -Math.PI / 2; kr.position.set(7.4, 0.07, 5.2); g.add(kr);
+    [['#ff6fb5', 0], ['#5ac8ff', 1], ['#ffd23f', 2]].forEach(([col, i]) => g.add(lbM(new THREE.BoxGeometry(0.45, 0.45, 0.45), toon(col), 6.6 + i * 0.5, 0.25 + (i === 1 ? 0.45 : 0), 5.2 + (i === 2 ? 0.4 : 0))));
+    { const ty = new THREE.Group(); ty.position.set(8.3, 0.4, 5.7); g.add(ty); ty.add(lbM(new THREE.SphereGeometry(0.34, 12, 10), toon('#c98b5a'), 0, 0, 0)); ty.add(lbM(new THREE.SphereGeometry(0.24, 12, 10), toon('#c98b5a'), 0, 0.5, 0)); for (const sx of [-1, 1]) ty.add(lbM(new THREE.SphereGeometry(0.09, 8, 6), toon('#c98b5a'), sx * 0.18, 0.7, 0)); }
+    // posters
+    { const ec = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 2), new THREE.MeshBasicMaterial({ map: lbTex(96, 128, (c, ww, hh) => { c.fillStyle = '#ffffff'; c.fillRect(0, 0, ww, hh); c.fillStyle = '#2a2f3a'; c.textAlign = 'center'; c.textBaseline = 'middle'; [[0, 44, 'E'], [1, 28, 'F P'], [2, 20, 'T O Z'], [3, 14, 'L P E D'], [4, 10, 'P E C F D']].forEach(([i, sz, t]) => { c.font = '800 ' + sz + 'px sans-serif'; c.fillText(t, ww / 2, 20 + i * 22 + i * i * 1.5); }); c.strokeStyle = '#c9d6e6'; c.lineWidth = 6; c.strokeRect(3, 3, ww - 6, hh - 6); }) })); ec.position.set(-6.8, 3.3, -7.74); g.add(ec); }
+    poster(g, 10.76, 3.4, 3.8, -Math.PI / 2, '🧼 Ellerini yıka', '#5aa9ff'); poster(g, -10.76, 3.4, -5.4, Math.PI / 2, '💖 Sağlıklı beslen', '#4fb35a'); poster(g, 3, 5.7, -7.74, 0, '🩺 Geçmiş olsun', '#e8434f'); hang(g, -6, 3.4, 3.4, 0, '🩺 Danışma', '#5aa9ff', 2.2, 0.7); hang(g, 3, 3.4, -2.2, 0, '🛏️ Yataklar', '#27b36a', 2.2, 0.7);
+    // blue guide stripe from the door to the reception
+    const gs = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 6), new THREE.MeshBasicMaterial({ color: '#7fb8ff', transparent: true, opacity: 0.55 })); gs.rotation.x = -Math.PI / 2; gs.position.set(0, 0.07, 4.9); g.add(gs); }
 }
 // ---- the two walk-in buildings ----
 function lbBuildInteriors() {
@@ -5310,6 +5385,7 @@ function lbBuildInteriors() {
     spots.push({ x: O.x, z: O.z + 7.1, exit: 'hospital' });
     LB.rooms.hospital = { O, w: 22, d: 16, g, spots, obs, spawn: new THREE.Vector3(O.x, 0, O.z + 5.6) };
   }
+  lbDecorRooms();
 }
 function lbGoInside(id) {
   const R = LB.rooms[id];
