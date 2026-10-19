@@ -91,3 +91,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v81 | versions/v81-ic-mekan.html | 🏬 Market ve hastane içleri çok daha güzel: karo zemin, pencereler, sarkıt lambalar, tabelalar, posterler, sepetler, kasa bandı, serum standları, ilaç dolabı, çocuk köşesi |
 | v82 | versions/v82-inek-kaplan.html | 🐮🐯 İnek ve kaplan baştan çizildi (2D ve 3D): benekli inek, memeli, boynuzlu, çanlı; çizgili, uzun kuyruklu kaplan |
 | v83 | versions/v83-ev-mutfak.html | 🏠 Evin içi: mutfak (ocak, fırın, buzdolabı), yemek masası, salon (TV, koltuk), yatak odası. Ocakta 12 yemek pişirme oyunu; çiğ yiyecekler pişmeden yenmez |
+| v84 | versions/v84-hayvan-duzelt.html | 🐾 Hata düzeltildi: yeni 14 hayvan lobide görünmüyordu (kaydedilmiyordu); inek/kaplan 3D lobide düzgün, kaplan çizgileri düzeltildi |
