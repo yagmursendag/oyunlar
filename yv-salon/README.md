@@ -92,3 +92,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v82 | versions/v82-inek-kaplan.html | 🐮🐯 İnek ve kaplan baştan çizildi (2D ve 3D): benekli inek, memeli, boynuzlu, çanlı; çizgili, uzun kuyruklu kaplan |
 | v83 | versions/v83-ev-mutfak.html | 🏠 Evin içi: mutfak (ocak, fırın, buzdolabı), yemek masası, salon (TV, koltuk), yatak odası. Ocakta 12 yemek pişirme oyunu; çiğ yiyecekler pişmeden yenmez |
 | v84 | versions/v84-hayvan-duzelt.html | 🐾 Hata düzeltildi: yeni 14 hayvan lobide görünmüyordu (kaydedilmiyordu); inek/kaplan 3D lobide düzgün, kaplan çizgileri düzeltildi |
+| v85 | versions/v85-dolap-parkur.html | 🧊 Evde dolap: yemekleri çantadan dolaba koy / çıkar, yemek pişirirken dolaptakileri de kullanır. 🏃 Parkur: renkli bloklara zıpla, tepeye çık, süre tut, ödül kazan |

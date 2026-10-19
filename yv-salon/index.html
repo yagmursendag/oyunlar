@@ -4762,7 +4762,7 @@ function lbInit() {
   }
   LB.tapMark = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.55, 24), new THREE.MeshBasicMaterial({ color: '#ff5fa2', transparent: true, opacity: 0 })); LB.tapMark.rotation.x = -Math.PI / 2; LB.tapMark.position.y = 0.05; sc.add(LB.tapMark);
   lbBuildInteriors();
-  lbBuildBeach(); lbBuildSky(); lbBuildVolley(); lbBuildFootball(); lbBuildOuter(); lbBuildPark(); lbBuildLuna(); lbBuildLuna2(); lbBuildFair(); lbBuildScenery(); lbBuildFx(); lbBuildGlints();
+  lbBuildBeach(); lbBuildSky(); lbBuildVolley(); lbBuildFootball(); lbBuildOuter(); lbBuildPark(); lbBuildLuna(); lbBuildLuna2(); lbBuildFair(); lbBuildParkour(); lbBuildScenery(); lbBuildFx(); lbBuildGlints();
   LB.ok = true;
   return true;
 }
@@ -4808,6 +4808,7 @@ function lbCollide(v, rad = 0.5) {
   if (v.z > 30) { v.x = clamp(v.x, -40, 40); v.z = Math.min(v.z, 88); } // the beach and the sea
   else if (d > 98) { const k = 98 / d; v.x *= k; v.z *= k; }
   for (const t of LB.trees || []) { const tx = v.x - t[0], tz = v.z - t[1], td = Math.hypot(tx, tz); if (td < t[2] + rad) { const k = (t[2] + rad) / (td || 1); v.x = t[0] + tx * k; v.z = t[1] + tz * k; } } // trees, windmill, playground
+  for (const p of LB.pk || []) if (v.y < p.top - 0.3 && v.x > p.x0 - rad && v.x < p.x1 + rad && v.z > p.z0 - rad && v.z < p.z1 + rad) { const dl = v.x - (p.x0 - rad), dr = p.x1 + rad - v.x, dt2 = v.z - (p.z0 - rad), db = p.z1 + rad - v.z, mn = Math.min(dl, dr, dt2, db); if (mn === dl) v.x = p.x0 - rad; else if (mn === dr) v.x = p.x1 + rad; else if (mn === dt2) v.z = p.z0 - rad; else v.z = p.z1 + rad; }
   if (v.z > VB.z0 - 0.4 && v.z < VB.z1 + 0.4 && Math.abs(v.x - VB.cx) < 0.5) v.x = v.x < VB.cx ? VB.cx - 0.5 : VB.cx + 0.5; // volleyball net
   for (const p of LB.places) { const dx = v.x - p.pos.x, dz = v.z - p.pos.z, dd = Math.hypot(dx, dz); if (dd < 5.6 + rad) { const k = (5.6 + rad) / (dd || 1); v.x = p.pos.x + dx * k; v.z = p.pos.z + dz * k; } }
 }
@@ -4845,7 +4846,7 @@ function lbUpdate(dt) {
   if (vx || vz) { const ang = Math.atan2(vx, vz); me.rotation.y += Math.atan2(Math.sin(ang - me.rotation.y), Math.cos(ang - me.rotation.y)) * Math.min(1, dt * 12); }
   lbAnim(me, dt, vx || vz ? spd : 0);
   lbSwim(me, dt); if (!LB.swim && (vx || vz) && scene === 'lobby') questEvent('walk', spd * dt); if (scene === 'lobby') questEvent('lobbytime', dt);
-  if (!LB.ride) lbJumpUpdate(me, dt); lbRide(me, dt); lbParkUpdate(me, dt); lbLunaUpdate(me); lbLunaAnim(dt); lbLunaAnim2(dt); lbZoneQuests(me); lbFx(dt); lbGlintUpdate(); lbVolley(dt); lbFootball(dt); lbOuterAnim(dt);
+  if (!LB.ride) lbJumpUpdate(me, dt); lbRide(me, dt); lbParkUpdate(me, dt); lbPkUpdate(me, dt); lbLunaUpdate(me); lbLunaAnim(dt); lbLunaAnim2(dt); lbZoneQuests(me); lbFx(dt); lbGlintUpdate(); lbVolley(dt); lbFootball(dt); lbOuterAnim(dt);
   // pet follows
   if (LB.pet) {
     const bx = me.position.x - Math.sin(me.rotation.y) * 1.3 + Math.cos(me.rotation.y) * 0.9, bz = me.position.z - Math.cos(me.rotation.y) * 1.3 - Math.sin(me.rotation.y) * 0.9;
@@ -4874,11 +4875,11 @@ function lbUpdate(dt) {
   for (const st of LB.staff || []) lbAnim(st, dt, 0);
   // camera follows from behind
   const inside = LB.where !== 'town', cd = inside ? 7 : 10;
-  const cp = new THREE.Vector3(me.position.x + Math.sin(LB.yaw) * cd * ((LB.ride && LB.ride.kind === 'wheel') ? 0 : 1) - ((LB.ride && LB.ride.kind === 'wheel') ? 11 : 0), (inside ? 5.4 : 6.2) + ((LB.fly || (LB.ride && (LB.ride.kind === 'wheel' || LB.ride.kind === 'tower'))) ? me.position.y * 0.7 : 0), me.position.z + Math.cos(LB.yaw) * cd * ((LB.ride && LB.ride.kind === 'wheel') ? 0 : 1));
+  const cp = new THREE.Vector3(me.position.x + Math.sin(LB.yaw) * cd * ((LB.ride && LB.ride.kind === 'wheel') ? 0 : 1) - ((LB.ride && LB.ride.kind === 'wheel') ? 11 : 0), (inside ? 5.4 : 6.2) + ((LB.fly || (LB.ride && (LB.ride.kind === 'wheel' || LB.ride.kind === 'tower'))) ? me.position.y * 0.7 : Math.max(0, me.position.y - 1.5) * 0.9), me.position.z + Math.cos(LB.yaw) * cd * ((LB.ride && LB.ride.kind === 'wheel') ? 0 : 1));
   if (inside) lbClampCam(cp);
   // softer light indoors so floors and walls don't look washed out
   lbDayNight(dt, inside);
-  LB.cam.position.lerp(cp, 1 - Math.exp(-dt * 6)); LB.cam.lookAt(me.position.x, 1.6 + ((LB.fly || (LB.ride && (LB.ride.kind === 'wheel' || LB.ride.kind === 'tower'))) ? me.position.y * 0.7 : 0), me.position.z);
+  LB.cam.position.lerp(cp, 1 - Math.exp(-dt * 6)); LB.cam.lookAt(me.position.x, 1.6 + ((LB.fly || (LB.ride && (LB.ride.kind === 'wheel' || LB.ride.kind === 'tower'))) ? me.position.y * 0.7 : Math.max(0, me.position.y - 1.5) * 0.9), me.position.z);
   // fountain water, clouds, butterflies, tap marker
   const pa = LB.jet.geometry.attributes.position;
   LB.drops.forEach((q, i) => { q.t = (q.t + dt * q.sp) % 1; const r = q.t * 1.3, y = 3.1 + Math.sin(q.t * Math.PI) * 1.4 - q.t * 1.2; pa.setXYZ(i, Math.cos(q.a) * r, y, Math.sin(q.a) * r); });
@@ -5391,8 +5392,20 @@ const RECIPES = [
   { out: 'c_pancake', need: { egg: 1, milk: 1 } }, { out: 'c_pizza', need: { bread: 1, cheese: 1, tomato: 1 } }, { out: 'c_chicken', need: { nuggets: 1, potato: 1 } }, { out: 'c_soup', need: { tomato: 1, potato: 1, onion: 1 } },
   { out: 'c_corn', need: { corn: 1 } }, { out: 'c_saute', need: { mushroom: 1, onion: 1 } }, { out: 'c_cake', need: { egg: 1, milk: 1, choco: 1 } }, { out: 'c_eggplant', need: { eggplant: 1, tomato: 1 } },
 ];
+const FRIDGE_CAP = 60;
+const fridgeUsed = () => Object.values(inv.fridge || {}).reduce((a, v) => a + v, 0);
+const foodHave = k => ((inv.food || {})[k] || 0) + ((inv.fridge || {})[k] || 0);
+function openFridge() {
+  inv.fridge = inv.fridge || {}; inv.food = inv.food || {};
+  const bag = Object.entries(inv.food).filter(([, n]) => n > 0), fr = Object.entries(inv.fridge).filter(([, n]) => n > 0), st = 'width:auto;display:inline-block;margin:3px;padding:8px 10px;font-size:15px';
+  openModal('<h2>🧊 Dolap</h2><p>🎒 Çanta: <b>' + bagUsed() + '/' + bagCap() + '</b> • 🧊 Dolap: <b>' + fridgeUsed() + '/' + FRIDGE_CAP + '</b></p><h3>🎒 Çantan (dolaba koy)</h3><div style="max-height:22vh;overflow:auto">' + (bag.length ? bag.map(([k, n]) => '<button class="mb y" style="' + st + '" data-b="' + k + '">' + FOODS[k][0] + ' ' + FOODS[k][1] + ' ×' + n + '</button>').join('') : '<p>Çantanda yiyecek yok</p>') + '</div>' + (bag.length ? '<button class="mb g" style="' + st + '" id="fall">⬇️ Hepsini dolaba koy</button>' : '') + '<h3>🧊 Dolapta (çantaya al)</h3><div style="max-height:22vh;overflow:auto">' + (fr.length ? fr.map(([k, n]) => '<button class="mb y" style="' + st + '" data-f="' + k + '">' + FOODS[k][0] + ' ' + FOODS[k][1] + ' ×' + n + '</button>').join('') : '<p>Dolap boş</p>') + '</div><button class="mb s" id="fclose">Kapat</button>');
+  $('fclose').onclick = closeModal;
+  modal.querySelectorAll('[data-b]').forEach(b => { b.onclick = () => { const k = b.dataset.b; if (fridgeUsed() >= FRIDGE_CAP) { sfx('no'); return say('Dolap dolu! 🧊'); } inv.food[k]--; inv.fridge[k] = (inv.fridge[k] || 0) + 1; save(); sfx('pop'); openFridge(); }; });
+  modal.querySelectorAll('[data-f]').forEach(b => { b.onclick = () => { const k = b.dataset.f; if (bagUsed() >= bagCap()) { sfx('no'); return say('Çantan dolu! 🎒'); } inv.fridge[k]--; inv.food[k] = (inv.food[k] || 0) + 1; save(); sfx('pop'); openFridge(); }; });
+  const fa = $('fall'); if (fa) fa.onclick = () => { for (const [k, n] of bag) { const m = Math.min(n, FRIDGE_CAP - fridgeUsed()); if (m <= 0) break; inv.food[k] -= m; inv.fridge[k] = (inv.fridge[k] || 0) + m; } save(); sfx('done'); openFridge(); };
+}
 let CK = null;
-const ckHave = r => Object.entries(r.need).every(([k, n]) => ((inv.food || {})[k] || 0) >= n);
+const ckHave = r => Object.entries(r.need).every(([k, n]) => foodHave(k) >= n);
 function openCook() { CK = { ph: 'pick', last: performance.now(), t: 0 }; }
 function ckStart(r) {
   if (!ckHave(r)) { sfx('no'); return say('Malzemen eksik! 🛒 Marketten al'); }
@@ -5405,7 +5418,7 @@ function ckTurn() {
   const x = 0.5 + Math.sin(K.t * 2.6) * 0.5, hit = Math.abs(x - K.zone) < 0.12; K.tries--; K.msg = hit ? 'Harika! 🔥' : 'Kaçırdın! 💨'; if (hit) { K.hits++; sfx('coin'); } else sfx('pop'); K.a = 0.9;
 }
 function ckFinish() {
-  const K = CK, r = K.r; for (const [k, n] of Object.entries(r.need)) inv.food[k] = Math.max(0, (inv.food[k] || 0) - n);
+  const K = CK, r = K.r; inv.fridge = inv.fridge || {}; for (const [k, n] of Object.entries(r.need)) { const fromBag = Math.min(n, inv.food[k] || 0); inv.food[k] = (inv.food[k] || 0) - fromBag; if (n > fromBag) inv.fridge[k] = Math.max(0, (inv.fridge[k] || 0) - (n - fromBag)); }
   if (K.hits >= 1) { const n = K.hits >= 3 ? 2 : 1; inv.food[r.out] = (inv.food[r.out] || 0) + n; questEvent('cook'); save(); sparkle(640, 300, 30); sfx('done'); K.msg = K.hits >= 3 ? 'Mükemmel! ' + FOODS[r.out][0] + ' ×2 pişti!' : FOODS[r.out][0] + ' ' + FOODS[r.out][1] + ' hazır!'; }
   else { save(); sfx('no'); K.msg = 'Yandı! 🔥 Bir dahaki sefere daha dikkatli ol'; }
   K.ph = 'done';
@@ -5417,7 +5430,7 @@ function ckDraw() {
   text('🍳 Mutfak', 640, 108, 36, '#3a2340', 'center', 800);
   btn(900, 72, 110, 40, '✖', () => { CK = null; }, { col: '#ffffff', size: 20 });
   if (K.ph === 'pick') {
-    text('Ne pişirmek istiyorsun? Malzemeler çantanda olmalı', 640, 148, 18, '#6b5a70', 'center', 700);
+    text('Ne pişirmek istiyorsun? Malzemeler çantanda ya da dolapta olmalı', 640, 148, 18, '#6b5a70', 'center', 700);
     RECIPES.forEach((r, i) => {
       const x = 275 + (i % 4) * 185, y = 175 + Math.floor(i / 4) * 140, ok = ckHave(r), o = FOODS[r.out];
       ctx.fillStyle = ok ? '#fff0f7' : '#f1ecef'; rr(x, y, 175, 128, 16); ctx.fill(); emoji(o[0], x + 30, y + 30, 36); fitText(o[1], x + 54, y + 26, 14, 114, '#3a2340', 800);
@@ -5456,7 +5469,7 @@ function lbBuildHome() {
   bx(1.7, 3.5, 1.5, '#f4f6fb', -1.5, 1.75, -9.2); bx(1.7, 0.06, 1.52, '#cfd6e2', -1.5, 2.6, -9.2); bx(0.08, 0.9, 0.1, '#9aa3b5', -0.72, 3.1, -8.45); bx(0.08, 1.2, 0.1, '#9aa3b5', -0.72, 1.7, -8.45);
   bx(0.8, 0.05, 0.4, '#c98b5a', -8.3, 1.17, -9.3); for (const [dx, col] of [[-0.2, '#e8434f'], [0, '#ff8a3d'], [0.2, '#4fb35a']]) g.add(lbM(new T3.SphereGeometry(0.1, 8, 6), toon(col), -8.3 + dx, 1.28, -9.3));
   bx(8.6, 0.06, 0.05, '#4a3a5a', -7, 3.4, -9.6); for (let i = 0; i < 4; i++) { g.add(lbM(new T3.CylinderGeometry(0.014, 0.014, 0.35, 4), toon('#4a3a5a'), -9.5 + i * 1.7, 3.2, -9.6)); g.add(lbM(new T3.CylinderGeometry(0.22, 0.2, 0.2, 12), toon(['#ff8a3d', '#8b5cf6', '#5ac8ff', '#ff6fb5'][i]), -9.5 + i * 1.7, 2.95, -9.6)); }
-  obs.push([-12.4, -0.6, -10, -8.3]); spots.push({ x: O.x - 5.5, z: O.z - 7.2, cook: true });
+  obs.push([-12.4, -0.6, -10, -8.3]); spots.push({ x: O.x - 5.5, z: O.z - 7.2, cook: true }); spots.push({ x: O.x - 1.5, z: O.z - 7.4, fridge: true });
   // dining table with plates
   bx(3.4, 0.14, 1.9, '#c98b5a', -7.2, 1.0, -3.2); for (const [dx, dz] of [[-1.5, -0.8], [1.5, -0.8], [-1.5, 0.8], [1.5, 0.8]]) bx(0.14, 1.0, 0.14, '#a8703c', -7.2 + dx, 0.5, -3.2 + dz);
   for (const [dx, dz] of [[-0.9, 0.3], [0.9, 0.3], [-0.9, -0.3], [0.9, -0.3]]) g.add(lbM(new T3.CylinderGeometry(0.28, 0.25, 0.04, 14), toon('#ffffff'), -7.2 + dx, 1.09, -3.2 + dz));
@@ -5597,6 +5610,7 @@ function spotActions(sp) {
   if (sp.exit) return [['🚪 Dışarı çık', lbGoOutside, '#27b36a']];
   if (sp.catalog) return [['🛍️ Büyük Raf • tüm ürünler', showCatalog, '#ff5fa2']];
   if (sp.cook) return [['🍳 Yemek pişir', openCook, '#ff8a3d']];
+  if (sp.fridge) return [['🧊 Dolap (yemek sakla)', openFridge, '#5aa9ff']];
   if (sp.sleep) return [['😴 Yat ve uyu', () => { const nn = needs(); if (nn.sleep >= 100) return say('Hiç uykun yok! 😊'); LB.sleepT = 4; sfx('pop'); }, '#8b5cf6']];
   if (sp.food) { const [e, nm, pr, gain] = FOODS[sp.food]; return [[`🛒 ${e} ${nm} • ${rich() ? '∞' : pr + ' TL'} (+${gain} tokluk)`, () => { if (LB.basket.length >= 24) return say('Sepet doldu! Kasaya git 💳'); LB.basket.push(sp.food); sfx('pop'); part({ x: 640, y: 560, vy: -60, life: 0.9, kind: 'txt', t: `${e} sepete!`, col: '#2d7ff9' }); }, '#2d7ff9']]; }
   if (sp.pay) {
@@ -5755,6 +5769,8 @@ const QUEST_POOL = [
   { id: 'market', text: 'Market\'ten 3 şey al 🛒', goal: 3, reward: 20 },
   { id: 'eat', text: 'Çantandan 2 yiyecek ye 😋', goal: 2, reward: 15 },
   { id: 'cook', text: 'Evde bir yemek pişir 🍳', goal: 1, reward: 20 },
+  { id: 'parkour', text: 'Parkuru bitir 🏃', goal: 1, reward: 40 },
+  { id: 'parkour3', text: 'Parkuru 3 kez bitir 🏃', goal: 3, reward: 110 },
   { id: 'cook4', text: 'Evde 4 yemek pişir 🍳', goal: 4, reward: 70 },
   { id: 'swim', text: 'Denizde 30 saniye yüz 🏊', goal: 30, reward: 25 },
   { id: 'sleep', text: 'Evinde uyu 😴', goal: 1, reward: 15 },
@@ -5847,7 +5863,7 @@ function quests() {
 }
 const QUEST_ALIAS = { walk: ['walk800'], jump: ['jump50'], emote: ['emote15'], swim: ['swim90'], serve: ['serve8'], luna: ['luna4'], goal: ['goal6'], volley: ['volley6'], eat: ['eat5'], lobbytime: ['lobby10'], mynails: ['mynails3'] };
 Object.entries({ walk: 'walk2000', jump: 'jump100', emote: 'emote30', swim: 'swim180', serve: 'serve12', luna: 'luna6', goal: 'goal10', volley: 'volley10', eat: 'eat8', lobbytime: 'lobby20', park: 'park8', market: 'market6', job: 'job5', artdraw: 'artdraw100', shop: 'shop5' }).forEach(([k, v]) => { (QUEST_ALIAS[k] = QUEST_ALIAS[k] || []).push(v); });
-(QUEST_ALIAS.cook = QUEST_ALIAS.cook || []).push('cook4');
+(QUEST_ALIAS.cook = QUEST_ALIAS.cook || []).push('cook4'); (QUEST_ALIAS.parkour = QUEST_ALIAS.parkour || []).push('parkour3');
 function questEvent(id, amt = 1) {
   if (!profile) return;
   if (QUEST_ALIAS[id] && !questEvent.busy) { questEvent.busy = 1; QUEST_ALIAS[id].forEach(a => questEvent(a, amt)); questEvent.busy = 0; }
@@ -5949,7 +5965,7 @@ function lbJump() {
   if (scene !== 'lobby' || !LB.me) return;
   if (LB.ride) return lbDismount();
   if (LB.fly) return lbFlyMove(2);
-  if (LB.jumpV || LB.me.position.y > 0.01) return;
+  if (LB.jumpV || LB.me.position.y > lbGroundH(LB.me.position.x, LB.me.position.z, LB.me.position.y) + 0.01) return;
   LB.jumpV = LB.swim ? 4.5 : 7.5; sfx('pop'); questEvent('jump');
 }
 function lbJumpUpdate(me, dt) {
@@ -5957,12 +5973,49 @@ function lbJumpUpdate(me, dt) {
     me.position.y += (LB.flyY - me.position.y) * Math.min(1, dt * 5); const A = me.userData.A, mv = LB.vel && Math.hypot(LB.vel[0], LB.vel[1]) > 0.1;
     A.arms[0].rotation.x = A.arms[1].rotation.x = mv ? -1.5 : -2.7; A.legs[0].rotation.x = mv ? 0.5 : 0.1; A.legs[1].rotation.x = mv ? 0.5 : -0.1; A.body.position.y = Math.sin(T * 3) * 0.06; return;
   }
-  if (!LB.jumpV && me.position.y <= 0) return;
-  LB.jumpV -= 20 * dt; me.position.y = Math.max(0, me.position.y + LB.jumpV * dt);
-  if (me.position.y === 0 && LB.jumpV < 0) { LB.jumpV = 0; return; }
+  const gh = lbGroundH(me.position.x, me.position.z, me.position.y);
+  if (!LB.jumpV && me.position.y <= gh + 0.001) { me.position.y = gh; return; }
+  LB.jumpV -= 20 * dt; me.position.y = Math.max(gh, me.position.y + LB.jumpV * dt);
+  if (me.position.y <= gh && LB.jumpV < 0) { me.position.y = gh; LB.jumpV = 0; return; }
   const A = me.userData.A; A.legs[0].rotation.x = -0.6; A.legs[1].rotation.x = 0.35; A.arms[0].rotation.x = A.arms[1].rotation.x = -2.7;
 }
 
+// ================= 🏃 parkour: climb the coloured blocks to the top and race the clock =================
+const PK = { x: 0, z: -62 };
+const PK_PL = [ // x, z, half-width, half-depth, top height (relative to the course)
+  [0, 0, 2.4, 2.4, 0.5], [3.8, 0, 1.2, 1.2, 1.1], [7.2, 1.6, 1.2, 1.2, 1.9], [10.6, 0, 1.2, 1.2, 2.6], [14, -2.2, 1.2, 1.2, 3.3], [14.2, -6, 1.2, 1.2, 4.1], [11, -8.6, 1.1, 1.1, 4.8], [7.6, -8.6, 1, 1, 5.5],
+  [4.2, -8, 1, 1, 6.1], [0.8, -8, 1, 1, 6.7], [-2.6, -6, 1.1, 1.1, 7.3], [-4, -1.6, 2.4, 2.4, 7.9],
+];
+function lbGroundH(x, z, y) { let h = 0; for (const p of LB.pk || []) if (x > p.x0 - 0.25 && x < p.x1 + 0.25 && z > p.z0 - 0.25 && z < p.z1 + 0.25 && p.top <= y + 0.4 && p.top > h) h = p.top; return h; }
+function lbPkIndexUnder(me) { const gh = lbGroundH(me.position.x, me.position.z, me.position.y); if (gh <= 0 || Math.abs(me.position.y - gh) > 0.05) return -1; return (LB.pk || []).findIndex(p => p.top === gh && me.position.x > p.x0 - 0.25 && me.position.x < p.x1 + 0.25 && me.position.z > p.z0 - 0.25 && me.position.z < p.z1 + 0.25); }
+function lbBuildParkour() {
+  const sc = LB.scene, cols = ['#ff6fb5', '#ffd23f', '#5ac8ff', '#8be07e', '#b18cff', '#ff8a3d']; LB.pk = [];
+  const pad = new THREE.Mesh(new THREE.CircleGeometry(24, 40), toon('#e9f6d8')); pad.rotation.x = -Math.PI / 2; pad.position.set(PK.x + 5, 0.035, PK.z - 4); pad.receiveShadow = true; sc.add(pad);
+  PK_PL.forEach(([x, z, hw, hd, top], i) => {
+    const wx = PK.x + x, wz = PK.z + z, c = i === 0 ? '#9fb4d8' : i === PK_PL.length - 1 ? '#ffd23f' : cols[i % 6];
+    sc.add(lbM(new THREE.BoxGeometry(hw * 2, top, hd * 2), toon(mix(c, '#000000', 0.12)), wx, top / 2, wz)); sc.add(lbM(new THREE.BoxGeometry(hw * 2 + 0.2, 0.18, hd * 2 + 0.2), toon(c), wx, top - 0.09, wz));
+    if (i) { const nm = lbSignPlane(String(i), c, 0.8, 0.5); nm.position.set(wx, top + 0.7, wz + hd + 0.05); sc.add(nm); }
+    LB.pk.push({ x0: wx - hw, x1: wx + hw, z0: wz - hd, z1: wz + hd, top, i });
+  });
+  { const s0 = lbSignPlane('🏃 Parkur', '#ff5fa2', 4.2, 1.0); s0.position.set(PK.x, 3.2, PK.z + 2.6); sc.add(s0); for (const dx of [-1.9, 1.9]) sc.add(lbM(new THREE.CylinderGeometry(0.08, 0.08, 3.2, 6), toon('#4a3a5a'), PK.x + dx, 1.6, PK.z + 2.62)); }
+  { const L = PK_PL[PK_PL.length - 1], fx = PK.x + L[0], fz = PK.z + L[1], top = L[4]; sc.add(lbM(new THREE.CylinderGeometry(0.06, 0.06, 3, 6), toon('#ffffff'), fx + 1.4, top + 1.5, fz - 1.4)); const fl = lbM(new THREE.PlaneGeometry(1.4, 0.9), new THREE.MeshToonMaterial({ color: '#e8434f', side: THREE.DoubleSide, gradientMap: lbGrad }), fx + 2.1, top + 2.6, fz - 1.4); sc.add(fl); LB.pkFlag = fl;
+    const cup = new THREE.Group(); cup.position.set(fx, top, fz); sc.add(cup); const gold = toon('#ffd23f'); cup.add(lbM(new THREE.CylinderGeometry(0.5, 0.5, 0.2, 14), gold, 0, 0.1, 0)); cup.add(lbM(new THREE.CylinderGeometry(0.12, 0.12, 0.6, 10), gold, 0, 0.5, 0)); cup.add(lbM(new THREE.CylinderGeometry(0.5, 0.25, 0.6, 14, 1, true), new THREE.MeshToonMaterial({ color: '#ffd23f', gradientMap: lbGrad, side: THREE.DoubleSide }), 0, 1.05, 0)); LB.pkCup = cup;
+    const sg = lbSignPlane('🏆 Bitiş', '#ffd23f', 2.4, 0.7); sg.position.set(fx, top + 1.4, fz + 1.5); sc.add(sg); }
+  for (const [dx, dz] of [[-6, 4], [18, -9], [6, -13]]) { const t = new THREE.Group(); t.position.set(PK.x + dx, 0, PK.z + dz); sc.add(t); t.add(lbM(new THREE.CylinderGeometry(0.25, 0.3, 1.6, 8), toon('#8a5a3a'), 0, 0.8, 0)); t.add(lbM(new THREE.SphereGeometry(1.2, 10, 8), toon('#4fb35a'), 0, 2.2, 0)); (LB.trees = LB.trees || []).push([PK.x + dx, PK.z + dz, 0.8]); }
+}
+function lbPkUpdate(me, dt) {
+  if (!LB.pk || LB.where !== 'town') return;
+  if (LB.pkFlag) LB.pkFlag.rotation.y = Math.sin(T * 3) * 0.4; if (LB.pkCup) LB.pkCup.rotation.y += dt;
+  const R = LB.pkRun, i = lbPkIndexUnder(me), last = LB.pk.length - 1;
+  if (R) { R.t += dt; if (i === last && R.t > 2) { lbPkFinish(R.t); LB.pkRun = null; } else if (R.t > 600) LB.pkRun = null; }
+  else if (i >= 1 && i < last && (LB.pkCool || 0) <= 0) { LB.pkRun = { t: 0 }; say('⏱️ Parkur başladı! En tepeye çık 🏆'); sfx('pop'); }
+  if (LB.pkCool > 0) LB.pkCool -= dt;
+}
+function lbPkFinish(t) {
+  const best = profile.pkBest || 9999, nb = t < best; if (nb) profile.pkBest = Math.round(t * 10) / 10; const tl = t < 45 ? 60 : t < 75 ? 35 : 15;
+  money += tl; save(); questEvent('parkour'); sfx('done'); sparkle(640, 300, 40); LB.pkCool = 30; say('🏆 Parkuru ' + t.toFixed(1) + ' sn’de bitirdin! +' + tl + ' TL' + (nb ? ' • Yeni rekor! 🥇' : ''));
+}
+function lbPkReset() { const me = LB.me; if (!me) return; me.position.set(PK.x - 0.5, 0.5, PK.z + 1); LB.jumpV = 0; LB.target = null; LB.pkRun = null; sfx('pop'); }
 // ================= 🏐 beach volleyball =================
 const VB = { cx: -14, z0: 35, z1: 45, half: 10, win: 5, g: 9 };
 function lbBuildVolley() {
@@ -6854,6 +6907,7 @@ function lbLunaStart(kind) {
   LB.fly = false; LB.target = null; LB.jumpV = 0; lbUndisguise(me.userData.A); LB.ride = { kind, i, t: 0 }; lbAction(me, 'sit'); questEvent('park'); sfx('done'); say(`${LUNA_NAME[kind]}! İyi eğlenceler 🎉`);
 }
 function drawLunaUi() {
+  if (scene === 'lobby' && LB.where === 'town' && LB.pkRun) { ctx.fillStyle = 'rgba(255,255,255,.94)'; rr(520, 16, 240, 50, 25); ctx.fill(); ctx.strokeStyle = '#ff5fa2'; ctx.lineWidth = 3; ctx.stroke(); text('⏱️ ' + LB.pkRun.t.toFixed(1) + ' sn' + (profile.pkBest ? '  🥇' + profile.pkBest : ''), 640, 50, 22, '#3a2340', 'center', 800); btn(930, 590, 190, 52, '🏁 Başa dön', lbPkReset, { size: 18 }); }
   if (LB.sleepT > 0 && scene === 'lobby') { ctx.fillStyle = `rgba(20,20,60,${Math.min(0.85, 0.3 + (4 - LB.sleepT) * 0.2)})`; ctx.fillRect(0, 0, W, H); for (let i = 0; i < 3; i++) text('Z', 640 + i * 40 + Math.sin(T * 2 + i) * 10, 360 - i * 40 - ((T * 30) % 40), 40 + i * 12, '#ffffff', 'center', 800); text('😴 Uyuyorsun...', 640, 470, 30, '#ffffff', 'center', 800); return; }
   if (CK && scene === 'lobby') return ckDraw();
   if (FG && scene === 'lobby') return fgDraw();
