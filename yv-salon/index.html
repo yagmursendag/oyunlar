@@ -3452,11 +3452,12 @@ const AV = {
   shoe: ['#ff5fa2', '#1c1c1c', '#ffffff', '#e8434f', '#3b82f6', '#ffd23f'], hat: ['none', 'cap', 'beanie', 'sunhat', 'party', 'backcap', 'headphones'], glasses: ['none', 'round', 'sun', 'star'],
   pet: ['none', 'cat', 'dog', 'bunny', 'snake', 'duck', 'dragon', 'penguin', 'unicorn', 'turtle', 'owl', 'fox', 'panda', 'axolotl', 'wolf', 'lion', 'robot', 'dino', 'phoenix', 'whitedeer', 'hedgehog', 'giraffe', 'elephant', 'monkey', 'koala', 'zebra', 'parrot', 'butterfly', 'pig', 'hamster', 'mouse', 'sheep', 'cow', 'horse', 'bear', 'deer', 'squirrel', 'raccoon', 'tiger', 'hippo', 'camel', 'sloth'], nail: ['none', ...NAIL_COLS.map(e => e[0])],
   lipc: ['#e0245e', '#ff6fa5', '#9b1b4b', '#d98a7a', '#ff6a2a', '#7a1fa2', '#ff2a2a', '#ffb6c8', '#5a1230', '#c43a8f'], shadc: ['#9b6bff', '#3b82f6', '#ff7ac6', '#ffc83d', '#2fd27a', '#1fc7c7', '#e8434f', '#8a5a34', '#c9cfd8', '#1e2f6b'], blushc: ['#ff7fa8', '#ff9a6b', '#e85a8a', '#c97bff', '#ffb3c8', '#ff6a5a', '#ffd0a0', '#9ad0ff'],
-  makeupKeys: ['lip', 'blush', 'shadow', 'lash', 'glitter', 'liner', 'mascara', 'highlighter', 'foundation', 'facepaint', 'eyebrow', 'contour', 'facegems', 'freckles', 'falselash', 'spray', 'eyeglow', 'colorliner', 'cheekstar', 'sunkiss', 'colorbrow', 'tattoo', 'lipliner', 'foreheadgem', 'whiskers', 'glittertear', 'clownnose', 'templestars'], faceKeys: ['freckles', 'mole'],
+  size: ['normal', 'baby', 'adult', 'child'], makeupKeys: ['lip', 'blush', 'shadow', 'lash', 'glitter', 'liner', 'mascara', 'highlighter', 'foundation', 'facepaint', 'eyebrow', 'contour', 'facegems', 'freckles', 'falselash', 'spray', 'eyeglow', 'colorliner', 'cheekstar', 'sunkiss', 'colorbrow', 'tattoo', 'lipliner', 'foreheadgem', 'whiskers', 'glittertear', 'clownnose', 'templestars'], faceKeys: ['freckles', 'mole'],
 };
-const LOOK_ENUMS = ['skin', 'hair', 'len', 'style', 'bangs', 'eyes', 'cloth', 'eyeStyle', 'tip', 'hairdo', 'pattern', 'shoe', 'hat', 'glasses', 'pet', 'nail', 'lipc', 'shadc', 'blushc'];
+const LOOK_ENUMS = ['skin', 'hair', 'len', 'style', 'bangs', 'eyes', 'cloth', 'eyeStyle', 'tip', 'hairdo', 'pattern', 'shoe', 'hat', 'glasses', 'pet', 'nail', 'lipc', 'shadc', 'blushc', 'size'];
 const DEFAULT_LOOK = { girl: true, skin: SKINS[0], hair: '#3b2314', len: 'long', style: 'wavy', bangs: 'scallop', eyes: '#5b3a1e', cloth: '#ff5fa2', jewels: [],
-  eyeStyle: 'normal', tip: 'none', hairdo: 'none', pattern: 'plain', shoe: '#ff5fa2', hat: 'none', glasses: 'none', pet: 'none', makeup: [], face: [], nail: 'none', art: '', lipc: '#e0245e', shadc: '#9b6bff', blushc: '#ff7fa8' };
+  eyeStyle: 'normal', tip: 'none', hairdo: 'none', pattern: 'plain', shoe: '#ff5fa2', hat: 'none', glasses: 'none', pet: 'none', makeup: [], face: [], nail: 'none', art: '', lipc: '#e0245e', shadc: '#9b6bff', blushc: '#ff7fa8', size: 'normal' };
+const SIZE_INFO = { normal: { name: 'Normal', icon: '🧍', f: 1, gems: 0 }, baby: { name: 'Bebek', icon: '👶', f: 0.55, gems: 10 }, adult: { name: 'Yetişkin', icon: '🧑', f: 1.18, gems: 20 }, child: { name: 'Çocuk', icon: '🧒', f: 0.78, gems: 15 } };
 // fill in anything missing or unknown (older looks and codes have fewer fields)
 function normLook(l) {
   const L = { ...DEFAULT_LOOK, ...(l || {}) };
@@ -3475,7 +3476,7 @@ function encodeLook(l) {
   l = normLook(l);
   return [l.girl ? 1 : 0, AV.skin.indexOf(l.skin), AV.hair.indexOf(l.hair), AV.len.indexOf(l.len), AV.style.indexOf(l.style), AV.bangs.indexOf(l.bangs), AV.eyes.indexOf(l.eyes), AV.cloth.indexOf(l.cloth),
     bits(Object.keys(JEWELS), l.jewels), AV.eyeStyle.indexOf(l.eyeStyle), AV.tip.indexOf(l.tip), AV.hairdo.indexOf(l.hairdo), AV.outfit.indexOf(l.outfit), AV.pattern.indexOf(l.pattern),
-    AV.shoe.indexOf(l.shoe), AV.hat.indexOf(l.hat), AV.glasses.indexOf(l.glasses), AV.pet.indexOf(l.pet), bits(AV.makeupKeys, l.makeup), bits(AV.faceKeys, l.face), AV.nail.indexOf(l.nail), AV.lipc.indexOf(l.lipc), AV.shadc.indexOf(l.shadc), AV.blushc.indexOf(l.blushc)];
+    AV.shoe.indexOf(l.shoe), AV.hat.indexOf(l.hat), AV.glasses.indexOf(l.glasses), AV.pet.indexOf(l.pet), bits(AV.makeupKeys, l.makeup), bits(AV.faceKeys, l.face), AV.nail.indexOf(l.nail), AV.lipc.indexOf(l.lipc), AV.shadc.indexOf(l.shadc), AV.blushc.indexOf(l.blushc), AV.size.indexOf(l.size)];
 }
 function decodeLook(a) {
   if (!Array.isArray(a)) return null;
@@ -3483,7 +3484,7 @@ function decodeLook(a) {
   const fromBits = (keys, i) => keys.filter((k, j) => (+a[i] || 0) & (1 << j));
   return normLook({ girl: !!a[0], skin: g(AV.skin, 1), hair: g(AV.hair, 2), len: g(AV.len, 3), style: g(AV.style, 4), bangs: g(AV.bangs, 5), eyes: g(AV.eyes, 6), cloth: g(AV.cloth, 7),
     jewels: fromBits(Object.keys(JEWELS), 8), eyeStyle: g(AV.eyeStyle, 9), tip: g(AV.tip, 10), hairdo: g(AV.hairdo, 11), outfit: g(AV.outfit, 12), pattern: g(AV.pattern, 13),
-    shoe: g(AV.shoe, 14), hat: g(AV.hat, 15), glasses: g(AV.glasses, 16), pet: g(AV.pet, 17), makeup: fromBits(AV.makeupKeys, 18), face: fromBits(AV.faceKeys, 19), nail: g(AV.nail, 20), lipc: g(AV.lipc, 21), shadc: g(AV.shadc, 22), blushc: g(AV.blushc, 23) });
+    shoe: g(AV.shoe, 14), hat: g(AV.hat, 15), glasses: g(AV.glasses, 16), pet: g(AV.pet, 17), makeup: fromBits(AV.makeupKeys, 18), face: fromBits(AV.faceKeys, 19), nail: g(AV.nail, 20), lipc: g(AV.lipc, 21), shadc: g(AV.shadc, 22), blushc: g(AV.blushc, 23), size: g(AV.size, 24) });
 }
 function hairStrands(len, w0, freq) {
   const front = [], back = [];
@@ -3783,6 +3784,14 @@ function drawPaint() {
   btn(520, 600, 200, 60, '⬅ Vazgeç', () => go(paintFrom === 'paint' ? 'title' : paintFrom), { size: 22 });
 }
 function openDesigner() { designFrom = scene; designLook = normLook(profile.look); designChar = buildChar(designLook, profile.name); go('designer'); }
+function buySize(k) {
+  const I = SIZE_INFO[k]; inv.sizes = inv.sizes || [];
+  if (I.gems && !rich() && !inv.sizes.includes(k)) {
+    if ((inv.gems || 0) < I.gems) { sfx('no'); return say(`${I.name} boy için ${fmt(I.gems - (inv.gems || 0))} 💎 daha lazım! Her hafta 5 elmas al`); }
+    inv.gems -= I.gems; inv.sizes.push(k); save(); sparkle(ptr.x, ptr.y, 18); say(`${I.icon} ${I.name} boyu aldın! -${I.gems} 💎`);
+  }
+  setLook('size', k);
+}
 function setLook(k, v) { designLook = { ...designLook, [k]: v }; designChar = buildChar(designLook, profile.name); sfx('pop'); }
 function drawDesigner() {
   const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#fff0f7'); g.addColorStop(1, '#e9d5ff');
@@ -3792,7 +3801,7 @@ function drawDesigner() {
   // the character on a little stage, with the pet
   ctx.fillStyle = '#ffffff'; ell(290, 662, 190, 26); ctx.fillStyle = '#ffd6ea'; ell(290, 662, 170, 18);
   drawPet(designLook.pet, 130, 664, 0.75);
-  const sc = 0.7;
+  const sc = 0.7 * SIZE_INFO[designLook.size || 'normal'].f;
   drawHead(designChar, 300, 655 - 620 * sc + Math.sin(T * 2) * 3, sc, { body: () => drawBody(designChar, 0, 1), mood: 1 });
   text(profile.name, 300, 112, 28, '#3a2340', 'center', 800);
   if (rich()) btn(40, 90, 190, 40, '🏷️ Mağazaya koy', sxPublishAsk, { col: '#ffe36e', size: 16 });
@@ -3814,6 +3823,7 @@ function drawDesigner() {
   });
   if (designTab === 'face') {
     row('Beden', chips([[true, '👧 Kız'], [false, '👦 Erkek']], 'girl'));
+    row('Boy', (x, yy) => ['normal', 'baby', 'child', 'adult'].forEach((k, i) => { const I = SIZE_INFO[k], own = !I.gems || rich() || (inv.sizes || []).includes(k); btn(x + i * 132, yy + 4, 124, 42, I.icon + ' ' + I.name + (own ? '' : ' ' + I.gems + '💎'), () => buySize(k), { active: (designLook.size || 'normal') === k, size: 14 }); }));
     row('Ten', swatches(AV.skin, 'skin'));
     row('Göz rengi', swatches(AV.eyes, 'eyes'));
     row('Göz stili', chips([['normal', 'Normal'], ['heart', '💖 Kalp'], ['star', '⭐ Yıldız'], ['happy', '😊 Mutlu'], ['cat', '🐱 Kedi']], 'eyeStyle', 104));
@@ -4379,6 +4389,7 @@ function lbAvatar(look, name, tagCol) {
   // name tag
   if (name) { const tag = lbLabel(name, tagCol || '#ff5fa2', '#ffffff'); tag.position.y = 2.75 + (['bunny', 'witch'].includes(L.outfit) ? 0.6 : 0) + (['chef', 'cowgirl', 'astronaut', 'police', 'firefighter', 'pirate', 'royal', 'knight', 'wizard', 'samurai', 'angel', 'diamond', 'cosmic', 'dragonarmor', 'whitedeer', 'cloud', 'farmer', 'doctor', 'bunny', 'witch', 'ball', 'sunking', 'icequeen', 'elf', 'robotsuit', 'pharaoh', 'unicornsuit', 'snowman', 'pumpkin', 'candy', 'crystal', 'lava', 'poseidon'].includes(L.outfit) ? 0.4 : L.hat === 'party' ? 0.3 : 0); g.add(tag); A.tag = tag; }
   if (LITE) { const bl = new THREE.Mesh(new THREE.CircleGeometry(0.5, 16), new THREE.MeshBasicMaterial({ map: lbSoftTex(), color: '#000000', transparent: true, opacity: 0.38, depthWrite: false })); bl.rotation.x = -Math.PI / 2; bl.position.y = 0.04; g.add(bl); }
+  g.scale.setScalar(SIZE_INFO[L.size].f); if (L.size === 'baby') head.scale.setScalar(1.3); else if (L.size === 'child') head.scale.setScalar(1.12);
   g.userData.A = A; if (lbOutlineOn()) lbOutline(g);
   return g;
 }

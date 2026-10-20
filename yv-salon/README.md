@@ -94,3 +94,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v84 | versions/v84-hayvan-duzelt.html | 🐾 Hata düzeltildi: yeni 14 hayvan lobide görünmüyordu (kaydedilmiyordu); inek/kaplan 3D lobide düzgün, kaplan çizgileri düzeltildi |
 | v85 | versions/v85-dolap-parkur.html | 🧊 Evde dolap: yemekleri çantadan dolaba koy / çıkar, yemek pişirirken dolaptakileri de kullanır. 🏃 Parkur: renkli bloklara zıpla, tepeye çık, süre tut, ödül kazan |
 | v86 | versions/v86-parkur-gunluk.html | 🏃 Parkur ödülü 20 TL, bloklar daha küçük/yüksek/uzak (zor), parkur her gün değişiyor |
+| v87 | versions/v87-boylar.html | 👶 Boy seçimi: Normal ücretsiz, Bebek 10 💎, Çocuk 15 💎, Yetişkin 20 💎 (Karakter > Yüz > Boy), 3D ve önizlemede boy değişir |
