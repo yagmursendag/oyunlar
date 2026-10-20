@@ -93,3 +93,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v83 | versions/v83-ev-mutfak.html | 🏠 Evin içi: mutfak (ocak, fırın, buzdolabı), yemek masası, salon (TV, koltuk), yatak odası. Ocakta 12 yemek pişirme oyunu; çiğ yiyecekler pişmeden yenmez |
 | v84 | versions/v84-hayvan-duzelt.html | 🐾 Hata düzeltildi: yeni 14 hayvan lobide görünmüyordu (kaydedilmiyordu); inek/kaplan 3D lobide düzgün, kaplan çizgileri düzeltildi |
 | v85 | versions/v85-dolap-parkur.html | 🧊 Evde dolap: yemekleri çantadan dolaba koy / çıkar, yemek pişirirken dolaptakileri de kullanır. 🏃 Parkur: renkli bloklara zıpla, tepeye çık, süre tut, ödül kazan |
+| v86 | versions/v86-parkur-gunluk.html | 🏃 Parkur ödülü 20 TL, bloklar daha küçük/yüksek/uzak (zor), parkur her gün değişiyor |
