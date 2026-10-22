@@ -95,3 +95,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v85 | versions/v85-dolap-parkur.html | 🧊 Evde dolap: yemekleri çantadan dolaba koy / çıkar, yemek pişirirken dolaptakileri de kullanır. 🏃 Parkur: renkli bloklara zıpla, tepeye çık, süre tut, ödül kazan |
 | v86 | versions/v86-parkur-gunluk.html | 🏃 Parkur ödülü 20 TL, bloklar daha küçük/yüksek/uzak (zor), parkur her gün değişiyor |
 | v87 | versions/v87-boylar.html | 👶 Boy seçimi: Normal ücretsiz, Bebek 10 💎, Çocuk 15 💎, Yetişkin 20 💎 (Karakter > Yüz > Boy), 3D ve önizlemede boy değişir |
+| v88 | versions/v88-atlikarinca.html | 🎠 Atlıkarınca yenilendi (gerçek atlar, direkler tavana ulaşıyor), tabelalardaki yazılar ve lunapark düğmeleri büyüdü |

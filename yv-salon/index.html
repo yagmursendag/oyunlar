@@ -5315,9 +5315,10 @@ function lbRoom(O, w, d, wallCol, floorA, floorB) {
   return g;
 }
 function lbSignPlane(txt, col, w = 6, h = 1.2) {
-  return new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ transparent: true, map: lbTex(640, 128, (c, ww, hh) => {
-    c.fillStyle = '#ffffff'; rr2(c, 4, 4, ww - 8, hh - 8, 44); c.fill(); c.lineWidth = 8; c.strokeStyle = col; c.stroke();
-    c.fillStyle = '#3a2340'; c.font = `800 64px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, ww / 2, hh / 2 + 4);
+  return new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ transparent: true, map: lbTex(768, Math.max(96, Math.round(768 * h / w)), (c, ww, hh) => {
+    c.fillStyle = '#ffffff'; rr2(c, 4, 4, ww - 8, hh - 8, Math.min(44, hh / 2.5)); c.fill(); c.lineWidth = 8; c.strokeStyle = col; c.stroke();
+    let fs = Math.round(hh * 0.66); c.font = `800 ${fs}px ${FONT}`; const tw = c.measureText(txt).width; if (tw > ww - 40) { fs = Math.floor(fs * (ww - 40) / tw); c.font = `800 ${fs}px ${FONT}`; }
+    c.fillStyle = '#3a2340'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, ww / 2, hh / 2 + 3);
   }) }));
 }
 // small 3D food models for the shelves
@@ -6674,7 +6675,7 @@ function lbParkUpdate(me, dt) {
 }
 function drawParkUi() {
   if (!LB.hopSq || scene !== 'lobby' || LB.where !== 'town') return;
-  if (LB.ride) btn(470, 530, 340, 60, '⬇️ Dur', lbDismount, { col: '#ffb86b', fg: '#ffffff', size: 22 });
+  if (LB.ride) btn(440, 520, 400, 72, '⬇️ Dur', lbDismount, { col: '#ffb86b', fg: '#ffffff', size: 30 });
   else if (LB.parkNear) { const P = LB.parkNear; btn(470, 530, 340, 60, P.label, () => lbParkStart(P.kind, P.i), { col: '#2fbf71', fg: '#ffffff', size: 22 }); }
   if (LB.hop && LB.hop.on && !LB.ride) { ctx.fillStyle = 'rgba(255,255,255,.94)'; rr(470, 16, 340, 50, 25); ctx.fill(); ctx.strokeStyle = '#ff8a1f'; ctx.lineWidth = 3; ctx.stroke(); fitText(`🎯 Seksek: ${LB.hop.next} / ${LB.hopSq.length}  (sırayla zıpla)`, 494, 50, 22, 296, '#3a2340', 800); }
 }
@@ -6765,15 +6766,24 @@ function lbBuildLuna() {
     for (const sx of [-1.4, 1.4]) for (const sz of [-5.6, 5.6]) lbBar(sc, new THREE.Vector3(wx + sx, hubY, wz), new THREE.Vector3(wx + sx, 0, wz + sz), 0.22, toon('#4a8fe0'));
     (LB.trees = LB.trees || []).push([wx, wz - 5.6, 1.0], [wx, wz + 5.6, 1.0]); }
   // 🎠 carousel
-  { const mx = cx - 5, mz = cz + 7, car = new THREE.Group(); car.position.set(mx, 0, mz); sc.add(car); LB.carousel = car; LB.horses = [];
-    car.add(lbM(new THREE.CylinderGeometry(4.2, 4.4, 0.4, 28), toon('#ffd6ea'), 0, 0.3, 0)); car.add(lbM(new THREE.CylinderGeometry(0.3, 0.3, 5.2, 10), toon('#ffd23f'), 0, 2.8, 0));
+  { const mx = cx - 5, mz = cz + 7, car = new THREE.Group(); car.position.set(mx, 0, mz); sc.add(car); LB.carousel = car; LB.horses = []; const gold = toon('#ffd23f'), hmat = k => toon(['#ffffff', '#ffb3d6', '#bfe9ff', '#fff0a0', '#d9c2ff', '#c8f5c0'][k]);
+    car.add(lbM(new THREE.CylinderGeometry(4.5, 4.7, 0.5, 32), toon('#ffd6ea'), 0, 0.25, 0)); car.add(lbM(new THREE.CylinderGeometry(4.2, 4.2, 0.06, 32), toon('#ff8fc2'), 0, 0.52, 0)); car.add(lbM(new THREE.CylinderGeometry(0.55, 0.55, 5.4, 14), toon('#ff5fa2'), 0, 2.7, 0));
+    for (let k = 0; k < 6; k++) { const a2 = k / 6 * Math.PI * 2 + 0.5; car.add(lbM(new THREE.CylinderGeometry(0.12, 0.12, 5.2, 8), gold, Math.cos(a2) * 4.2, 2.6, Math.sin(a2) * 4.2)); }
     for (let k = 0; k < 6; k++) {
-      const a = k / 6 * Math.PI * 2, h = new THREE.Group(), col = ['#ffffff', '#ffb3d6', '#bfe9ff', '#fff0a0', '#d9c2ff', '#c8f5c0'][k], hm = toon(col); h.position.set(Math.cos(a) * 3, 1.3, Math.sin(a) * 3); h.rotation.y = -(a + Math.PI / 2); car.add(h);
-      h.add(lbM(new THREE.CylinderGeometry(0.05, 0.05, 3.4, 6), toon('#ffd23f'), 0, 1.3, 0)); const b = lbM(new THREE.SphereGeometry(0.5, 12, 10), hm, 0, 0.2, 0); b.scale.set(1.5, 0.8, 0.7); h.add(b);
-      h.add(lbM(new THREE.SphereGeometry(0.28, 10, 8), hm, 0.75, 0.55, 0)); h.add(lbM(new THREE.ConeGeometry(0.1, 0.3, 6), toon('#ff5fa2'), 0.78, 0.9, 0));
-      for (const sz of [-0.2, 0.2]) for (const sx of [-0.4, 0.4]) h.add(lbM(new THREE.CylinderGeometry(0.07, 0.06, 0.5, 6), hm, sx, -0.2, sz)); LB.horses.push(h);
+      const a = k / 6 * Math.PI * 2, h = new THREE.Group(), hm = hmat(k), mane = toon('#ff5fa2'); h.position.set(Math.cos(a) * 3, 1.3, Math.sin(a) * 3); h.rotation.y = -(a + Math.PI / 2); car.add(h);
+      h.add(lbM(new THREE.CylinderGeometry(0.06, 0.06, 4.4, 8), gold, 0, 1.95, 0));
+      const b = lbM(new THREE.SphereGeometry(0.5, 14, 12), hm, 0, 0.2, 0); b.scale.set(1.55, 0.85, 0.75); h.add(b);
+      const nk = lbM(new THREE.CylinderGeometry(0.17, 0.26, 0.7, 10), hm, 0.62, 0.62, 0); nk.rotation.z = -0.5; h.add(nk);
+      const hd = lbM(new THREE.SphereGeometry(0.28, 12, 10), hm, 0.98, 0.88, 0); hd.scale.set(1.3, 0.95, 0.85); h.add(hd);
+      h.add(lbM(new THREE.SphereGeometry(0.15, 10, 8), toon('#ffd0e0'), 1.27, 0.8, 0));
+      for (const sz of [-0.12, 0.12]) { h.add(lbM(new THREE.ConeGeometry(0.06, 0.18, 6), hm, 0.9, 1.16, sz)); h.add(lbM(new THREE.SphereGeometry(0.035, 6, 6), toon('#2a1f2e'), 1.08, 0.95, sz * 1.9)); }
+      for (let m = 0; m < 4; m++) h.add(lbM(new THREE.SphereGeometry(0.1, 8, 6), mane, 0.55 - m * 0.04 + 0.02, 0.98 - m * 0.14 + 0.2, 0));
+      const tl = lbM(new THREE.CylinderGeometry(0.03, 0.12, 0.6, 6), mane, -0.82, 0.18, 0); tl.rotation.z = 0.8; h.add(tl);
+      h.add(lbM(new THREE.BoxGeometry(0.55, 0.1, 0.7), toon('#e8434f'), 0, 0.57, 0));
+      for (const sz of [-0.2, 0.2]) for (const sx of [-0.45, 0.45]) { h.add(lbM(new THREE.CylinderGeometry(0.075, 0.06, 0.55, 8), hm, sx, -0.25, sz)); h.add(lbM(new THREE.SphereGeometry(0.075, 8, 6), toon('#8a5a3a'), sx, -0.55, sz)); }
+      LB.horses.push(h);
     }
-    car.add(lbM(new THREE.ConeGeometry(5, 2.2, 12), toon('#ff5fa2'), 0, 5.9, 0)); car.add(lbM(new THREE.ConeGeometry(0.4, 0.8, 8), toon('#ffd23f'), 0, 7.4, 0));
+    car.add(lbM(new THREE.CylinderGeometry(5.1, 5.1, 0.25, 32), toon('#ffd23f'), 0, 4.75, 0)); car.add(lbM(new THREE.ConeGeometry(5, 2.2, 32), toon('#ff5fa2'), 0, 5.9, 0)); car.add(lbM(new THREE.ConeGeometry(0.4, 0.8, 8), gold, 0, 7.4, 0));
     (LB.trees = LB.trees || []).push([mx, mz, 4.7]); }
   // 🎪 chair swings
   { const px = cx + 10, pz = cz + 6, top = new THREE.Group(); top.position.set(px, 8.4, pz); sc.add(top); LB.chairTop = top; LB.chairs = [];
@@ -6934,7 +6944,7 @@ function drawLunaUi() {
   if (LB.sleepT > 0 && scene === 'lobby') { ctx.fillStyle = `rgba(20,20,60,${Math.min(0.85, 0.3 + (4 - LB.sleepT) * 0.2)})`; ctx.fillRect(0, 0, W, H); for (let i = 0; i < 3; i++) text('Z', 640 + i * 40 + Math.sin(T * 2 + i) * 10, 360 - i * 40 - ((T * 30) % 40), 40 + i * 12, '#ffffff', 'center', 800); text('😴 Uyuyorsun...', 640, 470, 30, '#ffffff', 'center', 800); return; }
   if (CK && scene === 'lobby') return ckDraw();
   if (FG && scene === 'lobby') return fgDraw();
-  if (LB.lunaNear && !LB.ride && scene === 'lobby') btn(430, 530, 420, 60, `${LUNA_NAME[LB.lunaNear]} • ${LUNA_PRICE[LB.lunaNear]} TL`, () => lbLunaStart(LB.lunaNear), { col: '#ff5fa2', fg: '#ffffff', size: 21 });
+  if (LB.lunaNear && !LB.ride && scene === 'lobby') btn(380, 520, 520, 76, `${LUNA_NAME[LB.lunaNear]} • ${LUNA_PRICE[LB.lunaNear]} TL`, () => lbLunaStart(LB.lunaNear), { col: '#ff5fa2', fg: '#ffffff', size: 30 });
 }
 
 // ================= 🎪 prettier funfair: spend-money stalls and games, lights, checker floor =================
