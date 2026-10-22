@@ -3326,7 +3326,7 @@ function drawShop() {
       btn(x + w / 2 + 2, y + 176, w / 2 - 10, 36, `${fmt(it.gems)} 💎`, () => buy(it, true), { col: rich() || (inv.gems || 0) >= it.gems ? '#2d6fd6' : '#c9c1c6', fg: '#ffffff', size: 13 });
     } else btn(x + 14, y + 176, w - 28, 36, `Al • ${fmt(it.price)} TL`, () => buy(it), { col: rich() || money >= it.price ? '#27b36a' : '#c9c1c6', fg: '#ffffff', size: it.price >= 100000 ? 14 : 17 });
   });
-  fitText(shopTab === 'bags' ? `Sırt çantanda ${bagUsed()}/${bagCap()} yer dolu. Yiyecekler ve eşyalar çantana girer.` : shopTab === 'sale' ? 'Sadece şimdi: kıyafet ve hayvanlarda %50 indirim! Sayfaları ◀ ▶ ile çevir 🏷️' : shopTab === 'clothes' ? 'Aldığın kıyafeti 🎨 Karakterim > Kıyafet bölümünden giy 👗' : shopTab === 'pets' ? 'Aldığın hayvanı 🎨 Karakterim > Aksesuar bölümünden seç. Tavşan hediye!' : shopTab === 'houses' ? 'Tek katlı evler TL, iki katlı evler 💎 ile. Evine 🏠 Evim\'den gir; evleri markette de bulabilirsin 🛒' : shopTab === 'special' ? 'Çok özel, çok pahalı! Işıl ışıl parlayan bir kıyafet 👑' : shopTab === 'makeup' ? 'Ruj ve yüz boyası 2, kirpik kıvırıcı 4; diğerleri 3 müşteride biter. Maskara ve kıvırıcı gözde basılı tutulur!' : shopTab === 'polish' ? `Bir oje ${POLISH_PRICE} TL, ${POLISH_USES} müşteride biter.` : shopTab === 'care' ? `Bir krem ${CREAM_PRICE} TL, içinde 5 fıs var. Bir sticker paketi ${STICKER_USES} müşteride biter.` : 'Bir kere al, hep senin!', 50, 668, 20, 740, '#6b5a70', 700);
+  fitText(shopTab === 'bags' ? `Sırt çantanda ${bagUsed()}/${bagCap()} yer dolu. Yiyecekler ve eşyalar çantana girer.` : shopTab === 'sale' ? 'Sadece şimdi: kıyafet ve hayvanlarda %50 indirim! Sayfaları ◀ ▶ ile çevir 🏷️' : shopTab === 'clothes' ? 'Aldığın kıyafeti 🎨 Karakterim > Kıyafet bölümünden giy 👗' : shopTab === 'pets' ? 'Aldığın hayvanı 🎨 Karakterim > Aksesuar bölümünden seç. Tavşan hediye!' : shopTab === 'houses' ? 'Evler pahalı: tek katlılar TL, iki katlılar TL + 💎. Evine 🏠 Evim\'den gir; evleri markette de bulabilirsin 🛒' : shopTab === 'special' ? 'Çok özel, çok pahalı! Işıl ışıl parlayan bir kıyafet 👑' : shopTab === 'makeup' ? 'Ruj ve yüz boyası 2, kirpik kıvırıcı 4; diğerleri 3 müşteride biter. Maskara ve kıvırıcı gözde basılı tutulur!' : shopTab === 'polish' ? `Bir oje ${POLISH_PRICE} TL, ${POLISH_USES} müşteride biter.` : shopTab === 'care' ? `Bir krem ${CREAM_PRICE} TL, içinde 5 fıs var. Bir sticker paketi ${STICKER_USES} müşteride biter.` : 'Bir kere al, hep senin!', 50, 668, 20, 740, '#6b5a70', 700);
   btn(1030, 636, 200, 56, shopFrom === 'title' ? '⬅ Geri' : '⬅ Salona dön', () => go(shopFrom), { col: '#ff5fa2', fg: '#ffffff', size: 22 });
 }
 function drawVisit() {
@@ -3674,7 +3674,7 @@ function drawHousesTab() {
     fitText(h.desc, x + 16, y + 356, 14, w - 32, '#6b5a70', 700);
     if (cur === h.id) text('✅ Oturuyorsun', hx, y + 410, 20, '#23884f', 'center', 800);
     else if (own) btn(x + 24, y + 380, w - 48, 44, '🔑 Taşın', () => houseAct(h.id), { col: '#8b5cf6', fg: '#ffffff', size: 19 });
-    else { const can = rich() || (h.gems ? (inv.gems || 0) >= h.gems : money >= h.tl); btn(x + 24, y + 380, w - 48, 44, rich() ? 'Al (admin)' : 'Al • ' + (h.gems ? fmt(h.gems) + ' 💎' : fmt(h.tl) + ' TL'), () => houseAct(h.id), { col: can ? (h.gems ? '#2d6fd6' : '#27b36a') : '#c9c1c6', fg: '#ffffff', size: 19 }); }
+    else { const can = houseCan(h); if (h.gems) text(housePrice(h), hx, y + 384, 18, can ? '#23884f' : '#e8434f', 'center', 800); btn(x + 24, y + (h.gems ? 392 : 380), w - 48, h.gems ? 38 : 44, rich() ? 'Al (admin)' : 'Satın al' + (h.gems ? '' : ' • ' + housePrice(h)), () => houseAct(h.id), { col: can ? '#27b36a' : '#c9c1c6', fg: '#ffffff', size: h.gems ? 18 : 17 }); }
   });
 }
 function drawNewTab() {
@@ -5512,15 +5512,16 @@ function ckDraw() {
 // ================= 🏡 houses sold in the market: 1 floor for TL, 2 floors for 💎 =================
 const HOUSES = [
   { id: 'small', name: 'Küçük Ev', icon: '🏠', floors: 1, tl: 0, wall: '#fff0d8', fa: '#e0b985', fb: '#d4a870', desc: 'Başlangıç evin: mutfak, salon, yatak odası' },
-  { id: 'cottage', name: 'Sevimli Kulübe', icon: '🌷', floors: 1, tl: 1200, wall: '#ffe3ec', fa: '#f6c9d8', fb: '#f0b6ca', extra: 'plants', desc: 'Pembe duvarlar, çiçek saksıları' },
-  { id: 'garden', name: 'Bahçeli Ev', icon: '🌳', floors: 1, tl: 4500, wall: '#e6f7e0', fa: '#cfe8b8', fb: '#bfdca8', extra: 'fireplace', desc: 'Yeşil duvarlar, şömine' },
-  { id: 'beach', name: 'Sahil Evi', icon: '🐠', floors: 1, tl: 12000, wall: '#dff3ff', fa: '#f2e2b8', fb: '#e8d4a0', extra: 'aquarium', desc: 'Mavi duvarlar, büyük akvaryum' },
-  { id: 'villa', name: 'Tek Katlı Villa', icon: '🎹', floors: 1, tl: 30000, wall: '#f5ecff', fa: '#d9c8f5', fb: '#cbb8ee', extra: 'piano', desc: 'Lüks salon, kuyruklu piyano' },
-  { id: 'two1', name: 'İki Katlı Ev', icon: '🏘️', floors: 2, gems: 200, wall: '#fff6d8', fa: '#e8c99a', fb: '#dcb882', extra: 'plants', desc: 'Merdivenle üst kata çık: yatak odaları, oyun köşesi' },
-  { id: 'two2', name: 'İki Katlı Konak', icon: '🏰', floors: 2, gems: 350, wall: '#e4ecff', fa: '#c8d4f2', fb: '#b9c8ec', extra: 'plants', desc: 'Mavi konak, geniş üst kat' },
-  { id: 'two3', name: 'Prenses Köşkü', icon: '👑', floors: 2, gems: 600, wall: '#ffe0f3', fa: '#f7c4e4', fb: '#f0b0d8', extra: 'plants', desc: 'Pembe saray, taçlı yatak' },
+  { id: 'cottage', name: 'Sevimli Kulübe', icon: '🌷', floors: 1, tl: 25000, wall: '#ffe3ec', fa: '#f6c9d8', fb: '#f0b6ca', extra: 'plants', desc: 'Pembe duvarlar, çiçek saksıları' },
+  { id: 'garden', name: 'Bahçeli Ev', icon: '🌳', floors: 1, tl: 90000, wall: '#e6f7e0', fa: '#cfe8b8', fb: '#bfdca8', extra: 'fireplace', desc: 'Yeşil duvarlar, şömine' },
+  { id: 'beach', name: 'Sahil Evi', icon: '🐠', floors: 1, tl: 280000, wall: '#dff3ff', fa: '#f2e2b8', fb: '#e8d4a0', extra: 'aquarium', desc: 'Mavi duvarlar, büyük akvaryum' },
+  { id: 'villa', name: 'Tek Katlı Villa', icon: '🎹', floors: 1, tl: 800000, wall: '#f5ecff', fa: '#d9c8f5', fb: '#cbb8ee', extra: 'piano', desc: 'Lüks salon, kuyruklu piyano' },
+  { id: 'two1', name: 'İki Katlı Ev', icon: '🏘️', floors: 2, tl: 400000, gems: 200, wall: '#fff6d8', fa: '#e8c99a', fb: '#dcb882', extra: 'plants', desc: 'Merdivenle üst kata çık: yatak odaları, oyun köşesi' },
+  { id: 'two2', name: 'İki Katlı Konak', icon: '🏰', floors: 2, tl: 900000, gems: 350, wall: '#e4ecff', fa: '#c8d4f2', fb: '#b9c8ec', extra: 'plants', desc: 'Mavi konak, geniş üst kat' },
+  { id: 'two3', name: 'Prenses Köşkü', icon: '👑', floors: 2, tl: 2000000, gems: 600, wall: '#ffe0f3', fa: '#f7c4e4', fb: '#f0b0d8', extra: 'plants', desc: 'Pembe saray, taçlı yatak' },
 ];
 const houseCur = () => HOUSES.find(h => h.id === (profile && profile.house)) || HOUSES[0];
+const housePrice = h => [h.tl ? fmt(h.tl) + ' TL' : '', h.gems ? fmt(h.gems) + ' 💎' : ''].filter(Boolean).join(' + '), houseCan = h => rich() || ((!h.tl || money >= h.tl) && (!h.gems || (inv.gems || 0) >= h.gems));
 const houseOwn = h => h.id === 'small' || rich() || (inv.houses || []).includes(h.id);
 function lbRebuildHome() {
   if (!LB.rooms || !LB.scene) return;
@@ -5530,8 +5531,9 @@ function lbRebuildHome() {
 function houseAct(id) {
   const h = HOUSES.find(x => x.id === id); if (!h) return; inv.houses = inv.houses || [];
   if (!houseOwn(h)) {
-    if (h.gems) { if ((inv.gems || 0) < h.gems) { sfx('no'); return say(h.name + ' için ' + fmt(h.gems - (inv.gems || 0)) + ' 💎 daha lazım! Her hafta 5 elmas al'); } inv.gems -= h.gems; }
-    else { if (money < h.tl) { sfx('no'); return say(fmt(h.tl - money) + ' TL daha lazım 💰'); } money -= h.tl; }
+    if (h.tl && money < h.tl) { sfx('no'); return say(h.name + ' için ' + fmt(h.tl - money) + ' TL daha lazım 💰'); }
+    if (h.gems && (inv.gems || 0) < h.gems) { sfx('no'); return say(h.name + ' için ' + fmt(h.gems - (inv.gems || 0)) + ' 💎 daha lazım! Her hafta 5 elmas al'); }
+    money -= h.tl || 0; inv.gems = (inv.gems || 0) - (h.gems || 0);
     inv.houses.push(h.id); questEvent('shop'); sparkle(640, 300, 30); sfx('done');
   } else if (profile.house === h.id) return;
   else if (rich() && !inv.houses.includes(h.id)) inv.houses.push(h.id);
@@ -5539,9 +5541,9 @@ function houseAct(id) {
 }
 function showHouses() {
   const cur = houseCur().id;
-  const row = h => { const own = houseOwn(h), price = own ? '' : (h.gems ? fmt(h.gems) + ' 💎' : fmt(h.tl) + ' TL');
+  const row = h => { const own = houseOwn(h), price = own ? '' : housePrice(h);
     return '<div style="background:#fff7fb;border:2px solid #f1d6e4;border-radius:16px;padding:8px 10px;margin:6px 0;text-align:left"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div><b style="font-size:19px">' + h.icon + ' ' + h.name + '</b> <small>' + (h.floors === 2 ? '🏘️ 2 kat' : '🏠 1 kat') + '</small><br><small>' + h.desc + '</small></div><button class="mb ' + (cur === h.id ? 's' : own ? 'y' : 'g') + '" style="width:auto;margin:0;padding:10px 12px;font-size:16px;white-space:nowrap" data-h="' + h.id + '">' + (cur === h.id ? '✅ Oturuyorsun' : own ? '🔑 Taşın' : (rich() ? 'Al (admin)' : price + ' • Satın al')) + '</button></div></div>'; };
-  openModal('<h2>🏡 Ev Satışı</h2><p style="margin:2px 0"><small>Tek katlı evler TL ile, iki katlı evler 💎 elmasla satılır. Aldığın evi istediğin zaman değiştirebilirsin.</small></p><div style="max-height:52vh;overflow:auto">' + HOUSES.map(row).join('') + '</div><button class="mb s" id="hclose">Kapat</button>');
+  openModal('<h2>🏡 Ev Satışı</h2><p style="margin:2px 0"><small>Evler pahalıdır! İki katlı evler hem TL hem 💎 ister. Aldığın evi istediğin zaman değiştirebilirsin.</small></p><div style="max-height:52vh;overflow:auto">' + HOUSES.map(row).join('') + '</div><button class="mb s" id="hclose">Kapat</button>');
   $('hclose').onclick = closeModal;
   modal.querySelectorAll('[data-h]').forEach(b => { b.onclick = () => houseAct(b.dataset.h); });
 }
