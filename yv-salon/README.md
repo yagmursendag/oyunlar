@@ -99,3 +99,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v89 | versions/v89-at-ileri.html | 🎠 Atlıkarınca atları artık ileri doğru dönüyor |
 | v90 | versions/v90-buyuk-park.html | 🛝 Oyun parkı büyüdü: çitli kapı, kum havuzu, dönence, yaylı atlar, tırmanma kubbesi, banklar, lambalar, çiçekler, ağaçlar |
 | v91 | versions/v91-yeni-kiyafet-donusum.html | 🆕 Yeni sekmesi: kıyafetler 3 gün sonra kalkıyor, yerine otomatik yenileri geliyor (8 kıyafet, "kaç gün kaldı" yazısı) |
+| v92 | versions/v92-evler.html | 🏡 Markette Evler bölümü: 5 tek katlı ev (1.200 TL’den) ve 3 iki katlı ev (200 💎’dan); iki katlıda merdivenle üst kat |
