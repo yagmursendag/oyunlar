@@ -4866,8 +4866,12 @@ function lbCollide(v, rad = 0.5) {
   if (v.z > VB.z0 - 0.4 && v.z < VB.z1 + 0.4 && Math.abs(v.x - VB.cx) < 0.5) v.x = v.x < VB.cx ? VB.cx - 0.5 : VB.cx + 0.5; // volleyball net
   for (const p of LB.places) { const dx = v.x - p.pos.x, dz = v.z - p.pos.z, dd = Math.hypot(dx, dz); if (dd < 5.6 + rad) { const k = (5.6 + rad) / (dd || 1); v.x = p.pos.x + dx * k; v.z = p.pos.z + dz * k; } }
 }
+function lbRebuildMe() {
+  const o = LB.me, n = lbAvatar(profile.look, profile.name + (profile.id === ADMIN_ID ? ' 👑' : ''), '#ff5fa2'); n.position.copy(o.position); n.rotation.copy(o.rotation); LB.scene.remove(o); LB.scene.add(n); LB.me = n;
+}
 function lbUpdate(dt) {
   if (!LB.ok) return;
+  { const lk = JSON.stringify(profile.look); if (LB.lookKey && LB.lookKey !== lk && LB.me) lbRebuildMe(); LB.lookKey = lk; }
   const n = needs(), tired = n.hunger <= 0 || n.sleep <= 0;
   // needs go down while you are out in the town
   if (scene === 'lobby' || scene === 'job' || (scene === 'place' && LB.sleepT <= 0)) { n.hunger = Math.max(0, n.hunger - dt * 0.28); n.sleep = Math.max(0, n.sleep - dt * 0.17); }
@@ -4925,11 +4929,11 @@ function lbUpdate(dt) {
   }
   // near a door?
   LB.near = scene === 'lobby' && LB.where === 'town' ? LB.places.find(pl => Math.hypot(pl.door.x - me.position.x, pl.door.z - me.position.z) < 3.2) || null : null;
-  LB.nearSpot = scene === 'lobby' && LB.where !== 'town' ? lbNearSpot() : null;
+  LB.nearSpot = scene === 'lobby' && LB.where !== 'town' && !LB.edit ? lbNearSpot() : null;
   for (const st of LB.staff || []) lbAnim(st, dt, 0);
   // camera follows from behind
-  const inside = LB.where !== 'town', cd = inside ? 7 : 10;
-  const cp = new THREE.Vector3(me.position.x + Math.sin(LB.yaw) * cd * ((LB.ride && LB.ride.kind === 'wheel') ? 0 : 1) - ((LB.ride && LB.ride.kind === 'wheel') ? 11 : 0), (inside ? 5.4 : 6.2) + ((LB.fly || (LB.ride && (LB.ride.kind === 'wheel' || LB.ride.kind === 'tower'))) ? me.position.y * 0.7 : Math.max(0, me.position.y - 1.5) * 0.9), me.position.z + Math.cos(LB.yaw) * cd * ((LB.ride && LB.ride.kind === 'wheel') ? 0 : 1));
+  const inside = LB.where !== 'town', cd = inside ? (LB.edit ? 11 : 7) : 10;
+  const cp = new THREE.Vector3(me.position.x + Math.sin(LB.yaw) * cd * ((LB.ride && LB.ride.kind === 'wheel') ? 0 : 1) - ((LB.ride && LB.ride.kind === 'wheel') ? 11 : 0), (inside ? (LB.edit ? 10 : 5.4) : 6.2) + ((LB.fly || (LB.ride && (LB.ride.kind === 'wheel' || LB.ride.kind === 'tower'))) ? me.position.y * 0.7 : Math.max(0, me.position.y - 1.5) * 0.9), me.position.z + Math.cos(LB.yaw) * cd * ((LB.ride && LB.ride.kind === 'wheel') ? 0 : 1));
   if (inside) lbClampCam(cp);
   // softer light indoors so floors and walls don't look washed out
   lbDayNight(dt, inside);
@@ -4952,6 +4956,7 @@ function lbUp() {
   if (!dr || dr.moved > 10 || !LB.ok) return;
   const rc = new THREE.Raycaster(); rc.setFromCamera({ x: ptr.x / W * 2 - 1, y: -(ptr.y / H * 2 - 1) }, LB.cam);
   const hit = rc.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), new THREE.Vector3());
+  if (LB.edit && hit) return lbEditTap(hit);
   // tapping a person opens their profile card
   const who = lbPickPerson(rc, hit); if (who) return lbOpenProfile(who);
   if (!hit) return;
@@ -5595,7 +5600,10 @@ function lbBuildHome() {
   if (HZ.extra === 'piano') { bx(1.4, 1.1, 3.0, '#1c1c24', 11.6, 0.95, 6.4); bx(0.5, 0.08, 2.8, '#ffffff', 10.8, 1.54, 6.4); for (let i = 0; i < 7; i++) bx(0.3, 0.1, 0.1, '#1c1c24', 10.95, 1.6, 5.2 + i * 0.4); bx(1.2, 0.1, 2.7, '#1c1c24', 11.6, 1.55, 6.4); for (const dz of [-1.2, 1.2]) bx(0.15, 0.6, 0.15, '#1c1c24', 11.4, 0.3, 6.4 + dz); bx(0.6, 0.5, 0.9, '#8b5cf6', 9.6, 0.4, 6.4); obs.push([10.3, 12.4, 4.7, 8.0]); }
   if (HZ.floors === 2) { for (let i = 0; i < 6; i++) bx(2.4, 0.45 * (i + 1), 0.8, i % 2 ? '#c98b5a' : '#a8703c', 11.4, 0.225 * (i + 1), 4.9 + i * 0.85); bx(0.1, 1.0, 5.6, '#ffffff', 10.1, 1.3, 7.4); obs.push([10.1, 12.7, 4.4, 10]); spots.push({ x: O.x + 9.2, z: O.z + 4.6, stairs: 'home2' }); }
   spots.push({ x: O.x, z: O.z + 9.1, exit: 'home' });
-  LB.rooms.home = { O, w: 26, d: 20, g, spots, obs, spawn: new THREE.Vector3(O.x, 0, O.z + 7.4) };
+  spots.push({ x: O.x - 10.0, z: O.z + 7.2, furn: 'wardrobe' }, { x: O.x + 7.5, z: O.z - 7.6, furn: 'tv' }, { x: O.x + 7.5, z: O.z - 3.4, furn: 'rest' }, { x: O.x + 10.4, z: O.z + 1.2, furn: 'read' });
+  if (HZ.extra === 'piano') spots.push({ x: O.x + 9.0, z: O.z + 6.4, furn: 'piano' }); if (HZ.extra === 'aquarium') spots.push({ x: O.x + 10.1, z: O.z + 6.2, furn: 'fish' }); if (HZ.extra === 'fireplace') spots.push({ x: O.x + 10.3, z: O.z + 6.2, furn: 'warm' });
+  const nFixed = obs.length; lbPlaceItems(g, O, spots, obs, 'home');
+  LB.rooms.home = { O, w: 26, d: 20, g, spots, obs, fixedN: nFixed, spawn: new THREE.Vector3(O.x, 0, O.z + 7.4) };
 }
 function lbBuildHome2() {
   const HZ = houseCur(), O = new THREE.Vector3(0, 0, 170), g = lbRoom(O, 26, 20, HZ.wall, HZ.fb, HZ.fa), spots = [], obs = [], T3 = THREE;
@@ -5622,13 +5630,111 @@ function lbBuildHome2() {
   // stairs opening + railing, a spot to go down
   bx(2.6, 0.05, 5.6, '#2a1f2e', 11.4, 0.07, 7.1); bx(0.1, 1.0, 5.8, '#ffffff', 10.0, 0.6, 7.1); bx(2.8, 1.0, 0.1, '#ffffff', 11.4, 0.6, 4.3); obs.push([10.1, 12.7, 4.3, 10]);
   spots.push({ x: O.x + 9.0, z: O.z + 4.4, stairs: 'home' });
-  LB.rooms.home2 = { O, w: 26, d: 20, g, spots, obs, spawn: new THREE.Vector3(O.x + 8.2, 0, O.z + 3.6) };
+  const nFixed = obs.length; lbPlaceItems(g, O, spots, obs, 'home2');
+  LB.rooms.home2 = { O, w: 26, d: 20, g, spots, obs, fixedN: nFixed, spawn: new THREE.Vector3(O.x + 8.2, 0, O.z + 3.6) };
 }
 function lbGoFloor(id) {
   const R = LB.rooms[id]; if (!R) return; LB.where = id; LB.target = null; fade = 0.6; sfx('pop');
   LB.me.position.copy(R.spawn); LB.me.rotation.y = Math.PI; if (LB.pet) LB.pet.position.set(R.spawn.x + 1, 0, R.spawn.z + 1);
   LB.cam.position.set(R.spawn.x, 5.2, R.spawn.z + 7);
   say(id === 'home2' ? '🪜 Üst kattasın! Yataklar, oyun köşesi ve daha fazlası' : '🪜 Alt kattasın');
+}
+// ================= 🛠️ decorate your own house: buy furniture, place it, move it, turn it, sell it =================
+const FURN = {
+  bed2: { n: 'Yatak', i: '🛏️', p: 3000, hw: 1.5, hd: 2.2, fn: 'sleep' }, sofa2: { n: 'Koltuk', i: '🛋️', p: 2500, hw: 1.8, hd: 0.8, fn: 'rest' },
+  tv2: { n: 'Televizyon', i: '📺', p: 4000, hw: 1.3, hd: 0.5, fn: 'tv' }, shelf: { n: 'Kitaplık', i: '📚', p: 1500, hw: 1.3, hd: 0.5, fn: 'read' },
+  piano2: { n: 'Piyano', i: '🎹', p: 9000, hw: 1.4, hd: 0.7, fn: 'piano' }, mirror: { n: 'Gardırop', i: '🪞', p: 1800, hw: 1.1, hd: 0.5, fn: 'wardrobe' },
+  fish: { n: 'Akvaryum', i: '🐠', p: 3500, hw: 1.2, hd: 0.5, fn: 'fish' }, stove2: { n: 'Ocak', i: '🍳', p: 2500, hw: 1.0, hd: 0.6, fn: 'cook' },
+  fridge2: { n: 'Buzdolabı', i: '🧊', p: 3000, hw: 0.8, hd: 0.8, fn: 'fridge' }, table: { n: 'Masa', i: '🍽️', p: 1200, hw: 1.3, hd: 0.9 },
+  plant: { n: 'Saksı çiçek', i: '🪴', p: 300, hw: 0.5, hd: 0.5 }, lamp: { n: 'Lamba', i: '💡', p: 500, hw: 0.4, hd: 0.4 }, rug: { n: 'Halı', i: '🟪', p: 800, hw: 1.8, hd: 1.8, flat: 1 },
+};
+const FURN_KEYS = Object.keys(FURN);
+function lbFurnModel(k) {
+  const g = new THREE.Group(), bx = (w, h, d, col, x, y, z) => { const m = lbM(new THREE.BoxGeometry(w, h, d), typeof col === 'string' ? toon(col) : col, x, y, z); g.add(m); return m; };
+  const ball = (r, col, x, y, z) => { const m = lbM(new THREE.SphereGeometry(r, 10, 8), toon(col), x, y, z); g.add(m); return m; };
+  if (k === 'bed2') { bx(3, 0.5, 4.4, '#c98b5a', 0, 0.25, 0); bx(2.8, 0.35, 4.1, '#ffffff', 0, 0.68, 0); bx(2.8, 0.3, 2.6, normLook(profile.look).cloth, 0, 0.9, 0.7); bx(3, 1.6, 0.2, '#a8703c', 0, 0.8, -2.2); for (const sx of [-0.7, 0.7]) { const p = ball(0.45, '#ffe3f1', sx, 1.0, -1.5); p.scale.set(1.1, 0.5, 0.8); } }
+  else if (k === 'sofa2') { bx(3.4, 0.8, 1.4, '#ff6fb5', 0, 0.4, 0); bx(3.4, 0.9, 0.35, '#e8559a', 0, 1.05, -0.55); for (const sx of [-1.8, 1.8]) bx(0.4, 1.1, 1.4, '#e8559a', sx, 0.55, 0); for (const sx of [-0.8, 0.8]) bx(0.7, 0.7, 0.2, sx < 0 ? '#ffd23f' : '#5ac8ff', sx, 1.1, -0.3); }
+  else if (k === 'tv2') { bx(2.4, 0.8, 0.8, '#a8703c', 0, 0.4, 0); bx(2.2, 1.3, 0.12, '#1c1c24', 0, 1.5, 0); const sc2 = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 1.1), new THREE.MeshBasicMaterial({ color: '#7fd0ff' })); sc2.position.set(0, 1.5, 0.07); g.add(sc2); }
+  else if (k === 'shelf') { bx(2.4, 3.2, 0.9, '#c98b5a', 0, 1.6, 0); for (let r = 0; r < 4; r++) for (let q = 0; q < 5; q++) bx(0.3, 0.55 + (q % 3) * 0.1, 0.5, ['#ff6fb5', '#5ac8ff', '#ffd23f', '#8be07e', '#b18cff'][(q + r) % 5], -0.85 + q * 0.42, 0.55 + r * 0.75, 0.2); }
+  else if (k === 'piano2') { bx(2.6, 1.1, 1.3, '#1c1c24', 0, 0.95, -0.1); bx(2.4, 0.06, 0.5, '#ffffff', 0, 1.52, 0.5); for (let q = 0; q < 7; q++) bx(0.14, 0.08, 0.28, '#1c1c24', -1.0 + q * 0.33, 1.57, 0.42); for (const sx of [-1.1, 1.1]) bx(0.15, 0.6, 0.15, '#1c1c24', sx, 0.3, 0.2); bx(0.9, 0.4, 0.6, '#8b5cf6', 0, 0.3, 1.1); }
+  else if (k === 'mirror') { bx(2, 3.6, 0.9, '#e8d2b0', 0, 1.8, 0); bx(0.9, 2.5, 0.05, '#cfe9ff', -0.5, 1.9, 0.47); bx(0.9, 2.5, 0.05, '#cfe9ff', 0.5, 1.9, 0.47); bx(0.06, 3.4, 0.06, '#c98b5a', 0, 1.8, 0.49); }
+  else if (k === 'fish') { bx(2.2, 0.9, 0.8, '#c98b5a', 0, 0.45, 0); const tk = lbM(new THREE.BoxGeometry(2, 1.2, 0.7), new THREE.MeshToonMaterial({ color: '#7fd0ff', transparent: true, opacity: 0.5, gradientMap: lbGrad }), 0, 1.5, 0); g.add(tk); for (let q = 0; q < 4; q++) { const b = ball(0.14, ['#ff8a3d', '#ffd23f', '#ff6fb5', '#ffffff'][q], -0.7 + q * 0.5, 1.3 + (q % 2) * 0.4, 0); b.scale.set(1.6, 1, 0.6); } }
+  else if (k === 'stove2') { bx(1.8, 1.0, 1.2, '#e8434f', 0, 0.5, 0); bx(1.7, 0.08, 1.1, '#2a2f3a', 0, 1.04, 0); for (const [dx, dz] of [[-0.4, -0.25], [0.4, -0.25], [-0.4, 0.25], [0.4, 0.25]]) { const t = lbM(new THREE.TorusGeometry(0.17, 0.03, 6, 12), toon('#5a6070'), dx, 1.1, dz); t.rotation.x = Math.PI / 2; g.add(t); } bx(1.4, 0.5, 0.05, '#2a2f3a', 0, 0.5, 0.62); }
+  else if (k === 'fridge2') { bx(1.5, 3.2, 1.3, '#f4f6fb', 0, 1.6, 0); bx(1.52, 0.05, 1.32, '#cfd6e2', 0, 2.3, 0); bx(0.08, 0.8, 0.1, '#9aa3b5', 0.55, 1.6, 0.68); bx(0.08, 0.9, 0.1, '#9aa3b5', 0.55, 2.9, 0.68); }
+  else if (k === 'table') { bx(2.4, 0.14, 1.6, '#c98b5a', 0, 1.0, 0); for (const [dx, dz] of [[-1.1, -0.7], [1.1, -0.7], [-1.1, 0.7], [1.1, 0.7]]) bx(0.14, 1.0, 0.14, '#a8703c', dx, 0.5, dz); const v = lbM(new THREE.CylinderGeometry(0.2, 0.15, 0.3, 10), toon('#ff6fb5'), 0, 1.22, 0); g.add(v); ball(0.12, '#ffd23f', 0, 1.5, 0); }
+  else if (k === 'plant') { const p = lbM(new THREE.CylinderGeometry(0.4, 0.3, 0.6, 10), toon('#c9764a'), 0, 0.3, 0); g.add(p); for (let q = 0; q < 5; q++) ball(0.28, ['#4fb35a', '#6fcf6a', '#ff6fb5', '#ffd23f', '#ff8a3d'][q], (q % 3 - 1) * 0.2, 0.9 + (q % 2) * 0.35, (q % 2) * 0.1); }
+  else if (k === 'lamp') { const p = lbM(new THREE.CylinderGeometry(0.06, 0.1, 2.3, 8), toon('#4a3a5a'), 0, 1.15, 0); g.add(p); const sh = lbM(new THREE.ConeGeometry(0.5, 0.6, 12, 1, true), new THREE.MeshToonMaterial({ color: '#ffd23f', gradientMap: lbGrad, side: THREE.DoubleSide }), 0, 2.5, 0); g.add(sh); ball(0.15, '#fff6c8', 0, 2.4, 0); }
+  else if (k === 'rug') { const r = new THREE.Mesh(new THREE.CircleGeometry(1.8, 32), new THREE.MeshToonMaterial({ map: lbTex(128, 128, (c) => { for (let i = 5; i >= 0; i--) { c.fillStyle = ['#ffd23f', '#ff9ccf', '#5ac8ff', '#8be07e', '#b18cff', '#ffffff'][i]; c.beginPath(); c.arc(64, 64, 10 + i * 10.5, 0, 7); c.fill(); } }), gradientMap: lbGrad })); r.rotation.x = -Math.PI / 2; r.position.y = 0.08; g.add(r); }
+  return g;
+}
+function lbEditItems(key) { profile.hx = profile.hx || {}; return (profile.hx[key] = profile.hx[key] || []); }
+function lbPlaceItems(g, O, spots, obs, key) {
+  lbEditItems(key).forEach(([k, x, z, r], i) => {
+    const F = FURN[k]; if (!F) return; const m = lbFurnModel(k); m.position.set(x, 0, z); m.rotation.y = r; g.add(m);
+    const sw = Math.abs(Math.sin(r)) > 0.5, hw = sw ? F.hd : F.hw, hd = sw ? F.hw : F.hd; if (!F.flat) obs.push([x - hw, x + hw, z - hd, z + hd]);
+    if (F.fn) spots.push({ x: O.x + x + Math.sin(r) * (F.hd + 1.1), z: O.z + z + Math.cos(r) * (F.hd + 1.1), furn: F.fn });
+    if (LB.edit && LB.edit.key === key && LB.edit.idx === i) { const ring = lbM(new THREE.RingGeometry(Math.max(hw, hd) + 0.2, Math.max(hw, hd) + 0.45, 32), new THREE.MeshBasicMaterial({ color: '#ff5fa2', side: THREE.DoubleSide }), x, 0.1, z); ring.rotation.x = -Math.PI / 2; g.add(ring); }
+  });
+}
+function lbFurnRect(k, x, z, r) { const F = FURN[k], sw = Math.abs(Math.sin(r)) > 0.5, hw = sw ? F.hd : F.hw, hd = sw ? F.hw : F.hd; return [x - hw, x + hw, z - hd, z + hd]; }
+function lbEditOk(R, key, k, x, z, r, ignore) {
+  const F = FURN[k], [a0, a1, b0, b1] = lbFurnRect(k, x, z, r);
+  if (a0 < -R.w / 2 + 0.7 || a1 > R.w / 2 - 0.7 || b0 < -R.d / 2 + 0.7 || b1 > R.d / 2 - 0.7) return false;
+  if (F.fn) { const sx = x + Math.sin(r) * (F.hd + 1.1), sz = z + Math.cos(r) * (F.hd + 1.1); if (Math.abs(sx) > R.w / 2 - 0.6 || Math.abs(sz) > R.d / 2 - 0.6) return false; }
+  const hit = (q) => a0 < q[1] + 0.15 && a1 > q[0] - 0.15 && b0 < q[3] + 0.15 && b1 > q[2] - 0.15;
+  if (!F.flat) {
+    for (const q of R.obs.slice(0, R.fixedN)) if (hit(q)) return false;
+    const items = lbEditItems(key); for (let i = 0; i < items.length; i++) { if (i === ignore || !FURN[items[i][0]] || FURN[items[i][0]].flat) continue; if (hit(lbFurnRect(items[i][0], items[i][1], items[i][2], items[i][3]))) return false; }
+  }
+  for (const sp of R.spots) if ((sp.exit || sp.stairs) && Math.hypot(sp.x - R.O.x - x, sp.z - R.O.z - z) < 1.8 + Math.max(F.hw, F.hd)) return false;
+  return true;
+}
+function lbEditStart() { LB.edit = { key: LB.where, sel: null, idx: -1, page: 0 }; LB.target = null; lbRebuildHome(); say('🛠️ Alttan bir eşya seç, sonra odada yere dokun. Konulmuş eşyaya dokununca seçilir'); sfx('pop'); }
+function lbEditStop() { LB.edit = null; lbRebuildHome(); save(); sfx('done'); say('Evin hazır! 🏡'); }
+function lbEditTap(hit) {
+  const E = LB.edit, R = LB.rooms[E.key]; if (!E || !R || ptr.y > 520) return;
+  const x = Math.round((hit.x - R.O.x) * 2) / 2, z = Math.round((hit.z - R.O.z) * 2) / 2, items = lbEditItems(E.key);
+  if (E.sel) {
+    const F = FURN[E.sel]; if (items.length >= 30) { sfx('no'); return say('Bu katta en fazla 30 eşya olur'); }
+    if (!lbEditOk(R, E.key, E.sel, x, z, 0, -1)) { sfx('no'); return say('Buraya sığmıyor! Başka bir yere dokun'); }
+    if (!rich() && money < F.p) { sfx('no'); return say(fmt(F.p - money) + ' TL daha lazım 💰'); }
+    if (!rich()) money -= F.p; items.push([E.sel, x, z, 0]); E.idx = items.length - 1; E.sel = null; save(); sfx('coin'); lbRebuildHome(); return say(F.i + ' ' + F.n + ' yerleşti! Döndürebilir, taşıyabilirsin');
+  }
+  let best = -1, bd = 1e9; items.forEach((it, i) => { const q = lbFurnRect(it[0], it[1], it[2], it[3]); if (hit.x - R.O.x > q[0] - 0.3 && hit.x - R.O.x < q[1] + 0.3 && hit.z - R.O.z > q[2] - 0.3 && hit.z - R.O.z < q[3] + 0.3) { const d = Math.hypot(hit.x - R.O.x - it[1], hit.z - R.O.z - it[2]); if (d < bd) { bd = d; best = i; } } });
+  if (best >= 0) { E.idx = best; sfx('pop'); lbRebuildHome(); return; }
+  if (E.idx >= 0 && items[E.idx]) { const it = items[E.idx]; if (!lbEditOk(R, E.key, it[0], x, z, it[3], E.idx)) { sfx('no'); return say('Buraya sığmıyor!'); } it[1] = x; it[2] = z; save(); sfx('pop'); lbRebuildHome(); }
+}
+function lbEditRotate() { const E = LB.edit, it = E && lbEditItems(E.key)[E.idx]; if (!it) return; const R = LB.rooms[E.key], nr = (it[3] + Math.PI / 2) % (Math.PI * 2); if (!lbEditOk(R, E.key, it[0], it[1], it[2], nr, E.idx)) { sfx('no'); return say('Dönünce sığmıyor!'); } it[3] = nr; save(); sfx('pop'); lbRebuildHome(); }
+function lbEditSell() { const E = LB.edit, items = E && lbEditItems(E.key), it = items && items[E.idx]; if (!it) return; const F = FURN[it[0]], back = Math.floor(F.p / 2); items.splice(E.idx, 1); E.idx = -1; if (!rich()) money += back; save(); sfx('coin'); lbRebuildHome(); say(F.n + ' satıldı +' + fmt(back) + ' TL'); }
+function drawEditUi() {
+  if (scene !== 'lobby' || !(LB.where === 'home' || LB.where === 'home2') || LB.ride || LB.sleepT > 0) return;
+  const E = LB.edit;
+  if (!E) { btn(1030, 150, 220, 52, '🛠️ Evi düzenle', lbEditStart, { col: '#ffe36e', size: 19 }); return; }
+  ctx.fillStyle = 'rgba(255,255,255,.93)'; rr(10, 528, 1260, 184, 22); ctx.fill(); ctx.strokeStyle = '#ff8a3d'; ctx.lineWidth = 4; ctx.stroke();
+  FURN_KEYS.forEach((k, i) => { const F = FURN[k]; btn(20 + (i % 7) * 168, 538 + Math.floor(i / 7) * 52, 162, 46, F.i + ' ' + F.n + ' ' + fmt(F.p), () => { E.sel = E.sel === k ? null : k; E.idx = -1; lbRebuildHome(); sfx('pop'); }, { active: E.sel === k, size: 14 }); });
+  const items = lbEditItems(E.key), it = E.idx >= 0 ? items[E.idx] : null;
+  if (E.sel) text('📍 ' + FURN[E.sel].n + ' için odada yere dokun', 20, 676, 20, '#d6337f', 'left', 800);
+  else if (it) { text('Seçili: ' + FURN[it[0]].i + ' ' + FURN[it[0]].n + ' • yere dokununca taşınır', 20, 676, 18, '#3a2340', 'left', 800); btn(560, 650, 150, 48, '↻ Döndür', lbEditRotate, { size: 18 }); btn(720, 650, 200, 48, '💰 Sat +' + fmt(Math.floor(FURN[it[0]].p / 2)), lbEditSell, { size: 17 }); }
+  else text('Eşya seç ya da konulmuş bir eşyaya dokun (' + items.length + '/30)', 20, 676, 18, '#6b5a70', 'left', 700);
+  btn(1030, 650, 220, 48, '✅ Bitti', lbEditStop, { col: '#7ed957', size: 20 });
+}
+function lbRest() {
+  const n = needs(), now = Date.now(); if (now - (LB.restAt || 0) < 15000) return say('⏳ Biraz bekle, daha yeni dinlendin');
+  if (n.sleep >= 100) return say('Hiç uykun yok! 😊'); LB.restAt = now; n.sleep = Math.min(100, n.sleep + 10); save(); sfx('done'); sparkle(640, 330, 12); say('😌 Dinlendin! +10 uyku');
+}
+function furnActs(fn) {
+  const sleep = () => { const nn = needs(); if (nn.sleep >= 100) return say('Hiç uykun yok! 😊'); LB.sleepT = 4; sfx('pop'); };
+  const books = ['📚 "Prenses ve ejderha" kitabını okudun', '📖 Uzay macerası okudun, yıldızları sevdin', '📚 Yemek kitabında yeni tarifler gördün 🍳', '📖 Hayvanlar ansiklopedisini okudun 🐾'];
+  return {
+    sleep: [['😴 Yat ve uyu', sleep, '#8b5cf6']], rest: [['🛋️ Otur ve dinlen', lbRest, '#ff6fb5']],
+    tv: [['📺 Televizyon izle', () => { LB.restAt = 0; sfx('done'); sparkle(640, 330, 10); say('📺 Çizgi film izledin, keyfin yerinde! 😊'); lbRest(); }, '#5aa9ff']],
+    read: [['📚 Kitap oku', () => { sfx('pop'); say(books[Math.floor(Math.random() * books.length)]); questEvent('read'); }, '#8be07e']],
+    piano: [['🎹 Piyano çal', () => { ['coin', 'pop', 'coin', 'done'].forEach((s, i) => setTimeout(() => sfx(s), i * 220)); sparkle(640, 330, 14); say('🎶 Ne güzel çalıyorsun!'); }, '#1c1c24']],
+    wardrobe: [['👗 Gardırobu aç • kıyafet değiştir', openDesigner, '#ff5fa2']],
+    fish: [['🐠 Balıkları besle', () => { sfx('pop'); sparkle(640, 330, 10); say('🐠 Balıklar yemi çok sevdi!'); }, '#5ac8ff']],
+    cook: [['🍳 Yemek pişir', openCook, '#ff8a3d']], fridge: [['🧊 Dolap (yemek sakla)', openFridge, '#5aa9ff']],
+    warm: [['🔥 Şömine başında ısın', () => { sfx('pop'); say('🔥 Ne sıcacık! Kendini çok iyi hissettin'); lbRest(); }, '#ff8a3d']],
+  }[fn] || [];
 }
 // ---- the two walk-in buildings ----
 function lbBuildInteriors() {
@@ -5711,7 +5817,7 @@ function lbGoInside(id) {
   else say('Hastaneye hoş geldin! Danışmaya uğra 🏥');
 }
 function lbGoOutside() {
-  const id = LB.where;
+  const id = LB.where; if (LB.edit) { LB.edit = null; lbRebuildHome(); }
   if (id === 'market' && LB.basket.length) { sfx('no'); return say('Ödemeden çıkamazsın! 💳 Kasaya git ya da sepeti boşalt'); }
   const p = lbPlaceById(id); LB.where = 'town'; LB.target = null; fade = 0.8; sfx('pop');
   LB.me.position.copy(p.door).add(new THREE.Vector3(-Math.sin(p.a), 0, Math.cos(p.a)).multiplyScalar(1.5));
@@ -5743,6 +5849,7 @@ function lbNearSpot() {
 function spotActions(sp) {
   if (sp.exit) return [['🚪 Dışarı çık', lbGoOutside, '#27b36a']];
   if (sp.catalog) return [['🛍️ Büyük Raf • tüm ürünler', showCatalog, '#ff5fa2']];
+  if (sp.furn) return furnActs(sp.furn);
   if (sp.houses) return [['🏡 Evler • ev satın al', showHouses, '#e8434f']];
   if (sp.stairs) return [[sp.stairs === 'home2' ? '🪜 Üst kata çık' : '🪜 Alt kata in', () => lbGoFloor(sp.stairs), '#8b5cf6']];
   if (sp.cook) return [['🍳 Yemek pişir', openCook, '#ff8a3d']];
@@ -7141,6 +7248,7 @@ function drawLunaUi() {
   if (LB.sleepT > 0 && scene === 'lobby') { ctx.fillStyle = `rgba(20,20,60,${Math.min(0.85, 0.3 + (4 - LB.sleepT) * 0.2)})`; ctx.fillRect(0, 0, W, H); for (let i = 0; i < 3; i++) text('Z', 640 + i * 40 + Math.sin(T * 2 + i) * 10, 360 - i * 40 - ((T * 30) % 40), 40 + i * 12, '#ffffff', 'center', 800); text('😴 Uyuyorsun...', 640, 470, 30, '#ffffff', 'center', 800); return; }
   if (CK && scene === 'lobby') return ckDraw();
   if (FG && scene === 'lobby') return fgDraw();
+  drawEditUi();
   if (LB.lunaNear && !LB.ride && scene === 'lobby') btn(380, 520, 520, 76, `${LUNA_NAME[LB.lunaNear]} • ${LUNA_PRICE[LB.lunaNear]} TL`, () => lbLunaStart(LB.lunaNear), { col: '#ff5fa2', fg: '#ffffff', size: 30 });
 }
 
