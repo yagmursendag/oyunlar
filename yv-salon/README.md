@@ -97,3 +97,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v87 | versions/v87-boylar.html | 👶 Boy seçimi: Normal ücretsiz, Bebek 10 💎, Çocuk 15 💎, Yetişkin 20 💎 (Karakter > Yüz > Boy), 3D ve önizlemede boy değişir |
 | v88 | versions/v88-atlikarinca.html | 🎠 Atlıkarınca yenilendi (gerçek atlar, direkler tavana ulaşıyor), tabelalardaki yazılar ve lunapark düğmeleri büyüdü |
 | v89 | versions/v89-at-ileri.html | 🎠 Atlıkarınca atları artık ileri doğru dönüyor |
+| v90 | versions/v90-buyuk-park.html | 🛝 Oyun parkı büyüdü: çitli kapı, kum havuzu, dönence, yaylı atlar, tırmanma kubbesi, banklar, lambalar, çiçekler, ağaçlar |

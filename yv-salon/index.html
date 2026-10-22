@@ -4773,7 +4773,7 @@ function lbInit() {
   }
   LB.tapMark = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.55, 24), new THREE.MeshBasicMaterial({ color: '#ff5fa2', transparent: true, opacity: 0 })); LB.tapMark.rotation.x = -Math.PI / 2; LB.tapMark.position.y = 0.05; sc.add(LB.tapMark);
   lbBuildInteriors();
-  lbBuildBeach(); lbBuildSky(); lbBuildVolley(); lbBuildFootball(); lbBuildOuter(); lbBuildPark(); lbBuildLuna(); lbBuildLuna2(); lbBuildFair(); lbBuildParkour(); lbBuildScenery(); lbBuildFx(); lbBuildGlints();
+  lbBuildBeach(); lbBuildSky(); lbBuildVolley(); lbBuildFootball(); lbBuildOuter(); lbBuildPark(); lbBuildLuna(); lbBuildLuna2(); lbBuildFair(); lbBuildParkour(); lbBuildPark2(); lbBuildScenery(); lbBuildFx(); lbBuildGlints();
   LB.ok = true;
   return true;
 }
@@ -5992,6 +5992,60 @@ function lbJumpUpdate(me, dt) {
   const A = me.userData.A; A.legs[0].rotation.x = -0.6; A.legs[1].rotation.x = 0.35; A.arms[0].rotation.x = A.arms[1].rotation.x = -2.7;
 }
 
+// ================= 🛝 bigger, prettier playground: fence + gate, sandbox, roundabout, spring riders, climbing dome, benches, trees =================
+function lbBuildPark2() {
+  const [gx, gz] = ZONES[2], sc = LB.scene, R = 17.5, ent = Math.atan2(-gx, -gz), P = (r, a) => [gx + Math.sin(a) * r, gz + Math.cos(a) * r];
+  const cl = ['#ff5fa2', '#ffd23f', '#5ac8ff', '#8be07e', '#b18cff', '#ff8a3d'], tr = (x, z, r) => (LB.trees = LB.trees || []).push([x, z, r]);
+  const dEnt = a => Math.abs(((a - ent) % (Math.PI * 2) + Math.PI * 3) % (Math.PI * 2) - Math.PI);
+  // soft rubber floor with coloured patches and a border ring
+  const base = lbM(new THREE.CircleGeometry(R, 56), toon('#f6e7b8'), gx, 0.02, gz); base.rotation.x = -Math.PI / 2; base.receiveShadow = true; sc.add(base);
+  const ring = lbM(new THREE.RingGeometry(R - 0.7, R, 56), toon('#ffffff'), gx, 0.028, gz); ring.rotation.x = -Math.PI / 2; sc.add(ring);
+  for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2 + 0.3, r = 12 + (i % 3) * 1.6, [x, z] = P(r, a); const p = lbM(new THREE.CircleGeometry(1.5, 20), toon(mix(cl[i % 6], '#ffffff', 0.55)), x, 0.034, z); p.rotation.x = -Math.PI / 2; sc.add(p); }
+  // fence with a gate facing the plaza
+  const wood = toon('#ffffff'), post = toon('#ff8fc0'), N = 46;
+  for (let i = 0; i < N; i++) {
+    const a = i / N * Math.PI * 2; if (dEnt(a) < 0.2) continue;
+    const [x, z] = P(R - 0.2, a); sc.add(lbM(new THREE.BoxGeometry(0.28, 1.5, 0.28), post, x, 0.75, z)); sc.add(lbM(new THREE.ConeGeometry(0.2, 0.3, 4), toon('#ffd23f'), x, 1.65, z)); tr(x, z, 0.35);
+    if (dEnt(a + Math.PI / N) < 0.2) continue;
+    const [x2, z2] = P(R - 0.2, a + Math.PI / N), len = Math.hypot(x2 - x, z2 - z);
+    for (const y of [0.55, 1.05]) { const rl = lbM(new THREE.BoxGeometry(len + 0.05, 0.12, 0.08), wood, (x + x2) / 2, y, (z + z2) / 2); rl.rotation.y = Math.atan2(-(z2 - z), x2 - x); sc.add(rl); }
+  }
+  { const [x, z] = P(R - 0.2, ent), nx = Math.cos(ent), nz = -Math.sin(ent), gp = toon('#ffd23f');
+    for (const sd of [-3.6, 3.6]) { sc.add(lbM(new THREE.CylinderGeometry(0.28, 0.32, 4.6, 10), gp, x + nx * sd, 2.3, z + nz * sd)); tr(x + nx * sd, z + nz * sd, 0.5); for (let k = 0; k < 4; k++) sc.add(lbM(new THREE.SphereGeometry(0.38, 10, 8), toon(cl[(k + (sd > 0 ? 2 : 0)) % 6]), x + nx * sd, 4.9 + k * 0.1, z + nz * sd + (k - 1.5) * 0.12)); }
+    const sg = lbSignPlane('🛝 Oyun Parkı', '#ff8a1f', 6.6, 1.5); sg.position.set(x, 4.9, z); sg.rotation.y = ent; sc.add(sg); const bm = lbM(new THREE.BoxGeometry(7.4, 0.2, 0.2), gp, x, 4.05, z); bm.rotation.y = ent; sc.add(bm); }
+  // sandbox with a little castle
+  { const g = new THREE.Group(); g.position.set(gx + 10, 0, gz - 5); sc.add(g);
+    g.add(lbM(new THREE.BoxGeometry(5.2, 0.12, 5.2), toon('#f2d58a'), 0, 0.07, 0)); for (const [w, d, x, z] of [[5.6, 0.3, 0, -2.75], [5.6, 0.3, 0, 2.75], [0.3, 5.2, -2.75, 0], [0.3, 5.2, 2.75, 0]]) g.add(lbM(new THREE.BoxGeometry(w, 0.45, d), toon('#c98b5a'), x, 0.22, z));
+    g.add(lbM(new THREE.CylinderGeometry(0.6, 0.8, 0.8, 10), toon('#e7c470'), -0.8, 0.5, 0.4)); g.add(lbM(new THREE.ConeGeometry(0.62, 0.7, 10), toon('#ff6fb5'), -0.8, 1.25, 0.4)); g.add(lbM(new THREE.CylinderGeometry(0.4, 0.5, 0.6, 10), toon('#e7c470'), 0.9, 0.4, -0.5));
+    g.add(lbM(new THREE.CylinderGeometry(0.3, 0.22, 0.4, 10), toon('#5ac8ff'), 1.4, 0.3, 1.2)); const sg = lbSignPlane('🏖️ Kum Havuzu', '#e0a02d', 3.0, 0.7); sg.position.set(0, 1.5, 2.9); g.add(sg); for (const sd of [-1.4, 1.4]) g.add(lbM(new THREE.CylinderGeometry(0.05, 0.05, 1.5, 6), toon('#8a5a3a'), sd, 0.75, 2.88)); }
+  // roundabout (spins)
+  { const g = new THREE.Group(); g.position.set(gx + 9.5, 0.2, gz + 6.5); sc.add(g); LB.roundA = g;
+    for (let k = 0; k < 6; k++) g.add(lbM(new THREE.CylinderGeometry(2.2, 2.2, 0.16, 12, 1, false, k * Math.PI / 3, Math.PI / 3), toon(cl[k]), 0, 0.2, 0));
+    g.add(lbM(new THREE.CylinderGeometry(0.2, 0.2, 1.8, 8), toon('#ffffff'), 0, 1.0, 0)); for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2, b = lbM(new THREE.TorusGeometry(0.9, 0.05, 6, 14, Math.PI), toon('#ffffff'), Math.cos(a) * 0.9, 0.9, Math.sin(a) * 0.9); b.rotation.y = -a; g.add(b); }
+    sc.add(lbM(new THREE.CylinderGeometry(0.5, 0.6, 0.2, 10), toon('#6b4a3a'), gx + 9.5, 0.1, gz + 6.5)); tr(gx + 9.5, gz + 6.5, 2.2);
+    const sg = lbSignPlane('🌀 Dönence', '#8b5cf6', 2.6, 0.62); sg.position.set(gx + 9.5, 2.5, gz + 9.2); sc.add(sg); }
+  // spring riders
+  LB.springs = [];
+  [[-10, -6, 0], [-10, -2.6, 2], [-10, 0.8, 4]].forEach(([dx, dz, k]) => { const g = new THREE.Group(); g.position.set(gx + dx, 0, gz + dz); sc.add(g); g.add(lbM(new THREE.CylinderGeometry(0.4, 0.5, 0.1, 10), toon('#4a3a5a'), 0, 0.05, 0));
+    const top = new THREE.Group(); g.add(top); top.add(lbM(new THREE.CylinderGeometry(0.1, 0.1, 0.9, 6), toon('#c0c0d0'), 0, 0.5, 0)); const hm = toon(cl[k % 6]); const b = lbM(new THREE.SphereGeometry(0.4, 10, 8), hm, 0, 1.1, 0); b.scale.set(1.5, 0.8, 0.7); top.add(b); top.add(lbM(new THREE.SphereGeometry(0.25, 10, 8), hm, 0.6, 1.4, 0)); top.add(lbM(new THREE.BoxGeometry(0.5, 0.08, 0.08), toon('#ffffff'), 0.4, 1.7, 0));
+    top.userData.k = k; LB.springs.push(top); tr(gx + dx, gz + dz, 0.6); });
+  // climbing dome
+  { const dx = gx - 11.5, dz = gz + 8, g = new THREE.Group(); g.position.set(dx, 0, dz); sc.add(g);
+    for (let i = 1; i <= 3; i++) { const r = Math.sqrt(2.25 * 2.25 - (i * 0.55) ** 2), t = lbM(new THREE.TorusGeometry(r, 0.05, 6, 24), toon(cl[i]), 0, i * 0.55, 0); t.rotation.x = Math.PI / 2; g.add(t); }
+    for (let k = 0; k < 6; k++) { const m = lbM(new THREE.TorusGeometry(2.25, 0.05, 6, 20, Math.PI), toon(cl[k % 6]), 0, 0, 0); m.rotation.y = k * Math.PI / 6; g.add(m); }
+    tr(dx, dz, 2.3); const sg = lbSignPlane('🧗 Tırmanma', '#2fbf71', 2.8, 0.66); sg.position.set(0, 3.2, 0); sg.rotation.y = ent; g.add(sg); }
+  // benches, lamps, flower beds, trees
+  for (let i = 0; i < 6; i++) { const a = ent + 0.55 + i * 0.9, [x, z] = P(R - 2.4, a); if (dEnt(a) < 0.5) continue; const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = a + Math.PI; sc.add(g);
+    g.add(lbM(new THREE.BoxGeometry(2.0, 0.12, 0.6), toon('#c98b5a'), 0, 0.55, 0)); g.add(lbM(new THREE.BoxGeometry(2.0, 0.55, 0.1), toon('#c98b5a'), 0, 0.9, -0.3)); for (const sd of [-0.85, 0.85]) g.add(lbM(new THREE.BoxGeometry(0.1, 0.55, 0.55), toon('#4a3a5a'), sd, 0.27, 0)); tr(x, z, 0.9); }
+  for (let i = 0; i < 5; i++) { const a = ent + 0.35 + i * 1.2, [x, z] = P(R - 1.2, a); sc.add(lbM(new THREE.CylinderGeometry(0.08, 0.12, 3.6, 8), toon('#4a3a5a'), x, 1.8, z)); sc.add(lbM(new THREE.SphereGeometry(0.32, 10, 8), new THREE.MeshBasicMaterial({ color: '#fff6c8' }), x, 3.7, z)); tr(x, z, 0.3); }
+  for (const sd of [-1, 1]) { const [x, z] = P(R - 3.4, ent + sd * 0.3); sc.add(lbM(new THREE.CylinderGeometry(1, 1.1, 0.3, 14), toon('#8a5a3a'), x, 0.15, z + 0.3)); for (let k = 0; k < 6; k++) sc.add(lbM(new THREE.SphereGeometry(0.28, 8, 6), toon(cl[(k + (sd > 0 ? 3 : 0)) % 6]), x + (k % 3 - 1) * 0.55, 0.4, z + Math.floor(k / 3) * 0.6)); }
+  for (let i = 0; i < 12; i++) { const a = i * 0.52 + 0.2; if (dEnt(a) < 0.45) continue; const [x, z] = P(R + 2.2 + (i % 3), a), t = new THREE.Group(); t.position.set(x, 0, z); sc.add(t);
+    t.add(lbM(new THREE.CylinderGeometry(0.28, 0.34, 1.8, 8), toon('#8a5a3a'), 0, 0.9, 0)); const col = i % 2 ? '#4fb35a' : '#6fcf6a'; t.add(lbM(new THREE.SphereGeometry(1.4, 10, 8), toon(col), 0, 2.5, 0)); t.add(lbM(new THREE.SphereGeometry(1.0, 10, 8), toon(col), 0.6, 3.4, 0.3)); tr(x, z, 0.9); }
+}
+function lbPark2Anim(dt) {
+  if (LB.roundA) LB.roundA.rotation.y += dt * 1.1;
+  if (LB.springs) LB.springs.forEach(t => { t.rotation.z = Math.sin(T * 2.6 + t.userData.k) * 0.28; });
+}
 // ================= 🏃 parkour: climb the coloured blocks to the top and race the clock =================
 const PK = { x: 0, z: -62 };
 let PK_PL = [];
@@ -6028,6 +6082,7 @@ function lbBuildParkour() {
   for (const [dx, dz] of [[-6, 4], [18, -9], [6, -13]]) { if (PK_PL.some(p => Math.hypot(p[0] - dx, p[1] - dz) < p[2] + 3.2)) continue; const t = new THREE.Group(); t.position.set(PK.x + dx, 0, PK.z + dz); sc.add(t); t.add(lbM(new THREE.CylinderGeometry(0.25, 0.3, 1.6, 8), toon('#8a5a3a'), 0, 0.8, 0)); t.add(lbM(new THREE.SphereGeometry(1.2, 10, 8), toon('#4fb35a'), 0, 2.2, 0)); (LB.trees = LB.trees || []).push([PK.x + dx, PK.z + dz, 0.8]); }
 }
 function lbPkUpdate(me, dt) {
+  lbPark2Anim(dt);
   if (!LB.pk || LB.where !== 'town') return;
   if (LB.pkFlag) LB.pkFlag.rotation.y = Math.sin(T * 3) * 0.4; if (LB.pkCup) LB.pkCup.rotation.y += dt;
   const R = LB.pkRun, i = lbPkIndexUnder(me), last = LB.pk.length - 1;
