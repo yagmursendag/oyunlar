@@ -3606,11 +3606,32 @@ function sxParse(str) {
   if (!sxFreeOutfit(L.outfit)) return null;
   return Object.fromEntries(SX_KEYS.map(k => [k, L[k]]));
 }
+// everything in the 🆕 Yeni tab lasts 3 days, then new outfits take its place (bought ones stay in the wardrobe)
+const SX_LIFE = 3 * 86400000;
+const SX_OUT = { dress: 'Elbise', tshirt: 'Tişört', overalls: 'Tulum', apron: 'Önlük', gown: 'Prenses Elbisesi', tutu: 'Tütü', tracksuit: 'Eşofman', pajamas: 'Pijama', raincoat: 'Yağmurluk', hero: 'Kahraman Kıyafeti', jacket: 'Ceket', sweater: 'Kazak' };
+const SX_COL = ['Pembe', 'Mor', 'Yeşil', 'Turuncu', 'Mavi', 'Kırmızı', 'Turkuaz', 'Siyah'], SX_PAT = { plain: '', stripes: 'Çizgili', dots: 'Puantiyeli', hearts: 'Kalpli', stars: 'Yıldızlı' };
+let SX_AUTO = null;
+function sxAuto() {
+  const per = Math.floor(Date.now() / SX_LIFE); if (SX_AUTO && SX_AUTO.per === per) return SX_AUTO.list; SX_AUTO = { per, list: sxAutoMake(per) }; return SX_AUTO.list;
+}
+function sxAutoMake(per) {
+  let sd = (per * 2654435761 + 12345) % 2147483647 || 1; const rnd = n => Math.floor((sd = sd * 48271 % 2147483647) / 2147483647 * n);
+  const outs = Object.keys(SX_OUT).filter(sxFreeOutfit), list = [], seen = new Set();
+  for (let i = 0; list.length < 8 && i < 60; i++) {
+    const outfit = outs[rnd(outs.length)], ci = rnd(AV.cloth.length), pattern = AV.pattern[rnd(AV.pattern.length)], hat = rnd(3) ? 'none' : AV.hat[1 + rnd(AV.hat.length - 1)], shoe = AV.shoe[rnd(AV.shoe.length)], glasses = rnd(4) ? 'none' : AV.glasses[1 + rnd(AV.glasses.length - 1)];
+    const key = outfit + ci + pattern; if (seen.has(key)) continue; seen.add(key);
+    const p = 300 + rnd(12) * 100 + (hat !== 'none' ? 200 : 0) + (glasses !== 'none' ? 100 : 0) + (pattern !== 'plain' ? 150 : 0);
+    list.push({ id: 'r' + per.toString(36) + list.length, n: (SX_COL[ci] + ' ' + SX_PAT[pattern] + ' ' + SX_OUT[outfit]).replace('  ', ' '), p, o: { outfit, cloth: AV.cloth[ci], pattern, hat, shoe, glasses }, t: per * SX_LIFE, auto: 1 });
+  }
+  return list;
+}
 function sxItems() {
+  const now = Date.now(), live = x => !x.t || x.auto || now - x.t < SX_LIFE; // shared items start counting when they are put in the shop
   const mine = rich() && profile && Array.isArray(profile.myShop) ? profile.myShop.map(x => ({ ...x, local: true })) : [];
   const ids = new Set(SHOPX.list.map(x => x.id));
-  return [...mine.filter(x => !ids.has(x.id)), ...SHOPX.list].filter(x => x && x.o);
+  return [...mine.filter(x => !ids.has(x.id)), ...SHOPX.list].filter(x => x && x.o && live(x)).concat(sxAuto());
 }
+function sxLeft(it) { const d = Math.max(1, Math.ceil((it.t + SX_LIFE - Date.now()) / 86400000)); return '⏳ ' + d + ' gün kaldı'; }
 async function shopxLoad() {
   if (SHOPX.busy) return; SHOPX.busy = true; SHOPX.err = '';
   try {
@@ -3643,7 +3664,7 @@ function drawNewTab() {
     ctx.fillStyle = '#ffffff'; ctx.strokeStyle = 'rgba(214,51,127,.3)'; ctx.lineWidth = 3; rr(x, y, w, 440, 22); ctx.fill(); ctx.stroke();
     const c = sxChar(it); drawHead(c, x + w / 2, y + 62, 0.4, { body: () => drawBody(c, 0, 1), mood: 1 });
     text(it.n, x + w / 2, y + 336, 22, '#3a2340', 'center', 800);
-    text(it.local ? '📍 Sadece bu cihazda' : '🆕 Yeni', x + w / 2, y + 360, 15, it.local ? '#c27a1a' : '#23884f', 'center', 700);
+    text((it.local ? '📍 Bu cihazda • ' : '🆕 ') + (it.t ? sxLeft(it) : 'Yeni'), x + w / 2, y + 362, 17, it.local ? '#c27a1a' : '#23884f', 'center', 800);
     if (own) { text('✅ Senin', x + 20, y + 410, 20, '#23884f', 'left', 800); btn(x + w - 112, y + 380, 96, 44, '👗 Giy', () => sxWear(inv.custom[it.id].o), { col: '#7fe0b8', size: 18 }); }
     else { const can = rich() || money >= it.p; text(fmt(it.p) + ' TL', x + 20, y + 410, 24, '#e8434f', 'left', 800); btn(x + w - 112, y + 380, 96, 44, rich() ? 'Al (admin)' : 'Al', () => sxBuy(it), { col: can ? '#27b36a' : '#c9c1c6', fg: '#ffffff', size: 18 }); }
     if (rich()) btn(x + w - 44, y + 6, 38, 38, '🗑️', () => sxDelete(it), { size: 18 });
