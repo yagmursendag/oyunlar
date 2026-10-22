@@ -4872,7 +4872,7 @@ function lbUpdate(dt) {
     else if (LB.target) { const dx = LB.target.x - me.position.x, dz = LB.target.z - me.position.z, d = Math.hypot(dx, dz); if (d < 0.3) LB.target = null; else { vx = dx / d; vz = dz / d; } }
   }
   if (LB.ride) { if (vx || vz) lbDismount(); else { vx = 0; vz = 0; } }
-  const spd = tired ? 2.4 : LB.fly ? 9 : LB.hop && LB.hop.on ? 2.4 : LB.swim ? 3.4 : 5.5;
+  const spd = tired ? 2.4 : LB.fly ? 9 : LB.hop && LB.hop.on ? 3 : LB.swim ? 3.4 : 5.5;
   me.position.x += vx * spd * dt; me.position.z += vz * spd * dt; LB.vel = [vx * spd, vz * spd];
   if (LB.where === 'town') { if (!(LB.fly && me.position.y > 4)) lbCollide(me.position); else { const hh = Math.hypot(me.position.x, me.position.z); if (hh > 95) { me.position.x *= 95 / hh; me.position.z *= 95 / hh; } } } else lbCollideRoom(me.position);
   if (vx || vz) { const ang = Math.atan2(vx, vz); me.rotation.y += Math.atan2(Math.sin(ang - me.rotation.y), Math.cos(ang - me.rotation.y)) * Math.min(1, dt * 12); }
@@ -6094,6 +6094,7 @@ function lbJumpUpdate(me, dt) {
 // ================= 🛝 bigger, prettier playground: fence + gate, sandbox, roundabout, spring riders, climbing dome, benches, trees =================
 function lbBuildPark2() {
   const [gx, gz] = ZONES[2], sc = LB.scene, R = 17.5, ent = Math.atan2(-gx, -gz), P = (r, a) => [gx + Math.sin(a) * r, gz + Math.cos(a) * r];
+  LB.p2 = { round: [gx + 9.5, gz + 6.5, 3.4], climb: [gx - 11.5, gz + 8, 3.5], sand: [gx + 10, gz - 5, 0], castles: [], box: null };
   const cl = ['#ff5fa2', '#ffd23f', '#5ac8ff', '#8be07e', '#b18cff', '#ff8a3d'], tr = (x, z, r) => (LB.trees = LB.trees || []).push([x, z, r]);
   const dEnt = a => Math.abs(((a - ent) % (Math.PI * 2) + Math.PI * 3) % (Math.PI * 2) - Math.PI);
   // soft rubber floor with coloured patches and a border ring
@@ -6116,7 +6117,7 @@ function lbBuildPark2() {
   { const g = new THREE.Group(); g.position.set(gx + 10, 0, gz - 5); sc.add(g);
     g.add(lbM(new THREE.BoxGeometry(5.2, 0.12, 5.2), toon('#f2d58a'), 0, 0.07, 0)); for (const [w, d, x, z] of [[5.6, 0.3, 0, -2.75], [5.6, 0.3, 0, 2.75], [0.3, 5.2, -2.75, 0], [0.3, 5.2, 2.75, 0]]) g.add(lbM(new THREE.BoxGeometry(w, 0.45, d), toon('#c98b5a'), x, 0.22, z));
     g.add(lbM(new THREE.CylinderGeometry(0.6, 0.8, 0.8, 10), toon('#e7c470'), -0.8, 0.5, 0.4)); g.add(lbM(new THREE.ConeGeometry(0.62, 0.7, 10), toon('#ff6fb5'), -0.8, 1.25, 0.4)); g.add(lbM(new THREE.CylinderGeometry(0.4, 0.5, 0.6, 10), toon('#e7c470'), 0.9, 0.4, -0.5));
-    g.add(lbM(new THREE.CylinderGeometry(0.3, 0.22, 0.4, 10), toon('#5ac8ff'), 1.4, 0.3, 1.2)); const sg = lbSignPlane('🏖️ Kum Havuzu', '#e0a02d', 3.0, 0.7); sg.position.set(0, 1.5, 2.9); g.add(sg); for (const sd of [-1.4, 1.4]) g.add(lbM(new THREE.CylinderGeometry(0.05, 0.05, 1.5, 6), toon('#8a5a3a'), sd, 0.75, 2.88)); }
+    LB.p2.box = g; g.add(lbM(new THREE.CylinderGeometry(0.3, 0.22, 0.4, 10), toon('#5ac8ff'), 1.4, 0.3, 1.2)); const sg = lbSignPlane('🏖️ Kum Havuzu', '#e0a02d', 3.0, 0.7); sg.position.set(0, 1.5, 2.9); g.add(sg); for (const sd of [-1.4, 1.4]) g.add(lbM(new THREE.CylinderGeometry(0.05, 0.05, 1.5, 6), toon('#8a5a3a'), sd, 0.75, 2.88)); }
   // roundabout (spins)
   { const g = new THREE.Group(); g.position.set(gx + 9.5, 0.2, gz + 6.5); sc.add(g); LB.roundA = g;
     for (let k = 0; k < 6; k++) g.add(lbM(new THREE.CylinderGeometry(2.2, 2.2, 0.16, 12, 1, false, k * Math.PI / 3, Math.PI / 3), toon(cl[k]), 0, 0.2, 0));
@@ -6127,7 +6128,7 @@ function lbBuildPark2() {
   LB.springs = [];
   [[-10, -6, 0], [-10, -2.6, 2], [-10, 0.8, 4]].forEach(([dx, dz, k]) => { const g = new THREE.Group(); g.position.set(gx + dx, 0, gz + dz); sc.add(g); g.add(lbM(new THREE.CylinderGeometry(0.4, 0.5, 0.1, 10), toon('#4a3a5a'), 0, 0.05, 0));
     const top = new THREE.Group(); g.add(top); top.add(lbM(new THREE.CylinderGeometry(0.1, 0.1, 0.9, 6), toon('#c0c0d0'), 0, 0.5, 0)); const hm = toon(cl[k % 6]); const b = lbM(new THREE.SphereGeometry(0.4, 10, 8), hm, 0, 1.1, 0); b.scale.set(1.5, 0.8, 0.7); top.add(b); top.add(lbM(new THREE.SphereGeometry(0.25, 10, 8), hm, 0.6, 1.4, 0)); top.add(lbM(new THREE.BoxGeometry(0.5, 0.08, 0.08), toon('#ffffff'), 0.4, 1.7, 0));
-    top.userData.k = k; LB.springs.push(top); tr(gx + dx, gz + dz, 0.6); });
+    top.userData.k = k; LB.springs.push(top); LB.p2['spring' + LB.springs.length] = [gx + dx, gz + dz, 1.4]; tr(gx + dx, gz + dz, 0.6); });
   // climbing dome
   { const dx = gx - 11.5, dz = gz + 8, g = new THREE.Group(); g.position.set(dx, 0, dz); sc.add(g);
     for (let i = 1; i <= 3; i++) { const r = Math.sqrt(2.25 * 2.25 - (i * 0.55) ** 2), t = lbM(new THREE.TorusGeometry(r, 0.05, 6, 24), toon(cl[i]), 0, i * 0.55, 0); t.rotation.x = Math.PI / 2; g.add(t); }
@@ -6142,8 +6143,9 @@ function lbBuildPark2() {
     t.add(lbM(new THREE.CylinderGeometry(0.28, 0.34, 1.8, 8), toon('#8a5a3a'), 0, 0.9, 0)); const col = i % 2 ? '#4fb35a' : '#6fcf6a'; t.add(lbM(new THREE.SphereGeometry(1.4, 10, 8), toon(col), 0, 2.5, 0)); t.add(lbM(new THREE.SphereGeometry(1.0, 10, 8), toon(col), 0.6, 3.4, 0.3)); tr(x, z, 0.9); }
 }
 function lbPark2Anim(dt) {
-  if (LB.roundA) LB.roundA.rotation.y += dt * 1.1;
-  if (LB.springs) LB.springs.forEach(t => { t.rotation.z = Math.sin(T * 2.6 + t.userData.k) * 0.28; });
+  const R = LB.ride;
+  if (LB.roundA) LB.roundA.rotation.y += dt * (R && R.kind === 'round' ? 2.6 : 1.1);
+  if (LB.springs) LB.springs.forEach((t, i) => { t.rotation.z = Math.sin(T * (R && R.kind === 'spring' && R.i === i ? 4 : 2.6) + t.userData.k) * (R && R.kind === 'spring' && R.i === i ? 0.5 : 0.28); });
 }
 // ================= 🏃 parkour: climb the coloured blocks to the top and race the clock =================
 const PK = { x: 0, z: -62 };
@@ -6791,18 +6793,32 @@ function lbBuildPark() {
   const [sx, sz] = [LB.hopSq[0][0] - 1.6, LB.hopSq[0][1]]; const s = lbSignPlane('🎯 Seksek', '#ff8a1f', 2.6, 0.55); s.position.set(sx, 1.6, sz); s.rotation.y = Math.PI / 2; sc.add(s);
 }
 // riding (slide / swing / seesaw): the position follows the toy until you walk or press Dur
+function lbRide2(me, R) {
+  const v = tv3(), p2 = LB.p2;
+  if (R.kind === 'round') { const a = R.i * Math.PI / 2, g = LB.roundA; g.localToWorld(v.set(Math.cos(a) * 1.5, 0.35, Math.sin(a) * 1.5)); me.position.copy(v); me.rotation.y = Math.atan2(p2.round[0] - v.x, p2.round[1] - v.z); if (R.t > 22) lbDismount(); }
+  else if (R.kind === 'spring') { const t = LB.springs[R.i]; t.localToWorld(v.set(0, 1.55, 0)); me.position.copy(v); me.rotation.y = Math.PI / 2 + t.parent.rotation.y; if (R.t > 25) lbDismount(); }
+  else if (R.kind === 'climb') { const c = p2.climb, p = Math.min(1, R.t / 3.2), th = p * Math.PI / 2, r = 2.3 * Math.cos(th) + 0.1; me.position.set(c[0] + r, 2.3 * Math.sin(th) + 0.05, c[1]); me.rotation.y = -Math.PI / 2; if (R.t > 3.2 && !R.top) { R.top = 1; sfx('done'); say('🧗 Zirvedesin! Yaşasın!'); sparkle(640, 300, 16); } if (R.t > 6) lbDismount(); }
+  else { const c = p2.sand; me.position.set(c[0] + 0.3 + Math.sin(R.t * 3) * 0.1, 0.12, c[1] - 0.4); me.rotation.y = 0; if (R.t > 4.5) { lbSandCastle(); lbDismount(); } }
+}
+function lbSandCastle() {
+  const p2 = LB.p2, g = new THREE.Group(), cs = ['#e7c470', '#f2d58a', '#d9b25a']; g.position.set(p2.sand[0] + (Math.random() - 0.5) * 3.6, 0.12, p2.sand[1] + (Math.random() - 0.5) * 3.6); LB.scene.add(g);
+  g.add(lbM(new THREE.CylinderGeometry(0.45, 0.55, 0.6, 10), toon(cs[0]), 0, 0.3, 0)); g.add(lbM(new THREE.CylinderGeometry(0.28, 0.35, 0.5, 10), toon(cs[1]), 0, 0.85, 0)); g.add(lbM(new THREE.ConeGeometry(0.3, 0.4, 10), toon('#ff6fb5'), 0, 1.3, 0));
+  p2.castles.push(g); if (p2.castles.length > 6) LB.scene.remove(p2.castles.shift()); sfx('done'); sparkle(640, 330, 14); say('🏰 Kum kalen hazır! (' + p2.castles.length + ' kale)');
+}
 function lbParkStart(kind, i = 0) {
   if (LB.ride || scene !== 'lobby' || !LB.me) return; LB.fly = false; LB.target = null; LB.jumpV = 0; lbUndisguise(LB.me.userData.A);
   LB.ride = { kind, i, t: 0 }; lbAction(LB.me, 'sit'); questEvent('park'); sfx('pop');
-  say(kind === 'slide' ? '🛝 Wiii!' : kind === 'swing' ? '🎠 Sallanıyorsun! Bırakmak için Dur ya da yürü' : '⚖️ Tahterevalli! Bırakmak için Dur ya da yürü');
+  say(kind === 'round' ? '🌀 Dönence dönüyor! Bırakmak için Dur ya da yürü' : kind === 'spring' ? '🐴 Hop hop! Bırakmak için Dur ya da yürü' : kind === 'climb' ? '🧗 Tırmanıyorsun...' : kind === 'sand' ? '🏖️ Kum kale yapıyorsun...' : kind === 'slide' ? '🛝 Wiii!' : kind === 'swing' ? '🎠 Sallanıyorsun! Bırakmak için Dur ya da yürü' : '⚖️ Tahterevalli! Bırakmak için Dur ya da yürü');
 }
 function lbDismount() {
   const R = LB.ride; if (!R) return; LB.ride = null; lbActEnd(LB.me.userData.A);
   if (LUNA_EXIT[R.kind]) { const e = LUNA_EXIT[R.kind](); LB.me.position.set(e[0], 0, e[1]); }
   if (R.kind === 'swing') { const s = LB.swings[R.i]; LB.me.position.set(s.position.x, LB.me.position.y, s.position.z + 2.6); }
+  { const C = LB.p2 && LB.p2[R.kind === 'spring' ? 'spring' + (R.i + 1) : R.kind]; if (C) { const m = LB.me.position; let dx = m.x - C[0], dz = m.z - C[1]; const d = Math.hypot(dx, dz) || 1; if (!C[2]) { m.y = 0; } else { m.set(C[0] + dx / d * C[2], 0, C[1] + dz / d * C[2]); } LB.jumpV = 0; } }
 }
 function lbRide(me, dt) {
   const R = LB.ride; if (!R) return; R.t += dt; const [gx, gz] = ZONES[2];
+  if (['round', 'spring', 'climb', 'sand'].includes(R.kind)) return lbRide2(me, R);
   if (R.kind === 'slide') { const p = Math.min(1, R.t / 1.3), e = p * p * (3 - 2 * p); me.position.set(gx - 5, 2.35 - 2.25 * e, gz - 2.5 + 3.0 * e); me.rotation.y = 0; if (p >= 1) lbDismount(); }
   else if (R.kind === 'swing') { const s = LB.swings[R.i], a = s.rotation.x; me.position.set(s.position.x, s.position.y - 2 * Math.cos(a) - 0.05, s.position.z - 2 * Math.sin(a)); me.rotation.y = 0; }
   else if (R.kind === 'seesaw') { const ss = LB.seesaw, a = ss.rotation.z, lx = -1.7, ly = 0.3; me.position.set(ss.position.x + lx * Math.cos(a) - ly * Math.sin(a), ss.position.y + lx * Math.sin(a) + ly * Math.cos(a) - 0.05, ss.position.z); me.rotation.y = Math.PI / 2; }
@@ -6813,6 +6829,7 @@ function lbParkUpdate(me, dt) {
   const [gx, gz] = ZONES[2];
   if (!LB.ride) {
     let best = 3.2; const cand = [['slide', 0, gx - 5, gz - 2, '🛝 Kay'], ['swing', 0, LB.swings[0].position.x, gz + 3.2, '🎠 Salıncağa bin'], ['swing', 1, LB.swings[1].position.x, gz + 3.2, '🎠 Salıncağa bin'], ['seesaw', 0, gx + 1, gz - 5, '⚖️ Tahterevalli']];
+    if (LB.p2) { const P2 = LB.p2; cand.push(['round', 0, P2.round[0], P2.round[1], '🌀 Dönence\'ye bin'], ['climb', 0, P2.climb[0], P2.climb[1], '🧗 Kubbeye tırman'], ['sand', 0, P2.sand[0], P2.sand[1], '🏖️ Kumda kale yap']); [1, 2, 3].forEach(k => P2['spring' + k] && cand.push(['spring', k - 1, P2['spring' + k][0], P2['spring' + k][1], '🐴 Yaylı ata bin'])); }
     for (const [kind, i, x, z, label] of cand) { const d = Math.hypot(me.position.x - x, me.position.z - z); if (d < best) { best = d; LB.parkNear = { kind, i, label }; } }
   }
   // hopscotch: jump from square to square in number order (slow walking while you play)
@@ -6821,8 +6838,9 @@ function lbParkUpdate(me, dt) {
   if (!h.on) { h.on = true; h.next = 0; say('🎯 Seksek! Kareleri 1\'den başlayarak sırayla zıpla'); }
   const air = me.position.y > 0.12;
   if (h.air && !air) {
-    const i = H.findIndex(q => Math.abs(me.position.x - q[0]) < 0.85 && Math.abs(me.position.z - q[1]) < 0.85);
-    if (i === h.next) { h.next++; sfx('coin'); if (h.next >= H.length) { money += 10; save(); questEvent('park'); sparkle(640, 300, 28); sfx('done'); say('🏆 Seksek bitti! +10 TL'); questEvent('hop'); h.next = 0; } }
+    let i = -1, bd = 1.05; H.forEach((q, k) => { const d = Math.hypot(me.position.x - q[0], me.position.z - q[1]); if (d < bd) { bd = d; i = k; } });
+    if (i >= 0 && i === h.next - 1) { /* same square again */ }
+    else if (i === h.next) { h.next++; sfx('coin'); if (h.next >= H.length) { money += 10; save(); questEvent('park'); sparkle(640, 300, 28); sfx('done'); say('🏆 Seksek bitti! +10 TL'); questEvent('hop'); h.next = 0; } }
     else if (h.next > 0) { h.next = 0; sfx('no'); say('Olmadı! Yeniden 1. kareden başla'); }
   }
   h.air = air;
