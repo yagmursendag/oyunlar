@@ -257,7 +257,7 @@ function lbHold(e, ms) {
   spr.scale.set(0.8, 0.8, 1); spr.position.set(0, -0.8, 0.2); A.arms[1].add(spr); A.heldSpr = spr; LB.heldE = e;
   if (ms) setTimeout(() => { if (A.heldSpr === spr) lbUnhold(); }, ms);
 }
-const SHOP_TABS = [['sale', '🏷️ İndirim'], ['clothes', '👗 Kıyafet'], ['polish', '💅 Ojeler'], ['makeup', '💄 Makyaj'], ['care', '🧴 Krem'], ['tools', '🧰 Aletler'], ['jewels', '💍 Takılar'], ['decor', '🪄 Süsler'], ['pets', '🐾 Hayvanlar'], ['bags', '🎒 Çanta'], ['new', '🆕 Yeni'], ['special', '👑 Özel']];
+const SHOP_TABS = [['sale', '🏷️ İndirim'], ['clothes', '👗 Kıyafet'], ['polish', '💅 Ojeler'], ['makeup', '💄 Makyaj'], ['care', '🧴 Krem'], ['tools', '🧰 Aletler'], ['jewels', '💍 Takılar'], ['decor', '🪄 Süsler'], ['pets', '🐾 Hayvanlar'], ['bags', '🎒 Çanta'], ['houses', '🏡 Evler'], ['new', '🆕 Yeni'], ['special', '👑 Özel']];
 const SHOP = [
   ...NAIL_COLS.map(([id]) => ({ tab: 'polish', kind: 'polish', id, price: POLISH_PRICE })),
   { tab: 'care', kind: 'cream', id: 'cream', name: 'El kremi', price: CREAM_PRICE, desc: 'Bir tüpte 5 fıs' },
@@ -3292,12 +3292,13 @@ function drawShop() {
   ctx.fillStyle = 'rgba(255,255,255,.6)'; for (let x = 40; x < W; x += 110) for (let y = 40; y < H; y += 110) star4(x + (Math.floor(y / 110) % 2) * 55, y, 6);
   text('🛍️ Mağaza', 50, 66, 44, '#d6337f', 'left', 800);
   moneyPill(1030, 22);
-  SHOP_TABS.forEach(([id, label], i) => btn(50 + i * 98, 92, 93, 50, label, () => { shopTab = id; shopPage = 0; if (id === 'new') { newPage = 0; shopxLoad(); questEvent('newtab'); } }, { active: shopTab === id, col: id === 'sale' && shopTab !== id ? '#ffd6d6' : shopTab !== id && id === 'new' ? '#d6f5e3' : undefined, size: TOUCH ? 13 : 12 }));
+  SHOP_TABS.forEach(([id, label], i) => btn(50 + i * 92, 92, 88, 50, label, () => { shopTab = id; shopPage = 0; if (id === 'new') { newPage = 0; shopxLoad(); questEvent('newtab'); } }, { active: shopTab === id, col: id === 'sale' && shopTab !== id ? '#ffd6d6' : shopTab !== id && id === 'new' ? '#d6f5e3' : undefined, size: TOUCH ? 13 : 12 }));
   ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#5aa9ff'; ctx.lineWidth = 3; rr(810, 22, 200, 48, 24); ctx.fill(); ctx.stroke(); text(`💎 ${gemCash()}`, 910, 55, 24, '#2d6fd6', 'center', 800);
   if (shopTab === 'special') drawSpecial();
   if (shopTab === 'sale') drawSale();
   if (shopTab === 'new') drawNewTab();
-  const list = shopTab === 'special' || shopTab === 'sale' || shopTab === 'new' ? [] : SHOP.filter(it => it.tab === shopTab), pages = shopTab === 'sale' ? Math.ceil(SHOP.filter(it => it.tab === 'sale').length / 4) : Math.ceil(list.length / 12);
+  if (shopTab === 'houses') drawHousesTab();
+  const list = shopTab === 'special' || shopTab === 'sale' || shopTab === 'new' || shopTab === 'houses' ? [] : SHOP.filter(it => it.tab === shopTab), pages = shopTab === 'houses' ? Math.ceil(HOUSES.length / 4) : shopTab === 'sale' ? Math.ceil(SHOP.filter(it => it.tab === 'sale').length / 4) : Math.ceil(list.length / 12);
   if (shopPage >= pages) shopPage = 0;
   if (pages > 1) {
     btn(810, 636, 60, 56, '◀', () => { shopPage = (shopPage + pages - 1) % pages; }, { size: 24 });
@@ -3325,7 +3326,7 @@ function drawShop() {
       btn(x + w / 2 + 2, y + 176, w / 2 - 10, 36, `${fmt(it.gems)} 💎`, () => buy(it, true), { col: rich() || (inv.gems || 0) >= it.gems ? '#2d6fd6' : '#c9c1c6', fg: '#ffffff', size: 13 });
     } else btn(x + 14, y + 176, w - 28, 36, `Al • ${fmt(it.price)} TL`, () => buy(it), { col: rich() || money >= it.price ? '#27b36a' : '#c9c1c6', fg: '#ffffff', size: it.price >= 100000 ? 14 : 17 });
   });
-  fitText(shopTab === 'bags' ? `Sırt çantanda ${bagUsed()}/${bagCap()} yer dolu. Yiyecekler ve eşyalar çantana girer.` : shopTab === 'sale' ? 'Sadece şimdi: kıyafet ve hayvanlarda %50 indirim! Sayfaları ◀ ▶ ile çevir 🏷️' : shopTab === 'clothes' ? 'Aldığın kıyafeti 🎨 Karakterim > Kıyafet bölümünden giy 👗' : shopTab === 'pets' ? 'Aldığın hayvanı 🎨 Karakterim > Aksesuar bölümünden seç. Tavşan hediye!' : shopTab === 'special' ? 'Çok özel, çok pahalı! Işıl ışıl parlayan bir kıyafet 👑' : shopTab === 'makeup' ? 'Ruj ve yüz boyası 2, kirpik kıvırıcı 4; diğerleri 3 müşteride biter. Maskara ve kıvırıcı gözde basılı tutulur!' : shopTab === 'polish' ? `Bir oje ${POLISH_PRICE} TL, ${POLISH_USES} müşteride biter.` : shopTab === 'care' ? `Bir krem ${CREAM_PRICE} TL, içinde 5 fıs var. Bir sticker paketi ${STICKER_USES} müşteride biter.` : 'Bir kere al, hep senin!', 50, 668, 20, 740, '#6b5a70', 700);
+  fitText(shopTab === 'bags' ? `Sırt çantanda ${bagUsed()}/${bagCap()} yer dolu. Yiyecekler ve eşyalar çantana girer.` : shopTab === 'sale' ? 'Sadece şimdi: kıyafet ve hayvanlarda %50 indirim! Sayfaları ◀ ▶ ile çevir 🏷️' : shopTab === 'clothes' ? 'Aldığın kıyafeti 🎨 Karakterim > Kıyafet bölümünden giy 👗' : shopTab === 'pets' ? 'Aldığın hayvanı 🎨 Karakterim > Aksesuar bölümünden seç. Tavşan hediye!' : shopTab === 'houses' ? 'Tek katlı evler TL, iki katlı evler 💎 ile. Evine 🏠 Evim\'den gir; evleri markette de bulabilirsin 🛒' : shopTab === 'special' ? 'Çok özel, çok pahalı! Işıl ışıl parlayan bir kıyafet 👑' : shopTab === 'makeup' ? 'Ruj ve yüz boyası 2, kirpik kıvırıcı 4; diğerleri 3 müşteride biter. Maskara ve kıvırıcı gözde basılı tutulur!' : shopTab === 'polish' ? `Bir oje ${POLISH_PRICE} TL, ${POLISH_USES} müşteride biter.` : shopTab === 'care' ? `Bir krem ${CREAM_PRICE} TL, içinde 5 fıs var. Bir sticker paketi ${STICKER_USES} müşteride biter.` : 'Bir kere al, hep senin!', 50, 668, 20, 740, '#6b5a70', 700);
   btn(1030, 636, 200, 56, shopFrom === 'title' ? '⬅ Geri' : '⬅ Salona dön', () => go(shopFrom), { col: '#ff5fa2', fg: '#ffffff', size: 22 });
 }
 function drawVisit() {
@@ -3655,6 +3656,27 @@ function sxBuy(it) {
   questEvent('shop'); questEvent('shop3'); save(); sfx('done'); sparkle(ptr.x, ptr.y, 30); say(it.n + ' senin! 🎉 Giymek için "Giy" düğmesine bas');
 }
 function sxWear(o) { questEvent('newwear'); profile.look = normLook({ ...profile.look, ...o }); save(); sfx('done'); sparkle(ptr.x, ptr.y, 16); say('Giydin! ✨'); }
+function drawHousesTab() {
+  ctx.fillStyle = 'rgba(255,255,255,.55)'; rr(50, 156, 1180, 470, 28); ctx.fill();
+  const cur = houseCur().id;
+  HOUSES.slice(shopPage * 4, shopPage * 4 + 4).forEach((h, i) => {
+    const x = 70 + i * 288, y = 172, w = 268, own = houseOwn(h), two = h.floors === 2;
+    ctx.fillStyle = '#ffffff'; ctx.strokeStyle = cur === h.id ? '#2fbf71' : 'rgba(214,51,127,.3)'; ctx.lineWidth = 3; rr(x, y, w, 440, 22); ctx.fill(); ctx.stroke();
+    // a little picture of the house
+    const hx = x + w / 2, gy = y + 250, hh = two ? 130 : 80, hw2 = 80;
+    ctx.fillStyle = '#bfe8a0'; rr(x + 14, gy - 4, w - 28, 24, 12); ctx.fill();
+    ctx.fillStyle = h.wall; ctx.strokeStyle = '#a07a60'; ctx.lineWidth = 3; ctx.fillRect(hx - hw2, gy - hh, hw2 * 2, hh); ctx.strokeRect(hx - hw2, gy - hh, hw2 * 2, hh);
+    if (two) { ctx.beginPath(); ctx.moveTo(hx - hw2, gy - hh / 2); ctx.lineTo(hx + hw2, gy - hh / 2); ctx.stroke(); }
+    ctx.fillStyle = '#e8434f'; ctx.beginPath(); ctx.moveTo(hx - hw2 - 14, gy - hh); ctx.lineTo(hx, gy - hh - 52); ctx.lineTo(hx + hw2 + 14, gy - hh); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#8b5cf6'; ctx.fillRect(hx - 12, gy - 38, 24, 38); ctx.fillStyle = '#bfe9ff'; for (const dx of [-52, 30]) { ctx.fillRect(hx + dx, gy - hh + (two ? hh / 2 : 0) + 14, 22, 22); if (two) ctx.fillRect(hx + dx, gy - 40, 22, 22); }
+    text(h.icon + ' ' + h.name, hx, y + 300, 22, '#3a2340', 'center', 800);
+    text(two ? '🏘️ 2 katlı' : '🏠 1 katlı', hx, y + 328, 17, '#6b5a70', 'center', 700);
+    fitText(h.desc, x + 16, y + 356, 14, w - 32, '#6b5a70', 700);
+    if (cur === h.id) text('✅ Oturuyorsun', hx, y + 410, 20, '#23884f', 'center', 800);
+    else if (own) btn(x + 24, y + 380, w - 48, 44, '🔑 Taşın', () => houseAct(h.id), { col: '#8b5cf6', fg: '#ffffff', size: 19 });
+    else { const can = rich() || (h.gems ? (inv.gems || 0) >= h.gems : money >= h.tl); btn(x + 24, y + 380, w - 48, 44, rich() ? 'Al (admin)' : 'Al • ' + (h.gems ? fmt(h.gems) + ' 💎' : fmt(h.tl) + ' TL'), () => houseAct(h.id), { col: can ? (h.gems ? '#2d6fd6' : '#27b36a') : '#c9c1c6', fg: '#ffffff', size: 19 }); }
+  });
+}
 function drawNewTab() {
   const items = sxItems(), per = 4, pages = Math.max(1, Math.ceil(items.length / per)); if (newPage >= pages) newPage = 0;
   ctx.fillStyle = 'rgba(255,255,255,.55)'; rr(50, 156, 1180, 470, 28); ctx.fill();
@@ -5501,6 +5523,7 @@ const HOUSES = [
 const houseCur = () => HOUSES.find(h => h.id === (profile && profile.house)) || HOUSES[0];
 const houseOwn = h => h.id === 'small' || rich() || (inv.houses || []).includes(h.id);
 function lbRebuildHome() {
+  if (!LB.rooms || !LB.scene) return;
   for (const id of ['home', 'home2']) if (LB.rooms[id]) { LB.scene.remove(LB.rooms[id].g); delete LB.rooms[id]; }
   lbBuildHome(); if (houseCur().floors === 2) lbBuildHome2();
 }
@@ -5512,7 +5535,7 @@ function houseAct(id) {
     inv.houses.push(h.id); questEvent('shop'); sparkle(640, 300, 30); sfx('done');
   } else if (profile.house === h.id) return;
   else if (rich() && !inv.houses.includes(h.id)) inv.houses.push(h.id);
-  profile.house = h.id; save(); lbRebuildHome(); sfx('done'); say(h.icon + ' ' + h.name + ' artık senin evin! Evim\'e girince görürsün 🏡'); showHouses();
+  profile.house = h.id; save(); lbRebuildHome(); sfx('done'); say(h.icon + ' ' + h.name + ' artık senin evin! Evim\'e girince görürsün 🏡'); if (scene === 'lobby') showHouses();
 }
 function showHouses() {
   const cur = houseCur().id;
