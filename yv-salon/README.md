@@ -105,3 +105,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v95 | versions/v95-pahali-evler.html | 🏡 Evler pahalı oldu: tek katlılar 25.000–800.000 TL, iki katlılar 400.000–2.000.000 TL + elmas |
 | v96 | versions/v96-ev-duzenle.html | 🛠️ Evi düzenle: mobilya al/yerleştir/döndür/sat; evdeki eşyalar işlevli (gardırop, TV, koltuk, kitaplık, piyano, akvaryum, şömine, yatak, ocak, dolap) |
 | v97 | versions/v97-parkur-engeller.html | 🏃 Parkurda her gün farklı engeller: döner çubuk, kayan top, kayan duvar, dikenler (çarpınca bir önceki bloğa dönersin) |
+| v98 | versions/v98-eve-isinlan.html | 🏠 Eve ışınlan butonu (şehirde, market ve hastanede sağ üstte) |

@@ -7276,7 +7276,13 @@ function lbLunaStart(kind) {
   lbLunaSeats(kind).forEach((o, k) => { o.getWorldPosition(v); const d = kind === 'wheel' ? v.y : Math.hypot(v.x - me.position.x, v.z - me.position.z); if (d < best) { best = d; i = k; } });
   LB.fly = false; LB.target = null; LB.jumpV = 0; lbUndisguise(me.userData.A); LB.ride = { kind, i, t: 0 }; lbAction(me, 'sit'); questEvent('park'); sfx('done'); say(`${LUNA_NAME[kind]}! İyi eğlenceler 🎉`);
 }
+function lbTeleHome() {
+  if (LB.ride || LB.sleepT > 0 || !LB.me) return;
+  if (LB.where === 'market' && LB.basket.length) { sfx('no'); return say('Ödemeden çıkamazsın! 💳 Kasaya git ya da sepeti boşalt'); }
+  LB.pkRun = null; LB.fly = false; LB.jumpV = 0; LB.me.position.y = 0; LB.where = 'town'; sparkle(640, 360, 24); lbGoInside('home'); say('✨ Eve ışınlandın! 🏡');
+}
 function drawLunaUi() {
+  if (scene === 'lobby' && LB.me && !LB.ride && !LB.edit && !CK && !FG && !(LB.sleepT > 0) && !String(LB.where).startsWith('home')) btn(1062, 288, 200, 48, '🏠 Eve ışınlan', lbTeleHome, { col: '#ffe36e', size: 18 });
   if (scene === 'lobby' && LB.where === 'town' && LB.pkRun) { ctx.fillStyle = 'rgba(255,255,255,.94)'; rr(520, 16, 240, 50, 25); ctx.fill(); ctx.strokeStyle = '#ff5fa2'; ctx.lineWidth = 3; ctx.stroke(); text('⏱️ ' + LB.pkRun.t.toFixed(1) + ' sn' + (profile.pkBest ? '  🥇' + profile.pkBest : ''), 640, 50, 22, '#3a2340', 'center', 800); btn(930, 590, 190, 52, '🏁 Başa dön', lbPkReset, { size: 18 }); }
   if (LB.sleepT > 0 && scene === 'lobby') { ctx.fillStyle = `rgba(20,20,60,${Math.min(0.85, 0.3 + (4 - LB.sleepT) * 0.2)})`; ctx.fillRect(0, 0, W, H); for (let i = 0; i < 3; i++) text('Z', 640 + i * 40 + Math.sin(T * 2 + i) * 10, 360 - i * 40 - ((T * 30) % 40), 40 + i * 12, '#ffffff', 'center', 800); text('😴 Uyuyorsun...', 640, 470, 30, '#ffffff', 'center', 800); return; }
   if (CK && scene === 'lobby') return ckDraw();
