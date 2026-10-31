@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="theme-color" content="#14161f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>Ok Çıkar</title>
+<style>
+  :root { --bg:#14161f; --panel:#1e2130; --text:#eef0f7; --muted:#8b90a8; --accent:#ffb84d; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:system-ui,Segoe UI,sans-serif;
+         min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:12px 16px; user-select:none; }
+  header { width:100%; max-width:640px; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  h1 { font-size:20px; margin:0; letter-spacing:.5px; }
+  .stat { font-size:15px; color:var(--muted); }
+  .stat b { color:var(--text); }
+  #lives { font-size:20px; letter-spacing:2px; }
+  .wrap { position:relative; }
+  canvas { background:var(--panel); border-radius:16px; touch-action:manipulation; display:block; }
+  .bar { display:flex; gap:10px; margin-top:12px; }
+  button { background:var(--panel); color:var(--text); border:1px solid #333853; padding:10px 18px; border-radius:10px;
+           font-size:15px; cursor:pointer; }
+  button:hover { border-color:var(--accent); }
+  #overlay { position:absolute; inset:0; background:rgba(20,22,31,.88); border-radius:16px; display:none;
+             flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center; }
+  #overlay h2 { margin:0; font-size:28px; }
+  #overlay p { margin:0; color:var(--muted); }
+  #overlay button { background:var(--accent); color:#1a1a1a; border:none; font-weight:600; }
+</style>
+</head>
+<body>
+<header>
+  <h1>➜ Ok Çıkar</h1>
+  <div class="stat">Seviye <b id="lvl">1</b> · Puan <b id="score">0</b> · <span id="lives"></span></div>
+</header>
+<div class="wrap">
+  <canvas id="c"></canvas>
+  <div id="overlay"><h2 id="ot"></h2><p id="op"></p><button id="ob"></button></div>
+</div>
+<div class="bar">
+  <button id="hint">💡 İpucu (<span id="hc">3</span>)</button>
+  <button id="theme">🎨 Tema</button>
+  <button id="restart">↺ Yeniden</button>
+</div>
+
+<script>
+const DIRS = [[0,-1],[1,0],[0,1],[-1,0]];            // yukarı, sağ, aşağı, sol
+const THEMES = [
+  { name:'Gece',   bg:'#14161f', panel:'#1e2130', text:'#eef0f7', muted:'#8b90a8', accent:'#ffb84d', tile:'rgba(255,255,255,.05)',
+    colors:['#ff6b6b','#4dd0e1','#ffd54f','#81c784','#ba68c8','#ff8a65','#64b5f6'] },
+  { name:'Okyanus', bg:'#0b1d2e', panel:'#12304a', text:'#e8f4ff', muted:'#7fa3c0', accent:'#4dd0e1', tile:'rgba(255,255,255,.06)',
+    colors:['#4dd0e1','#80deea','#4fc3f7','#26c6da','#b2ebf2','#64b5f6','#a7ffeb'] },
+  { name:'Orman',  bg:'#101a12', panel:'#1b2b1f', text:'#eaf5ea', muted:'#86a58b', accent:'#aed581', tile:'rgba(255,255,255,.05)',
+    colors:['#aed581','#81c784','#dce775','#ffd54f','#a1887f','#4db6ac','#ff8a65'] },
+  { name:'Gün batımı', bg:'#25131f', panel:'#3a1f30', text:'#fff0f3', muted:'#c093a5', accent:'#ff8a65', tile:'rgba(255,255,255,.06)',
+    colors:['#ff8a65','#ff6b6b','#ffb74d','#f06292','#ba68c8','#ffd54f','#ff7043'] },
+  { name:'Açık',   bg:'#f2f3f8', panel:'#ffffff', text:'#1f2233', muted:'#6b7090', accent:'#5c6bc0', tile:'rgba(0,0,0,.05)',
+    colors:['#e53935','#1e88e5','#fb8c00','#43a047','#8e24aa','#00897b','#6d4c41'] },
+];
+let themeIdx = 0, theme = THEMES[0];
+try { themeIdx = (+localStorage.getItem('okcikar-theme') || 0) % THEMES.length; } catch(e) {}
+function applyTheme() {
+  theme = THEMES[themeIdx];
+  const r = document.documentElement.style;
+  for (const k of ['bg','panel','text','muted','accent']) r.setProperty('--' + k, theme[k]);
+  document.querySelector('meta[name=theme-color]').content = theme.bg;
+  try { localStorage.setItem('okcikar-theme', themeIdx); } catch(e) {}
+}
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const $ = id => document.getElementById(id);
+
+let level = 1, score = 0, lives = 3, hints = 3;
+let size, grid, arrows, cell, W, over = false, hintArrow = null, best = 1;
+try { best = +localStorage.getItem('okcikar-best') || 1; } catch(e) {}
+
+function inb(x, y) { return x >= 0 && y >= 0 && x < size && y < size; }
+
+// Çözülebilir seviye üretimi: oklar çıkış sırasının tersinden yerleştirilir.
+function pathClear(x, y, d) {
+  let [dx, dy] = DIRS[d];
+  x += dx; y += dy;
+  while (inb(x, y)) { if (grid[y][x]) return false; x += dx; y += dy; }
+  return true;
+}
+
+function generate() {
+  size = Math.min(5 + Math.floor((level - 1) / 2), 11);
+  grid = Array.from({length: size}, () => Array(size).fill(null));
+  arrows = [];
+  // dense board: arrows block each other a lot, still always solvable
+  const target = Math.floor(size * size * (0.65 + Math.min(level, 9) * 0.03));
+  for (let tries = 0; tries < 30000 && arrows.length < target; tries++) {
+    const x = Math.random() * size | 0, y = Math.random() * size | 0, d = Math.random() * 4 | 0;
+    if (grid[y][x] || !pathClear(x, y, d)) continue;
+    const a = { x, y, d, off: 0, vel: 0, moving: false, shake: 0, flash: 0,
+                ci: Math.random() * 7 | 0 };
+    grid[y][x] = a; arrows.push(a);
+  }
+}
+
+function resize() {
+  W = Math.max(240, Math.min(640, innerWidth - 32, innerHeight - 190));
+  const dpr = devicePixelRatio || 1;
+  cv.width = cv.height = W * dpr;
+  cv.style.width = cv.style.height = W + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  cell = W / size;
+}
+
+function hud() {
+  $('lvl').textContent = level; $('score').textContent = score; $('hc').textContent = hints;
+  $('lives').textContent = '❤'.repeat(lives) + '♡'.repeat(Math.max(0, 3 - lives));
+}
+
+function start(newGame) {
+  if (newGame) { level = 1; score = 0; }
+  lives = 3; hints = 3; over = false; hintArrow = null;
+  $('overlay').style.display = 'none';
+  generate(); resize(); hud();
+}
+
+function showOverlay(t, p, b, fn) {
+  $('ot').textContent = t; $('op').textContent = p; $('ob').textContent = b;
+  $('ob').onclick = fn; $('overlay').style.display = 'flex';
+}
+
+function tap(px, py) {
+  if (over) return;
+  const x = px / cell | 0, y = py / cell | 0;
+  if (!inb(x, y)) return;
+  const a = grid[y][x];
+  if (!a || a.moving) return;
+  hintArrow = null;
+  if (pathClear(x, y, a.d)) {
+    grid[y][x] = null; a.moving = true; score += 10 * level; hud();
+  } else {
+    a.shake = 1; lives--; hud();
+    if (lives <= 0) {
+      over = true;
+      if (level > best) { best = level; try { localStorage.setItem('okcikar-best', best); } catch(e) {} }
+      showOverlay('Oyun bitti', `Seviye ${level} · Puan ${score} · En iyi seviye ${best}`, 'Tekrar dene', () => start(true));
+    }
+  }
+}
+
+cv.addEventListener('pointerdown', e => {
+  const r = cv.getBoundingClientRect();
+  tap(e.clientX - r.left, e.clientY - r.top);
+});
+
+$('hint').onclick = () => {
+  if (over || hints <= 0) return;
+  const free = arrows.filter(a => !a.moving && grid[a.y][a.x] === a && pathClear(a.x, a.y, a.d));
+  if (!free.length) return;
+  hintArrow = free[Math.random() * free.length | 0]; hints--; hud();
+};
+$('restart').onclick = () => start(false);
+$('theme').onclick = () => { themeIdx = (themeIdx + 1) % THEMES.length; applyTheme(); $('theme').textContent = '🎨 ' + theme.name; };
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+addEventListener('resize', () => { if (size) resize(); });
+
+function drawArrow(a, t) {
+  let cx = (a.x + .5) * cell, cy = (a.y + .5) * cell;
+  const [dx, dy] = DIRS[a.d];
+  cx += dx * a.off * cell; cy += dy * a.off * cell;
+  if (a.shake > 0) cx += Math.sin(t / 25) * a.shake * cell * .12;
+  ctx.save();
+  ctx.translate(cx, cy);
+  // box only as feedback (blocked / hint), not as a permanent frame
+  if (a.shake > 0 || hintArrow === a) {
+    ctx.fillStyle = hintArrow === a ? 'rgba(255,184,77,.45)' : 'rgba(255,80,80,.35)';
+    ctx.beginPath(); ctx.roundRect(-cell * .44, -cell * .44, cell * .88, cell * .88, cell * .16); ctx.fill();
+  }
+  ctx.rotate(a.d * Math.PI / 2);
+  ctx.strokeStyle = ctx.fillStyle = theme.colors[a.ci];
+  // long, slim arrow: tail at +L, tip at -L
+  const L = cell * .4, hw = cell * .15, hl = cell * .22;
+  ctx.lineWidth = cell * .08; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(0, L); ctx.lineTo(0, -L + hl * .5); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, -L); ctx.lineTo(hw, -L + hl); ctx.lineTo(-hw, -L + hl); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+let last = performance.now();
+function frame(t) {
+  const dt = Math.min(0.05, (t - last) / 1000); last = t;
+  ctx.clearRect(0, 0, W, W);
+  for (const a of arrows) {
+    if (a.moving) { a.vel += 40 * dt; a.off += a.vel * dt; }
+    if (a.shake > 0) a.shake = Math.max(0, a.shake - dt * 2.5);
+  }
+  arrows = arrows.filter(a => !(a.moving && a.off > size + 2));
+  for (const a of arrows) drawArrow(a, t);
+  if (!over && arrows.length === 0) {
+    over = true; level++; score += 50;
+    if (level > best) { best = level; try { localStorage.setItem('okcikar-best', best); } catch(e) {} }
+    hud();
+    showOverlay('Tebrikler! 🎉', `Seviye ${level - 1} tamam · +50 bonus`, 'Sonraki seviye', () => start(false));
+  }
+  requestAnimationFrame(frame);
+}
+
+applyTheme(); $('theme').textContent = '🎨 ' + theme.name;
+start(true);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
