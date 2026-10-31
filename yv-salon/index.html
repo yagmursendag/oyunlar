@@ -6189,8 +6189,8 @@ function drawProfile() {
   const tag = P.kind === 'me' ? '⭐ Sensin' : P.kind === 'friend' ? '👭 Arkadaşın' : P.kind === 'online' ? (P.host ? '🟢 Çevrimiçi • lobinin sahibi' : '🟢 Çevrimiçi') : '🏙️ Kasabadan';
   text(P.kind === 'online' ? tag : `#${P.id}  •  ${tag}`, 556, 212, 18, '#6b5a70', 'left', 800);
   btn(870, 128, 130, 44, '✖ Kapat', () => { LB.prof = null; }, { size: 17 });
-  const rows = [...(P.kind === 'me' ? [['⭐', 'Seviyesi', String(myLevel()), '#8a5a00']] : []), ['💰', 'Parası', `${fmtMoney(P.money)} TL`, '#23884f'], ['💅', 'Baktığı müşteri', `${P.served || 0}`, '#3a2340'], ['💼', 'İşi', JOB_NAMES[P.job] || 'İşi yok', '#3a2340'], ['🐾', 'Hayvanı', PET_LABEL[L.pet] || 'Yok', '#3a2340']];
-  if (P.kind === 'online') { rows[0][2] = '—'; rows[1][2] = '—'; rows[2][2] = '—'; }
+  const rows = [...(P.kind === 'me' ? [['⭐', 'Seviyesi', String(myLevel()), '#8a5a00']] : P.kind === 'online' ? [['⭐', 'Seviyesi', String(P.lvl || 1), '#8a5a00']] : []), ['💰', 'Parası', `${fmtMoney(P.money)} TL`, '#23884f'], ['💅', 'Baktığı müşteri', `${P.served || 0}`, '#3a2340'], ['💼', 'İşi', JOB_NAMES[P.job] || 'İşi yok', '#3a2340'], ['🐾', 'Hayvanı', PET_LABEL[L.pet] || 'Yok', '#3a2340']];
+  if (P.kind === 'online') { rows[1][2] = '—'; rows[2][2] = '—'; rows[3][2] = '—'; }
   if (P.kind === 'me') rows.push(['💎', 'Elması', P.gems < 0 ? '∞' : fmt(P.gems), '#2d6fd6']);
   rows.forEach(([ico, k, v, col], i) => {
     const y = 236 + i * 56;
@@ -6513,7 +6513,7 @@ function mpLeave(keep) {
 }
 function mpPayload() {
   const me = LB.me, p = me.position, num = (v, a, b) => clamp(Number.isFinite(v) ? Math.round(v * 100) / 100 : 0, a, b);
-  return { n: String(profile.name || 'Oyuncu').slice(0, 20), l: JSON.stringify(encodeLook(profile.look)).slice(0, 300), x: num(p.x, -499, 499), z: num(p.z, -499, 499), r: num(Math.atan2(Math.sin(me.rotation.y), Math.cos(me.rotation.y)) + 8 * headIdx(), -1000, 1000), y: num(p.y, 0, 9.9), e: clamp(MP.e | 0, 0, 29), m: MP.m, h: !MP.host, t: MP.fb.database.ServerValue.TIMESTAMP };
+  return { n: String(profile.name || 'Oyuncu').slice(0, 20), l: JSON.stringify([...encodeLook(profile.look), Math.min(myLevel(), 9999)]).slice(0, 300), x: num(p.x, -499, 499), z: num(p.z, -499, 499), r: num(Math.atan2(Math.sin(me.rotation.y), Math.cos(me.rotation.y)) + 8 * headIdx(), -1000, 1000), y: num(p.y, 0, 9.9), e: clamp(MP.e | 0, 0, 29), m: MP.m, h: !MP.host, t: MP.fb.database.ServerValue.TIMESTAMP };
 }
 function mpEmote(i) {
   if (i < 0 || !MP_SAY[i]) return; if (i < 19) questEvent('emote');
@@ -6529,12 +6529,12 @@ function mpPeer(key, v) {
   const lookStr = typeof v.l === 'string' ? v.l : '', name = String(v.n || 'Oyuncu').slice(0, 20);
   if (!pe || pe.l !== lookStr || pe.n !== name) {
     const first = !pe; if (pe) { LB.scene.remove(pe.av); if (pe.pet) LB.scene.remove(pe.pet); }
-    let look = null; try { look = decodeLook(JSON.parse(lookStr)); } catch (e) { }
+    let look = null, lvl = 1; try { const la = JSON.parse(lookStr); look = decodeLook(la); lvl = Math.max(1, Math.min(9999, Math.floor(+la[25]) || 1)); } catch (e) { }
     look = look || normLook({}); MP.arts = MP.arts || {}; if (MP.arts[key]) look = normLook({ ...look, art: MP.arts[key] });
     if (MP.arts[key] === undefined) { MP.arts[key] = ''; try { Promise.resolve(MP.db.ref('arts/' + key).once('value')).then(sn => { const a = sn.val(); if (artOk(a)) { MP.arts[key] = a; const q = MP.peers[key]; if (q) q.l = null; } }).catch(() => { }); } catch (e) { } }
-    const av = lbAvatar(look, '🌐 ' + name, '#8b5cf6');
+    const av = lbAvatar(look, '🌐 ' + (lvl > 1 ? '⭐' + lvl + ' ' : '') + name, '#8b5cf6');
     av.position.set(+v.x || 0, 0, +v.z || 0); av.rotation.y = +v.r || 0; LB.scene.add(av);
-    av.userData.info = { kind: 'online', name, look, id: '—' };
+    av.userData.info = { kind: 'online', name, look, id: '—', lvl };
     pe = MP.peers[key] = { av, l: lookStr, n: name, m: v.m, tx: 0, tz: 0, tr: 0, ty: 0, seen: 0, host: false };
     if (look.pet && look.pet !== 'none') { const pt = lbPet(look.pet); if (look.pet === 'dragon') pt.scale.setScalar(1.4); pt.position.set(av.position.x + 1, 0, av.position.z); LB.scene.add(pt); pe.pet = pt; }
     if (first) say(`🌐 ${name} lobiye geldi!`);
