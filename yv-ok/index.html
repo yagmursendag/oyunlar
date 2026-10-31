@@ -87,18 +87,57 @@ function pathClear(x, y, d) {
   return true;
 }
 
+// body cells, head first. Head points to d; body winds backwards with many turns.
+function buildCells(x, y, d, len) {
+  const cells = [[x, y]];
+  let b = [-DIRS[d][0], -DIRS[d][1]];          // backward step direction
+  for (let k = 1; k < len; k++) {
+    if (k >= 2 && Math.random() < (k === 2 ? .7 : .55)) b = Math.random() < .5 ? [b[1], -b[0]] : [-b[1], b[0]];
+    const nx = cells[k - 1][0] + b[0], ny = cells[k - 1][1] + b[1];
+    if (!inb(nx, ny) || grid[ny][nx] || cells.some(([cx, cy]) => cx === nx && cy === ny)) return null;
+    cells.push([nx, ny]);
+  }
+  return cells;
+}
+
+// polyline in cell units: short tail extension, body centers, long exit ray
+function makePath(a) {
+  const body = a.cells.slice().reverse().map(([x, y]) => [x + .5, y + .5]);
+  const [dx, dy] = DIRS[a.d];
+  const d0 = body.length > 1 ? [body[1][0] - body[0][0], body[1][1] - body[0][1]] : [dx, dy];
+  const head = body[body.length - 1], E = 2 * a.len + size + 8;
+  a.pts = [[body[0][0] - d0[0] * .5, body[0][1] - d0[1] * .5], ...body, [head[0] + dx * E, head[1] + dy * E]];
+  a.cum = [0];
+  for (let i = 1; i < a.pts.length; i++)
+    a.cum.push(a.cum[i - 1] + Math.hypot(a.pts[i][0] - a.pts[i - 1][0], a.pts[i][1] - a.pts[i - 1][1]));
+}
+
 function generate() {
   size = Math.min(5 + Math.floor((level - 1) / 2), 11);
   grid = Array.from({length: size}, () => Array(size).fill(null));
   arrows = [];
-  // dense board: arrows block each other a lot, still always solvable
-  const target = Math.floor(size * size * (0.65 + Math.min(level, 9) * 0.03));
-  for (let tries = 0; tries < 30000 && arrows.length < target; tries++) {
+  const target = Math.floor(size * size * (0.7 + Math.min(level, 9) * 0.02));
+  let bag = [], filled = 0;
+  for (let tries = 0; tries < 60000 && filled < target; tries++) {
+    // lengths come from a shuffled bag, a length is used up only when it fits
+    if (!bag.length) bag = [1, 2, 3, 4, 6, 2, 3, 4].sort(() => Math.random() - .5);
+    if (tries % 50 === 49) bag.unshift(bag.pop());
+    const len = bag[bag.length - 1];
     const x = Math.random() * size | 0, y = Math.random() * size | 0, d = Math.random() * 4 | 0;
+    const [dx, dy] = DIRS[d];
+    // prefer heads with a long way out, so more arrows end up blocked
+    const room = d === 0 ? y : d === 1 ? size - 1 - x : d === 2 ? size - 1 - y : x;
+    if (room < size / 3 && Math.random() < .7) continue;
     if (grid[y][x] || !pathClear(x, y, d)) continue;
-    const a = { x, y, d, off: 0, vel: 0, moving: false, shake: 0, flash: 0,
-                ci: Math.random() * 7 | 0 };
-    grid[y][x] = a; arrows.push(a);
+    const cells = buildCells(x, y, d, len);
+    if (!cells) continue;
+    let selfBlock = false;                      // exit ray must not cross the arrow's own body
+    for (let cx = x + dx, cy = y + dy; inb(cx, cy); cx += dx, cy += dy)
+      if (cells.some(c => c[0] === cx && c[1] === cy)) selfBlock = true;
+    if (selfBlock) continue;
+    const a = { x, y, d, len, cells, off: 0, vel: 0, moving: false, shake: 0, ci: Math.random() * 7 | 0 };
+    for (const [cx, cy] of cells) grid[cy][cx] = a;
+    makePath(a); arrows.push(a); filled += len; bag.pop();
   }
 }
 
@@ -135,8 +174,9 @@ function tap(px, py) {
   const a = grid[y][x];
   if (!a || a.moving) return;
   hintArrow = null;
-  if (pathClear(x, y, a.d)) {
-    grid[y][x] = null; a.moving = true; score += 10 * level; hud();
+  if (pathClear(a.x, a.y, a.d)) {
+    for (const [cx, cy] of a.cells) grid[cy][cx] = null;
+    a.moving = true; score += 10 * level * a.len; hud();
   } else {
     a.shake = 1; lives--; hud();
     if (lives <= 0) {
@@ -154,7 +194,7 @@ cv.addEventListener('pointerdown', e => {
 
 $('hint').onclick = () => {
   if (over || hints <= 0) return;
-  const free = arrows.filter(a => !a.moving && grid[a.y][a.x] === a && pathClear(a.x, a.y, a.d));
+  const free = arrows.filter(a => !a.moving && pathClear(a.x, a.y, a.d));
   if (!free.length) return;
   hintArrow = free[Math.random() * free.length | 0]; hints--; hud();
 };
@@ -163,25 +203,43 @@ $('theme').onclick = () => { themeIdx = (themeIdx + 1) % THEMES.length; applyThe
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
 addEventListener('resize', () => { if (size) resize(); });
 
+function pointAt(a, s) {
+  const {pts, cum} = a;
+  if (s <= 0) return pts[0];
+  for (let i = 1; i < pts.length; i++) if (s <= cum[i]) {
+    const t = (s - cum[i - 1]) / (cum[i] - cum[i - 1]);
+    return [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * t, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * t];
+  }
+  return pts[pts.length - 1];
+}
+
 function drawArrow(a, t) {
-  let cx = (a.x + .5) * cell, cy = (a.y + .5) * cell;
   const [dx, dy] = DIRS[a.d];
-  cx += dx * a.off * cell; cy += dy * a.off * cell;
-  if (a.shake > 0) cx += Math.sin(t / 25) * a.shake * cell * .12;
   ctx.save();
-  ctx.translate(cx, cy);
-  // box only as feedback (blocked / hint), not as a permanent frame
+  if (a.shake > 0) ctx.translate(Math.sin(t / 25) * a.shake * cell * .12, 0);
+  // boxes only as feedback (blocked / hint), not as a permanent frame
   if (a.shake > 0 || hintArrow === a) {
     ctx.fillStyle = hintArrow === a ? 'rgba(255,184,77,.45)' : 'rgba(255,80,80,.35)';
-    ctx.beginPath(); ctx.roundRect(-cell * .44, -cell * .44, cell * .88, cell * .88, cell * .16); ctx.fill();
+    for (const [x, y] of a.cells) {
+      ctx.beginPath(); ctx.roundRect((x + .06) * cell, (y + .06) * cell, cell * .88, cell * .88, cell * .16); ctx.fill();
+    }
   }
-  ctx.rotate(a.d * Math.PI / 2);
   ctx.strokeStyle = ctx.fillStyle = theme.colors[a.ci];
-  // long, slim arrow: tail at +L, tip at -L
-  const L = cell * .4, hw = cell * .15, hl = cell * .22;
+  const hl = .22, hw = .15;                     // arrow head size in cells
+  const sTip = a.off + .5 + (a.len - 1) + .4, sBase = sTip - hl, s0 = a.off + .1;
+  const line = [pointAt(a, s0)];
+  for (let i = 0; i < a.pts.length; i++) if (a.cum[i] > s0 && a.cum[i] < sBase) line.push(a.pts[i]);
+  line.push(pointAt(a, sBase));
   ctx.lineWidth = cell * .08; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  ctx.beginPath(); ctx.moveTo(0, L); ctx.lineTo(0, -L + hl * .5); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(0, -L); ctx.lineTo(hw, -L + hl); ctx.lineTo(-hw, -L + hl); ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  line.forEach(([x, y], i) => i ? ctx.lineTo(x * cell, y * cell) : ctx.moveTo(x * cell, y * cell));
+  ctx.stroke();
+  const [bx, by] = pointAt(a, sBase), [tx, ty] = pointAt(a, sTip);
+  ctx.beginPath();
+  ctx.moveTo(tx * cell, ty * cell);
+  ctx.lineTo((bx - dy * hw) * cell, (by + dx * hw) * cell);
+  ctx.lineTo((bx + dy * hw) * cell, (by - dx * hw) * cell);
+  ctx.closePath(); ctx.fill();
   ctx.restore();
 }
 
@@ -193,7 +251,7 @@ function frame(t) {
     if (a.moving) { a.vel += 40 * dt; a.off += a.vel * dt; }
     if (a.shake > 0) a.shake = Math.max(0, a.shake - dt * 2.5);
   }
-  arrows = arrows.filter(a => !(a.moving && a.off > size + 2));
+  arrows = arrows.filter(a => !(a.moving && a.off > size + a.len + 3));
   for (const a of arrows) drawArrow(a, t);
   if (!over && arrows.length === 0) {
     over = true; level++; score += 50;
