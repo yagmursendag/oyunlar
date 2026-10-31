@@ -108,3 +108,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v98 | versions/v98-eve-isinlan.html | 🏠 Eve ışınlan butonu (şehirde, market ve hastanede sağ üstte) |
 | v99 | versions/v99-seviye.html | ⭐ Seviye: her tamamlanan (ödülü alınan) görevde +1; ana ekranda, lobide, görev ve profil ekranında görünür |
 | v100 | versions/v100-seviye-herkes.html | ⭐ Seviye çevrimiçi diğer oyunculara da görünür (isim etiketinde ve profil kartında) |
+| v101 | versions/v101-kaleci-kolay.html | ⚽ Kaleci kolaylaştı: daha yavaş, daha az tutuyor |
