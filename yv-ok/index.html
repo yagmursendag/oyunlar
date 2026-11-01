@@ -117,22 +117,22 @@ function makePath(a) {
     a.cum.push(a.cum[i - 1] + Math.hypot(a.pts[i][0] - a.pts[i - 1][0], a.pts[i][1] - a.pts[i - 1][1]));
 }
 
-function generate() {
-  size = ultra ? Math.min(10 + Math.floor(level / 3), 12) : Math.min(5 + Math.floor(level * .75), 12);
+function buildBoard() {
+  size = brutal() ? (ultra ? 11 : 9) : ultra ? Math.min(10 + Math.floor(level / 3), 12) : Math.min(5 + Math.floor(level * .75), 12);
   grid = Array.from({length: size}, () => Array(size).fill(null));
   arrows = [];
   const target = Math.floor(size * size * (0.6 + 0.38 * hardness()));
   let bag = [], filled = 0, lastOk = 0;
-  for (let tries = 0; tries < 60000 && filled < target; tries++) {
+  for (let tries = 0; tries < (brutal() ? 12000 : 60000) && filled < target; tries++) {
     // lengths come from a shuffled bag, a length is used up only when it fits
     if (!bag.length) {
       const h = hardness();
-      bag = (ultra ? [3, 4, 6, 8, 6, 4, 8, 3] : h < .2 ? [1, 2, 3, 4, 2, 3] : h < .6 ? [1, 2, 3, 4, 6, 3, 4, 2] : [2, 3, 4, 6, 6, 4, 3, 6])
+      bag = (brutal() ? [4, 5, 6, 7, 5, 6, 8, 4, 5] : ultra ? [3, 4, 6, 8, 6, 4, 8, 3] : h < .2 ? [1, 2, 3, 4, 2, 3] : h < .6 ? [1, 2, 3, 4, 6, 3, 4, 2] : [2, 3, 4, 6, 6, 4, 3, 6])
         .sort(() => Math.random() - .5);
     }
     if (tries % 50 === 49) bag.unshift(bag.pop());
     const stalled = tries - lastOk > 300;      // board is jammed: fill gaps with short arrows
-    const len = stalled ? ultra ? 3 + (Math.random() * 2 | 0) : (hardness() > .5 ? 2 : 1) + (Math.random() * 3 | 0) : bag[bag.length - 1];
+    const len = stalled ? ultra || brutal() ? 3 + (Math.random() * 2 | 0) : (hardness() > .5 ? 2 : 1) + (Math.random() * 3 | 0) : bag[bag.length - 1];
     const x = Math.random() * size | 0, y = Math.random() * size | 0, d = Math.random() * 4 | 0;
     const [dx, dy] = DIRS[d];
     // prefer heads with a long way out, so more arrows end up blocked
@@ -152,6 +152,37 @@ function generate() {
   }
 }
 
+// every 5th level is a "very hard" one: small board, long winding arrows, deep chains
+const brutal = () => level % 5 === 0;
+
+// how many rounds of "remove everything that is free" the board needs, and how many arrows are free at the start
+function solveDepth() {
+  let rem = arrows.slice(), rounds = 0, firstFree = 0;
+  const removed = [];
+  while (rem.length) {
+    const free = rem.filter(a => pathClear(a.x, a.y, a.d));
+    if (!free.length) break;
+    if (!rounds) firstFree = free.length;
+    for (const a of free) for (const [cx, cy] of a.cells) grid[cy][cx] = null;
+    removed.push(...free); rem = rem.filter(a => !free.includes(a)); rounds++;
+  }
+  for (const a of removed) for (const [cx, cy] of a.cells) grid[cy][cx] = a;   // put the board back
+  return {rounds, firstFree};
+}
+
+// normal levels: one board. Very hard levels: build many boards and keep the most tangled one
+function generate() {
+  if (!brutal()) { buildBoard(); return; }
+  let best = null, bestScore = -1e9;
+  for (let i = 0; i < 80; i++) {
+    buildBoard();
+    const {rounds, firstFree} = solveDepth();
+    const score = rounds * 10 - firstFree * 6 + arrows.length;
+    if (score > bestScore) { bestScore = score; best = {grid, arrows, size}; }
+  }
+  ({grid, arrows, size} = best);
+}
+
 function resize() {
   W = Math.max(240, Math.min(640, innerWidth - 32, innerHeight - 190));
   const dpr = devicePixelRatio || 1;
@@ -162,13 +193,14 @@ function resize() {
 }
 
 function hud() {
-  $('lvl').textContent = level; $('score').textContent = score; $('hc').textContent = hints;
+  $('lvl').textContent = level + (brutal() ? ' 🔥' : ''); $('score').textContent = score; $('hc').textContent = hints;
   $('lives').textContent = '❤'.repeat(lives) + '♡'.repeat(Math.max(0, 3 - lives));
 }
 
 function start(newGame) {
   if (newGame) { level = 1; score = 0; }
-  lives = ultra ? 2 : 3; hints = ultra ? 0 : level < 3 ? 3 : 2; over = false; hintArrow = null;
+  lives = brutal() ? (ultra ? 3 : 5) : ultra ? 2 : 3;
+  hints = brutal() ? (ultra ? 1 : 2) : ultra ? 0 : level < 3 ? 3 : 2; over = false; hintArrow = null;
   $('overlay').style.display = 'none';
   generate(); resize(); hud();
 }
@@ -275,7 +307,7 @@ function frame(t) {
     over = true; level++; score += 50;
     if (level > best) { best = level; try { localStorage.setItem('okcikar-best', best); } catch(e) {} }
     hud();
-    showOverlay('Tebrikler! 🎉', `Seviye ${level - 1} tamam · +50 bonus`, 'Sonraki seviye', () => start(false));
+    showOverlay('Tebrikler! 🎉', `Seviye ${level - 1} tamam · +50 bonus${brutal() ? " · 🔥 Sıradaki seviye ÇOK ZOR!" : ""}`, 'Sonraki seviye', () => start(false));
   }
   requestAnimationFrame(frame);
 }

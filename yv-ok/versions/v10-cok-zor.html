@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="theme-color" content="#14161f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>Ok Çıkar</title>
+<style>
+  :root { --bg:#14161f; --panel:#1e2130; --text:#eef0f7; --muted:#8b90a8; --accent:#ffb84d; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:system-ui,Segoe UI,sans-serif;
+         min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:12px 16px; user-select:none; }
+  header { width:100%; max-width:640px; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  h1 { font-size:20px; margin:0; letter-spacing:.5px; }
+  .stat { font-size:15px; color:var(--muted); }
+  .stat b { color:var(--text); }
+  #lives { font-size:20px; letter-spacing:2px; }
+  .wrap { position:relative; }
+  canvas { background:var(--panel); border-radius:16px; touch-action:manipulation; display:block; }
+  .bar { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:12px; }
+  button { background:var(--panel); color:var(--text); border:1px solid #333853; padding:10px 18px; border-radius:10px;
+           font-size:15px; cursor:pointer; }
+  button:hover { border-color:var(--accent); }
+  #overlay { position:absolute; inset:0; background:rgba(20,22,31,.88); border-radius:16px; display:none;
+             flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center; }
+  #overlay h2 { margin:0; font-size:28px; }
+  #overlay p { margin:0; color:var(--muted); }
+  #overlay button { background:var(--accent); color:#1a1a1a; border:none; font-weight:600; }
+</style>
+</head>
+<body>
+<header>
+  <h1>➜ Ok Çıkar</h1>
+  <div class="stat">Seviye <b id="lvl">1</b> · Puan <b id="score">0</b> · <span id="lives"></span></div>
+</header>
+<div class="wrap">
+  <canvas id="c"></canvas>
+  <div id="overlay"><h2 id="ot"></h2><p id="op"></p><button id="ob"></button></div>
+</div>
+<div class="bar">
+  <button id="hint">💡 İpucu (<span id="hc">3</span>)</button>
+  <button id="ultra">☠ Ultra: kapalı</button>
+  <button id="theme">🎨 Tema</button>
+  <button id="restart">↺ Yeniden</button>
+</div>
+
+<script>
+const DIRS = [[0,-1],[1,0],[0,1],[-1,0]];            // yukarı, sağ, aşağı, sol
+const THEMES = [
+  { name:'Gece',   bg:'#14161f', panel:'#1e2130', text:'#eef0f7', muted:'#8b90a8', accent:'#ffb84d', tile:'rgba(255,255,255,.05)',
+    colors:['#ff6b6b','#4dd0e1','#ffd54f','#81c784','#ba68c8','#ff8a65','#64b5f6'] },
+  { name:'Okyanus', bg:'#0b1d2e', panel:'#12304a', text:'#e8f4ff', muted:'#7fa3c0', accent:'#4dd0e1', tile:'rgba(255,255,255,.06)',
+    colors:['#4dd0e1','#80deea','#4fc3f7','#26c6da','#b2ebf2','#64b5f6','#a7ffeb'] },
+  { name:'Orman',  bg:'#101a12', panel:'#1b2b1f', text:'#eaf5ea', muted:'#86a58b', accent:'#aed581', tile:'rgba(255,255,255,.05)',
+    colors:['#aed581','#81c784','#dce775','#ffd54f','#a1887f','#4db6ac','#ff8a65'] },
+  { name:'Gün batımı', bg:'#25131f', panel:'#3a1f30', text:'#fff0f3', muted:'#c093a5', accent:'#ff8a65', tile:'rgba(255,255,255,.06)',
+    colors:['#ff8a65','#ff6b6b','#ffb74d','#f06292','#ba68c8','#ffd54f','#ff7043'] },
+  { name:'Açık',   bg:'#f2f3f8', panel:'#ffffff', text:'#1f2233', muted:'#6b7090', accent:'#5c6bc0', tile:'rgba(0,0,0,.05)',
+    colors:['#e53935','#1e88e5','#fb8c00','#43a047','#8e24aa','#00897b','#6d4c41'] },
+];
+let themeIdx = 0, theme = THEMES[0];
+try { themeIdx = (+localStorage.getItem('okcikar-theme') || 0) % THEMES.length; } catch(e) {}
+function applyTheme() {
+  theme = THEMES[themeIdx];
+  const r = document.documentElement.style;
+  for (const k of ['bg','panel','text','muted','accent']) r.setProperty('--' + k, theme[k]);
+  document.querySelector('meta[name=theme-color]').content = theme.bg;
+  try { localStorage.setItem('okcikar-theme', themeIdx); } catch(e) {}
+}
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const $ = id => document.getElementById(id);
+
+let level = 1, score = 0, lives = 3, hints = 3, ultra = false;
+try { ultra = localStorage.getItem('okcikar-ultra') === '1'; } catch(e) {}
+let size, grid, arrows, cell, W, over = false, hintArrow = null, best = 1;
+try { best = +localStorage.getItem('okcikar-best') || 1; } catch(e) {}
+
+function inb(x, y) { return x >= 0 && y >= 0 && x < size && y < size; }
+
+// Çözülebilir seviye üretimi: oklar çıkış sırasının tersinden yerleştirilir.
+function pathClear(x, y, d) {
+  let [dx, dy] = DIRS[d];
+  x += dx; y += dy;
+  while (inb(x, y)) { if (grid[y][x]) return false; x += dx; y += dy; }
+  return true;
+}
+
+// 0 on level 1, up to 1 from level 4: drives density, arrow length, turns and blocking
+const hardness = () => ultra ? 1 : Math.min(level - 1, 3) / 3;   // ultra: full difficulty from level 1
+
+// body cells, head first. Head points to d; body winds backwards with many turns.
+function buildCells(x, y, d, len) {
+  const cells = [[x, y]];
+  let b = [-DIRS[d][0], -DIRS[d][1]];          // backward step direction
+  for (let k = 1; k < len; k++) {
+    if (k >= 2 && Math.random() < (k === 2 ? .6 : .4) + .3 * hardness()) b = Math.random() < .5 ? [b[1], -b[0]] : [-b[1], b[0]];
+    const nx = cells[k - 1][0] + b[0], ny = cells[k - 1][1] + b[1];
+    if (!inb(nx, ny) || grid[ny][nx] || cells.some(([cx, cy]) => cx === nx && cy === ny)) return null;
+    cells.push([nx, ny]);
+  }
+  return cells;
+}
+
+// polyline in cell units: short tail extension, body centers, long exit ray
+function makePath(a) {
+  const body = a.cells.slice().reverse().map(([x, y]) => [x + .5, y + .5]);
+  const [dx, dy] = DIRS[a.d];
+  const d0 = body.length > 1 ? [body[1][0] - body[0][0], body[1][1] - body[0][1]] : [dx, dy];
+  const head = body[body.length - 1], E = 2 * a.len + size + 8;
+  a.pts = [[body[0][0] - d0[0] * .5, body[0][1] - d0[1] * .5], ...body, [head[0] + dx * E, head[1] + dy * E]];
+  a.cum = [0];
+  for (let i = 1; i < a.pts.length; i++)
+    a.cum.push(a.cum[i - 1] + Math.hypot(a.pts[i][0] - a.pts[i - 1][0], a.pts[i][1] - a.pts[i - 1][1]));
+}
+
+function buildBoard() {
+  size = brutal() ? (ultra ? 11 : 9) : ultra ? Math.min(10 + Math.floor(level / 3), 12) : Math.min(5 + Math.floor(level * .75), 12);
+  grid = Array.from({length: size}, () => Array(size).fill(null));
+  arrows = [];
+  const target = Math.floor(size * size * (0.6 + 0.38 * hardness()));
+  let bag = [], filled = 0, lastOk = 0;
+  for (let tries = 0; tries < (brutal() ? 12000 : 60000) && filled < target; tries++) {
+    // lengths come from a shuffled bag, a length is used up only when it fits
+    if (!bag.length) {
+      const h = hardness();
+      bag = (brutal() ? [4, 5, 6, 7, 5, 6, 8, 4, 5] : ultra ? [3, 4, 6, 8, 6, 4, 8, 3] : h < .2 ? [1, 2, 3, 4, 2, 3] : h < .6 ? [1, 2, 3, 4, 6, 3, 4, 2] : [2, 3, 4, 6, 6, 4, 3, 6])
+        .sort(() => Math.random() - .5);
+    }
+    if (tries % 50 === 49) bag.unshift(bag.pop());
+    const stalled = tries - lastOk > 300;      // board is jammed: fill gaps with short arrows
+    const len = stalled ? ultra || brutal() ? 3 + (Math.random() * 2 | 0) : (hardness() > .5 ? 2 : 1) + (Math.random() * 3 | 0) : bag[bag.length - 1];
+    const x = Math.random() * size | 0, y = Math.random() * size | 0, d = Math.random() * 4 | 0;
+    const [dx, dy] = DIRS[d];
+    // prefer heads with a long way out, so more arrows end up blocked
+    const room = d === 0 ? y : d === 1 ? size - 1 - x : d === 2 ? size - 1 - y : x;
+    if (!stalled && room < size / 3 && Math.random() < .3 + .65 * hardness()) continue;
+    if (grid[y][x] || !pathClear(x, y, d)) continue;
+    const cells = buildCells(x, y, d, len);
+    if (!cells) continue;
+    let selfBlock = false;                      // exit ray must not cross the arrow's own body
+    for (let cx = x + dx, cy = y + dy; inb(cx, cy); cx += dx, cy += dy)
+      if (cells.some(c => c[0] === cx && c[1] === cy)) selfBlock = true;
+    if (selfBlock) continue;
+    const a = { x, y, d, len, cells, off: 0, vel: 0, moving: false, shake: 0, ci: Math.random() * 7 | 0 };
+    for (const [cx, cy] of cells) grid[cy][cx] = a;
+    makePath(a); arrows.push(a); filled += len; lastOk = tries;
+    if (!stalled) bag.pop();
+  }
+}
+
+// every 5th level is a "very hard" one: small board, long winding arrows, deep chains
+const brutal = () => level % 5 === 0;
+
+// how many rounds of "remove everything that is free" the board needs, and how many arrows are free at the start
+function solveDepth() {
+  let rem = arrows.slice(), rounds = 0, firstFree = 0;
+  const removed = [];
+  while (rem.length) {
+    const free = rem.filter(a => pathClear(a.x, a.y, a.d));
+    if (!free.length) break;
+    if (!rounds) firstFree = free.length;
+    for (const a of free) for (const [cx, cy] of a.cells) grid[cy][cx] = null;
+    removed.push(...free); rem = rem.filter(a => !free.includes(a)); rounds++;
+  }
+  for (const a of removed) for (const [cx, cy] of a.cells) grid[cy][cx] = a;   // put the board back
+  return {rounds, firstFree};
+}
+
+// normal levels: one board. Very hard levels: build many boards and keep the most tangled one
+function generate() {
+  if (!brutal()) { buildBoard(); return; }
+  let best = null, bestScore = -1e9;
+  for (let i = 0; i < 80; i++) {
+    buildBoard();
+    const {rounds, firstFree} = solveDepth();
+    const score = rounds * 10 - firstFree * 6 + arrows.length;
+    if (score > bestScore) { bestScore = score; best = {grid, arrows, size}; }
+  }
+  ({grid, arrows, size} = best);
+}
+
+function resize() {
+  W = Math.max(240, Math.min(640, innerWidth - 32, innerHeight - 190));
+  const dpr = devicePixelRatio || 1;
+  cv.width = cv.height = W * dpr;
+  cv.style.width = cv.style.height = W + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  cell = W / size;
+}
+
+function hud() {
+  $('lvl').textContent = level + (brutal() ? ' 🔥' : ''); $('score').textContent = score; $('hc').textContent = hints;
+  $('lives').textContent = '❤'.repeat(lives) + '♡'.repeat(Math.max(0, 3 - lives));
+}
+
+function start(newGame) {
+  if (newGame) { level = 1; score = 0; }
+  lives = brutal() ? (ultra ? 3 : 5) : ultra ? 2 : 3;
+  hints = brutal() ? (ultra ? 1 : 2) : ultra ? 0 : level < 3 ? 3 : 2; over = false; hintArrow = null;
+  $('overlay').style.display = 'none';
+  generate(); resize(); hud();
+}
+
+function showOverlay(t, p, b, fn) {
+  $('ot').textContent = t; $('op').textContent = p; $('ob').textContent = b;
+  $('ob').onclick = fn; $('overlay').style.display = 'flex';
+}
+
+function tap(px, py) {
+  if (over) return;
+  const x = px / cell | 0, y = py / cell | 0;
+  if (!inb(x, y)) return;
+  const a = grid[y][x];
+  if (!a || a.moving) return;
+  hintArrow = null;
+  if (pathClear(a.x, a.y, a.d)) {
+    for (const [cx, cy] of a.cells) grid[cy][cx] = null;
+    a.moving = true; score += 10 * level * a.len; hud();
+  } else {
+    a.shake = 1; lives--; hud();
+    if (lives <= 0) {
+      over = true;
+      if (level > best) { best = level; try { localStorage.setItem('okcikar-best', best); } catch(e) {} }
+      showOverlay('Oyun bitti', `Seviye ${level} · Puan ${score} · En iyi seviye ${best}`, 'Tekrar dene', () => start(true));
+    }
+  }
+}
+
+cv.addEventListener('pointerdown', e => {
+  const r = cv.getBoundingClientRect();
+  tap(e.clientX - r.left, e.clientY - r.top);
+});
+
+$('hint').onclick = () => {
+  if (over || hints <= 0) return;
+  const free = arrows.filter(a => !a.moving && pathClear(a.x, a.y, a.d));
+  if (!free.length) return;
+  hintArrow = free[Math.random() * free.length | 0]; hints--; hud();
+};
+$('restart').onclick = () => start(false);
+$('ultra').onclick = () => {
+  ultra = !ultra;
+  try { localStorage.setItem('okcikar-ultra', ultra ? '1' : '0'); } catch(e) {}
+  $('ultra').textContent = '☠ Ultra: ' + (ultra ? 'açık' : 'kapalı');
+  start(true);
+};
+$('theme').onclick = () => { themeIdx = (themeIdx + 1) % THEMES.length; $('ultra').textContent = '☠ Ultra: ' + (ultra ? 'açık' : 'kapalı');
+applyTheme(); $('theme').textContent = '🎨 ' + theme.name; };
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+addEventListener('resize', () => { if (size) resize(); });
+
+function pointAt(a, s) {
+  const {pts, cum} = a;
+  if (s <= 0) return pts[0];
+  for (let i = 1; i < pts.length; i++) if (s <= cum[i]) {
+    const t = (s - cum[i - 1]) / (cum[i] - cum[i - 1]);
+    return [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * t, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * t];
+  }
+  return pts[pts.length - 1];
+}
+
+function drawArrow(a, t) {
+  const [dx, dy] = DIRS[a.d];
+  ctx.save();
+  if (a.shake > 0) ctx.translate(Math.sin(t / 25) * a.shake * cell * .12, 0);
+  // boxes only as feedback (blocked / hint), not as a permanent frame
+  if (a.shake > 0 || hintArrow === a) {
+    ctx.fillStyle = hintArrow === a ? 'rgba(255,184,77,.45)' : 'rgba(255,80,80,.35)';
+    for (const [x, y] of a.cells) {
+      ctx.beginPath(); ctx.roundRect((x + .06) * cell, (y + .06) * cell, cell * .88, cell * .88, cell * .16); ctx.fill();
+    }
+  }
+  ctx.strokeStyle = ctx.fillStyle = theme.colors[a.ci];
+  const hl = .22, hw = .15;                     // arrow head size in cells
+  const sTip = a.off + .5 + (a.len - 1) + .4, sBase = sTip - hl, s0 = a.off + .1;
+  const line = [pointAt(a, s0)];
+  for (let i = 0; i < a.pts.length; i++) if (a.cum[i] > s0 && a.cum[i] < sBase) line.push(a.pts[i]);
+  line.push(pointAt(a, sBase));
+  ctx.lineWidth = cell * .08; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath();
+  line.forEach(([x, y], i) => i ? ctx.lineTo(x * cell, y * cell) : ctx.moveTo(x * cell, y * cell));
+  ctx.stroke();
+  const [bx, by] = pointAt(a, sBase), [tx, ty] = pointAt(a, sTip);
+  ctx.beginPath();
+  ctx.moveTo(tx * cell, ty * cell);
+  ctx.lineTo((bx - dy * hw) * cell, (by + dx * hw) * cell);
+  ctx.lineTo((bx + dy * hw) * cell, (by - dx * hw) * cell);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+let last = performance.now();
+function frame(t) {
+  const dt = Math.min(0.05, (t - last) / 1000); last = t;
+  ctx.clearRect(0, 0, W, W);
+  for (const a of arrows) {
+    if (a.moving) { a.vel += 40 * dt; a.off += a.vel * dt; }
+    if (a.shake > 0) a.shake = Math.max(0, a.shake - dt * 2.5);
+  }
+  arrows = arrows.filter(a => !(a.moving && a.off > size + a.len + 3));
+  for (const a of arrows) drawArrow(a, t);
+  if (!over && arrows.length === 0) {
+    over = true; level++; score += 50;
+    if (level > best) { best = level; try { localStorage.setItem('okcikar-best', best); } catch(e) {} }
+    hud();
+    showOverlay('Tebrikler! 🎉', `Seviye ${level - 1} tamam · +50 bonus${brutal() ? " · 🔥 Sıradaki seviye ÇOK ZOR!" : ""}`, 'Sonraki seviye', () => start(false));
+  }
+  requestAnimationFrame(frame);
+}
+
+applyTheme(); $('theme').textContent = '🎨 ' + theme.name;
+start(true);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

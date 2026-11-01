@@ -5698,7 +5698,7 @@ function lbEditTap(hit) {
     const F = FURN[E.sel]; if (items.length >= 30) { sfx('no'); return say('Bu katta en fazla 30 eşya olur'); }
     if (!lbEditOk(R, E.key, E.sel, x, z, 0, -1)) { sfx('no'); return say('Buraya sığmıyor! Başka bir yere dokun'); }
     if (!rich() && money < F.p) { sfx('no'); return say(fmt(F.p - money) + ' TL daha lazım 💰'); }
-    if (!rich()) money -= F.p; items.push([E.sel, x, z, 0]); E.idx = items.length - 1; E.sel = null; save(); sfx('coin'); lbRebuildHome(); return say(F.i + ' ' + F.n + ' yerleşti! Döndürebilir, taşıyabilirsin');
+    if (!rich()) money -= F.p; items.push([E.sel, x, z, 0]); E.idx = items.length - 1; E.sel = null; save(); sfx('coin'); questEvent('furn'); lbRebuildHome(); return say(F.i + ' ' + F.n + ' yerleşti! Döndürebilir, taşıyabilirsin');
   }
   let best = -1, bd = 1e9; items.forEach((it, i) => { const q = lbFurnRect(it[0], it[1], it[2], it[3]); if (hit.x - R.O.x > q[0] - 0.3 && hit.x - R.O.x < q[1] + 0.3 && hit.z - R.O.z > q[2] - 0.3 && hit.z - R.O.z < q[3] + 0.3) { const d = Math.hypot(hit.x - R.O.x - it[1], hit.z - R.O.z - it[2]); if (d < bd) { bd = d; best = i; } } });
   if (best >= 0) { E.idx = best; sfx('pop'); lbRebuildHome(); return; }
@@ -5720,7 +5720,7 @@ function drawEditUi() {
 }
 function lbRest() {
   const n = needs(), now = Date.now(); if (now - (LB.restAt || 0) < 15000) return say('⏳ Biraz bekle, daha yeni dinlendin');
-  if (n.sleep >= 100) return say('Hiç uykun yok! 😊'); LB.restAt = now; n.sleep = Math.min(100, n.sleep + 10); save(); sfx('done'); sparkle(640, 330, 12); say('😌 Dinlendin! +10 uyku');
+  if (n.sleep >= 100) return say('Hiç uykun yok! 😊'); LB.restAt = now; n.sleep = Math.min(100, n.sleep + 10); save(); questEvent('rest'); sfx('done'); sparkle(640, 330, 12); say('😌 Dinlendin! +10 uyku');
 }
 function furnActs(fn) {
   const sleep = () => { const nn = needs(); if (nn.sleep >= 100) return say('Hiç uykun yok! 😊'); LB.sleepT = 4; sfx('pop'); };
@@ -5729,9 +5729,9 @@ function furnActs(fn) {
     sleep: [['😴 Yat ve uyu', sleep, '#8b5cf6']], rest: [['🛋️ Otur ve dinlen', lbRest, '#ff6fb5']],
     tv: [['📺 Televizyon izle', () => { LB.restAt = 0; sfx('done'); sparkle(640, 330, 10); say('📺 Çizgi film izledin, keyfin yerinde! 😊'); lbRest(); }, '#5aa9ff']],
     read: [['📚 Kitap oku', () => { sfx('pop'); say(books[Math.floor(Math.random() * books.length)]); questEvent('read'); }, '#8be07e']],
-    piano: [['🎹 Piyano çal', () => { ['coin', 'pop', 'coin', 'done'].forEach((s, i) => setTimeout(() => sfx(s), i * 220)); sparkle(640, 330, 14); say('🎶 Ne güzel çalıyorsun!'); }, '#1c1c24']],
+    piano: [['🎹 Piyano çal', () => { ['coin', 'pop', 'coin', 'done'].forEach((s, i) => setTimeout(() => sfx(s), i * 220)); sparkle(640, 330, 14); questEvent('piano'); say('🎶 Ne güzel çalıyorsun!'); }, '#1c1c24']],
     wardrobe: [['👗 Gardırobu aç • kıyafet değiştir', openDesigner, '#ff5fa2']],
-    fish: [['🐠 Balıkları besle', () => { sfx('pop'); sparkle(640, 330, 10); say('🐠 Balıklar yemi çok sevdi!'); }, '#5ac8ff']],
+    fish: [['🐠 Balıkları besle', () => { sfx('pop'); sparkle(640, 330, 10); questEvent('fish'); say('🐠 Balıklar yemi çok sevdi!'); }, '#5ac8ff']],
     cook: [['🍳 Yemek pişir', openCook, '#ff8a3d']], fridge: [['🧊 Dolap (yemek sakla)', openFridge, '#5aa9ff']],
     warm: [['🔥 Şömine başında ısın', () => { sfx('pop'); say('🔥 Ne sıcacık! Kendini çok iyi hissettin'); lbRest(); }, '#ff8a3d']],
   }[fn] || [];
@@ -6090,23 +6090,34 @@ const QUEST_POOL = [
   { id: 'step_brows', text: 'Bir müşterinin kaşını al ✨', goal: 1, reward: 20 },
   { id: 'step_shave', text: 'Bir müşteriyi tıraş et 🪒', goal: 1, reward: 25 },
   { id: 'step_cut', text: 'Bir müşterinin saçını kes ✂️', goal: 1, reward: 25 },
+  { id: 'furn1', text: 'Evine bir mobilya yerleştir 🛋️', goal: 1, reward: 25 },
+  { id: 'furn3', text: 'Evine 3 mobilya yerleştir 🛋️', goal: 3, reward: 60 },
+  { id: 'rest2', text: 'Evde 2 kez dinlen 😌', goal: 2, reward: 20 },
+  { id: 'read1', text: 'Evde kitap oku 📚', goal: 1, reward: 15 },
+  { id: 'piano1', text: 'Evde piyano çal 🎹', goal: 1, reward: 15 },
+  { id: 'fish1', text: 'Akvaryumdaki balıkları besle 🐠', goal: 1, reward: 15 },
+  { id: 'tp1', text: 'Eve ışınlan 🏠', goal: 1, reward: 10 },
+  { id: 'pk2', text: 'Parkuru 2 kez bitir 🏃', goal: 2, reward: 70 },
+  { id: 'swim60', text: 'Denizde 60 saniye yüz 🏊', goal: 60, reward: 35 },
+  { id: 'park2', text: 'Oyun parkında 2 kez oyna 🛝', goal: 2, reward: 15 },
 ];
-const QUEST_BONUS = 50;
+const QUEST_BONUS = 100, QUEST_DAILY = 6;
 const qDef = id => QUEST_POOL.find(q => q.id === id);
 const todayKey = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
 let questsOpen = false;
-// three new quests every day
+// six new quests every day
 function quests() {
   if (!profile) return [];
   if (!profile.quests || profile.quests.day !== todayKey()) {
-    const pool = [...QUEST_POOL].sort(() => Math.random() - 0.5).slice(0, 3);
+    const pool = [...QUEST_POOL].sort(() => Math.random() - 0.5).slice(0, QUEST_DAILY);
     profile.quests = { day: todayKey(), list: pool.map(q => ({ id: q.id, n: 0, claimed: false })), bonus: false }; save();
   }
+  { const L = profile.quests.list; if (L.length < QUEST_DAILY) { const have = new Set(L.map(q => q.id)); QUEST_POOL.filter(q => !have.has(q.id)).sort(() => Math.random() - 0.5).slice(0, QUEST_DAILY - L.length).forEach(q => L.push({ id: q.id, n: 0, claimed: false })); profile.quests.bonus = false; save(); } }
   return profile.quests.list;
 }
 const QUEST_ALIAS = { walk: ['walk800'], jump: ['jump50'], emote: ['emote15'], swim: ['swim90'], serve: ['serve8'], luna: ['luna4'], goal: ['goal6'], volley: ['volley6'], eat: ['eat5'], lobbytime: ['lobby10'], mynails: ['mynails3'] };
 Object.entries({ walk: 'walk2000', jump: 'jump100', emote: 'emote30', swim: 'swim180', serve: 'serve12', luna: 'luna6', goal: 'goal10', volley: 'volley10', eat: 'eat8', lobbytime: 'lobby20', park: 'park8', market: 'market6', job: 'job5', artdraw: 'artdraw100', shop: 'shop5' }).forEach(([k, v]) => { (QUEST_ALIAS[k] = QUEST_ALIAS[k] || []).push(v); });
-(QUEST_ALIAS.cook = QUEST_ALIAS.cook || []).push('cook4'); (QUEST_ALIAS.parkour = QUEST_ALIAS.parkour || []).push('parkour3');
+(QUEST_ALIAS.cook = QUEST_ALIAS.cook || []).push('cook4'); QUEST_ALIAS.furn = ['furn1', 'furn3']; QUEST_ALIAS.rest = ['rest2']; QUEST_ALIAS.read = ['read1']; QUEST_ALIAS.piano = ['piano1']; QUEST_ALIAS.fish = ['fish1']; QUEST_ALIAS.tp = ['tp1']; (QUEST_ALIAS.parkour = QUEST_ALIAS.parkour || []).push('pk2'); (QUEST_ALIAS.swim = QUEST_ALIAS.swim || []).push('swim60'); (QUEST_ALIAS.park = QUEST_ALIAS.park || []).push('park2'); (QUEST_ALIAS.parkour = QUEST_ALIAS.parkour || []).push('parkour3');
 function questEvent(id, amt = 1) {
   if (!profile) return;
   if (QUEST_ALIAS[id] && !questEvent.busy) { questEvent.busy = 1; QUEST_ALIAS[id].forEach(a => questEvent(a, amt)); questEvent.busy = 0; }
@@ -6125,25 +6136,25 @@ function drawQuests() {
   quests();
   ctx.fillStyle = 'rgba(40,20,50,.45)'; ctx.fillRect(0, 0, W, H);
   btn(0, 0, W, H, '', () => { }, { hidden: true }); // nothing behind the panel can be tapped
-  ctx.fillStyle = '#ffffff'; rr(290, 110, 700, 500, 28); ctx.fill();
-  text('📋 Günlük Görevler', 640, 168, 36, '#d6337f', 'center', 800); levelPill(312, 124, 150, 38, 17);
-  text(`Görev bitirince seviye atlarsın! • yenilenmesine ${24 - new Date().getHours()} saat var`, 640, 200, 17, '#6b5a70', 'center', 700);
-  btn(840, 126, 130, 44, '✖ Kapat', () => { questsOpen = false; }, { size: 17 });
+  ctx.fillStyle = '#ffffff'; rr(290, 24, 700, 676, 28); ctx.fill();
+  text('📋 Günlük Görevler', 640, 78, 34, '#d6337f', 'center', 800); levelPill(312, 40, 150, 38, 17);
+  text(`Görev bitirince seviye atlarsın! • yenilenmesine ${24 - new Date().getHours()} saat var`, 640, 108, 16, '#6b5a70', 'center', 700);
+  btn(840, 38, 130, 44, '✖ Kapat', () => { questsOpen = false; }, { size: 17 });
   const P = profile.quests;
   quests().forEach((q, i) => {
-    const Q = qDef(q.id), y = 222 + i * 100, done = q.n >= Q.goal;
-    ctx.fillStyle = done ? '#e8fff1' : '#fff0f7'; rr(320, y, 640, 88, 18); ctx.fill();
-    fitText(Q.text, 340, y + 32, 20, 430, '#3a2340', 800);
-    ctx.fillStyle = '#f1d6e4'; rr(340, y + 48, 400, 22, 11); ctx.fill();
-    ctx.fillStyle = done ? '#2fbf71' : '#ff9ccf'; rr(340, y + 48, Math.max(22, 400 * Math.min(1, q.n / Q.goal)), 22, 11); ctx.fill();
-    text(`${Math.floor(q.n)} / ${Q.goal}`, 540, y + 64, 14, '#3a2340', 'center', 800);
-    if (q.claimed) text('✅ Alındı', 870, y + 54, 20, '#23884f', 'center', 800);
-    else if (done) btn(790, y + 22, 160, 46, `🎁 +${Q.reward} TL`, () => { q.claimed = true; money += Q.reward; save(); sfx('coin'); sparkle(870, y + 44, 20); levelUp(); }, { col: '#27b36a', fg: '#ffffff', size: 18 });
-    else text(`🎁 +${Q.reward} TL`, 870, y + 54, 18, '#8b5cf6', 'center', 800);
+    const Q = qDef(q.id), y = 124 + i * 86, done = q.n >= Q.goal;
+    ctx.fillStyle = done ? '#e8fff1' : '#fff0f7'; rr(320, y, 640, 78, 16); ctx.fill();
+    fitText(Q.text, 338, y + 28, 19, 440, '#3a2340', 800);
+    ctx.fillStyle = '#f1d6e4'; rr(338, y + 42, 400, 22, 11); ctx.fill();
+    ctx.fillStyle = done ? '#2fbf71' : '#ff9ccf'; rr(338, y + 42, Math.max(22, 400 * Math.min(1, q.n / Q.goal)), 22, 11); ctx.fill();
+    text(`${Math.floor(q.n)} / ${Q.goal}`, 538, y + 58, 14, '#3a2340', 'center', 800);
+    if (q.claimed) text('✅ Alındı', 870, y + 46, 20, '#23884f', 'center', 800);
+    else if (done) btn(790, y + 16, 160, 46, `🎁 +${Q.reward} TL`, () => { q.claimed = true; money += Q.reward; save(); sfx('coin'); sparkle(870, y + 40, 20); levelUp(); }, { col: '#27b36a', fg: '#ffffff', size: 18 });
+    else text(`🎁 +${Q.reward} TL`, 870, y + 46, 18, '#8b5cf6', 'center', 800);
   });
-  if (P.bonus) text('🌟 Bugünün bütün görevleri bitti! Yarın yenileri gelir', 640, 560, 18, '#23884f', 'center', 800);
-  else if (quests().every(q => q.claimed)) btn(470, 534, 340, 52, `🌟 Hepsi bitti! Bonus +${QUEST_BONUS} TL`, () => { P.bonus = true; money += QUEST_BONUS; save(); sfx('done'); sparkle(640, 560, 30); }, { col: '#ffd23f', size: 18 });
-  else text(`Üç görevi de bitirirsen bonus: +${QUEST_BONUS} TL 🌟`, 640, 562, 18, '#6b5a70', 'center', 700);
+  if (P.bonus) text('🌟 Bugünün bütün görevleri bitti! Yarın yenileri gelir', 640, 672, 18, '#23884f', 'center', 800);
+  else if (quests().every(q => q.claimed)) btn(470, 636, 340, 52, `🌟 Hepsi bitti! Bonus +${QUEST_BONUS} TL`, () => { P.bonus = true; money += QUEST_BONUS; save(); sfx('done'); sparkle(640, 560, 30); }, { col: '#ffd23f', size: 18 });
+  else text(`Altı görevi de bitirirsen bonus: +${QUEST_BONUS} TL 🌟`, 640, 672, 18, '#6b5a70', 'center', 700);
 }
 
 // ================= 👤 tap someone in the lobby to see their profile =================
@@ -7282,7 +7293,7 @@ function lbLunaStart(kind) {
 function lbTeleHome() {
   if (LB.ride || LB.sleepT > 0 || !LB.me) return;
   if (LB.where === 'market' && LB.basket.length) { sfx('no'); return say('Ödemeden çıkamazsın! 💳 Kasaya git ya da sepeti boşalt'); }
-  LB.pkRun = null; LB.fly = false; LB.jumpV = 0; LB.me.position.y = 0; LB.where = 'town'; sparkle(640, 360, 24); lbGoInside('home'); say('✨ Eve ışınlandın! 🏡');
+  LB.pkRun = null; LB.fly = false; LB.jumpV = 0; LB.me.position.y = 0; LB.where = 'town'; sparkle(640, 360, 24); questEvent('tp'); lbGoInside('home'); say('✨ Eve ışınlandın! 🏡');
 }
 function drawLunaUi() {
   if (scene === 'lobby' && LB.me && !LB.ride && !LB.edit && !CK && !FG && !(LB.sleepT > 0) && !String(LB.where).startsWith('home')) btn(1062, 288, 200, 48, '🏠 Eve ışınlan', lbTeleHome, { col: '#ffe36e', size: 18 });
