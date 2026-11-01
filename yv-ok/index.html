@@ -20,6 +20,7 @@
   .stat b { color:var(--text); }
   #lives { font-size:20px; letter-spacing:2px; }
   .wrap { position:relative; }
+  #scroll { overflow:auto; border-radius:16px; }
   canvas { background:var(--panel); border-radius:16px; touch-action:manipulation; display:block; }
   .bar { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:12px; }
   button { background:var(--panel); color:var(--text); border:1px solid #333853; padding:10px 18px; border-radius:10px;
@@ -38,7 +39,7 @@
   <div class="stat">Seviye <b id="lvl">1</b> · Puan <b id="score">0</b> · <span id="lives"></span></div>
 </header>
 <div class="wrap">
-  <canvas id="c"></canvas>
+  <div id="scroll"><canvas id="c"></canvas></div>
   <div id="overlay"><h2 id="ot"></h2><p id="op"></p><button id="ob"></button></div>
 </div>
 <div class="bar">
@@ -118,12 +119,12 @@ function makePath(a) {
 }
 
 function buildBoard() {
-  size = brutal() ? (ultra ? 11 : 9) : ultra ? Math.min(10 + Math.floor(level / 3), 12) : Math.min(5 + Math.floor(level * .75), 12);
+  size = brutal() ? Math.min((ultra ? 15 : 13) + Math.floor(level / 10), ultra ? 17 : 15) : ultra ? Math.min(10 + Math.floor(level / 3), 12) : Math.min(5 + Math.floor(level * .75), 12);
   grid = Array.from({length: size}, () => Array(size).fill(null));
   arrows = [];
   const target = Math.floor(size * size * (0.6 + 0.38 * hardness()));
   let bag = [], filled = 0, lastOk = 0;
-  for (let tries = 0; tries < (brutal() ? 12000 : 60000) && filled < target; tries++) {
+  for (let tries = 0; tries < (brutal() ? 40000 : 60000) && filled < target; tries++) {
     // lengths come from a shuffled bag, a length is used up only when it fits
     if (!bag.length) {
       const h = hardness();
@@ -170,21 +171,33 @@ function solveDepth() {
   return {rounds, firstFree};
 }
 
+// distance from the head to the first arrow in its way (0 = free). Far blockers make an arrow look free but fail.
+function blockDist(a) {
+  const [dx, dy] = DIRS[a.d];
+  for (let k = 1, x = a.x + dx, y = a.y + dy; inb(x, y); k++, x += dx, y += dy) if (grid[y][x]) return k;
+  return 0;
+}
+
 // normal levels: one board. Very hard levels: build many boards and keep the most tangled one
 function generate() {
   if (!brutal()) { buildBoard(); return; }
   let best = null, bestScore = -1e9;
-  for (let i = 0; i < 80; i++) {
+  for (let i = 0; i < 60; i++) {
     buildBoard();
     const {rounds, firstFree} = solveDepth();
-    const score = rounds * 10 - firstFree * 6 + arrows.length;
+    const decoys = arrows.reduce((n, a) => n + (blockDist(a) >= 3 ? 1 : 0), 0);   // blocked, but only from far away
+    const score = rounds * 12 - firstFree * 8 + arrows.length + decoys * 4;
     if (score > bestScore) { bestScore = score; best = {grid, arrows, size}; }
   }
   ({grid, arrows, size} = best);
 }
 
 function resize() {
-  W = Math.max(240, Math.min(640, innerWidth - 32, innerHeight - 190));
+  const avail = Math.max(240, Math.min(640, innerWidth - 32, innerHeight - 190));
+  W = Math.max(avail, size * 30);               // cells never get smaller than 30px: big boards scroll
+  const box = $('scroll').style;
+  box.width = Math.min(W, innerWidth - 32) + 'px';
+  box.height = Math.min(W, Math.max(240, innerHeight - 190)) + 'px';
   const dpr = devicePixelRatio || 1;
   cv.width = cv.height = W * dpr;
   cv.style.width = cv.style.height = W + 'px';
@@ -199,8 +212,8 @@ function hud() {
 
 function start(newGame) {
   if (newGame) { level = 1; score = 0; }
-  lives = brutal() ? (ultra ? 3 : 5) : ultra ? 2 : 3;
-  hints = brutal() ? (ultra ? 1 : 2) : ultra ? 0 : level < 3 ? 3 : 2; over = false; hintArrow = null;
+  lives = brutal() ? (ultra ? 3 : 4) : ultra ? 2 : 3;
+  hints = brutal() ? (ultra ? 0 : 1) : ultra ? 0 : level < 3 ? 3 : 2; over = false; hintArrow = null;
   $('overlay').style.display = 'none';
   generate(); resize(); hud();
 }
@@ -230,7 +243,7 @@ function tap(px, py) {
   }
 }
 
-cv.addEventListener('pointerdown', e => {
+cv.addEventListener('pointerup', e => {
   const r = cv.getBoundingClientRect();
   tap(e.clientX - r.left, e.clientY - r.top);
 });

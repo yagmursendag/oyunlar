@@ -4205,6 +4205,7 @@ const PLACES = [
   { id: 'flowers', name: 'Çiçekçi', icon: '🌷', col: '#d2f5dc', roof: '#2fa35a' },
   { id: 'home', name: 'Evim', icon: '🏠', col: '#fff3b0', roof: '#8b5cf6' },
   { id: 'market', name: 'Market', icon: '🛒', col: '#d7f0ff', roof: '#2d7ff9' },
+  { id: 'school', name: 'Okul', icon: '🏫', col: '#fff0b8', roof: '#2d7ff9', ang: 6.5 / 7 },
 ];
 // needs: 100 = full, they go down while you are in the lobby
 function needs() { if (!profile.needs) profile.needs = { hunger: 100, sleep: 100 }; return profile.needs; }
@@ -4712,7 +4713,7 @@ function lbBuilding(p) {
     if (p.id !== 'hospital') for (let k = 0; k < 3; k++) g.add(lbM(new THREE.SphereGeometry(0.16, 8, 6), toon(['#ff6fb5', '#ffd23f', '#b18cff'][k]), s * 2.9 - 0.6 + k * 0.6, h * 0.52 - 0.86, d / 2 + 0.28));
   }
   // striped awning
-  if (['cafe', 'icecream', 'flowers', 'salon'].includes(p.id)) {
+  if (['cafe', 'icecream', 'flowers', 'salon', 'school'].includes(p.id)) {
     const aw = new THREE.Mesh(new THREE.PlaneGeometry(w - 0.4, 1.4), new THREE.MeshToonMaterial({ gradientMap: lbGrad, side: THREE.DoubleSide, map: lbTex(256, 64, (gg, ww, hh) => { for (let i = 0; i < 8; i++) { gg.fillStyle = i % 2 ? '#ffffff' : p.roof; gg.fillRect(i * 32, 0, 32, hh); } gg.fillStyle = 'rgba(0,0,0,.08)'; gg.fillRect(0, hh - 8, ww, 8); }) }));
     aw.position.set(0, 3.55, d / 2 + 0.62); aw.rotation.x = -0.9; aw.castShadow = true; g.add(aw);
   }
@@ -4730,6 +4731,7 @@ function lbBuilding(p) {
   else if (p.id === 'flowers') for (let i = 0; i < 5; i++) { const a = i * 1.26; top.add(lbM(new THREE.SphereGeometry(0.45, 12, 10), toon(['#ff6fb5', '#ffd23f', '#b18cff', '#ff8a3d', '#ff4f8b'][i]), Math.cos(a) * 0.7, 0.4, Math.sin(a) * 0.7)); }
   else if (p.id === 'home') { g.add(lbM(new THREE.BoxGeometry(0.8, 2, 0.8), toon('#c98b5a'), 2.4, h + 1.8, -1)); }
   else if (p.id === 'market') { top.add(lbM(new THREE.SphereGeometry(0.9, 18, 14), toon('#e8434f'), 0, 0.5, 0)); top.add(lbM(new THREE.CylinderGeometry(0.06, 0.06, 0.5, 8), toon('#6b4a3a'), 0, 1.5, 0)); const lf = lbM(new THREE.SphereGeometry(0.3, 10, 8), toon('#2fd27a'), 0.3, 1.5, 0); lf.scale.set(1, 0.4, 0.6); top.add(lf); }
+  else if (p.id === 'school') { for (let i = 0; i < 3; i++) top.add(lbM(new THREE.BoxGeometry(1.5 - i * 0.2, 0.32, 1.0), toon(['#e8434f', '#2d7ff9', '#2fbf71'][i]), 0, 0.1 + i * 0.32, 0)); top.add(lbM(new THREE.SphereGeometry(0.34, 12, 10), toon('#e8434f'), 0, 1.25, 0)); }
   else if (p.id === 'salon') { top.add(lbM(new THREE.BoxGeometry(0.9, 1.1, 0.9), toon('#ff5fa2'), 0, 0.3, 0)); top.add(lbM(new THREE.CylinderGeometry(0.28, 0.28, 0.9, 12), toon('#2a1f2e'), 0, 1.3, 0)); }
   top.children.forEach(ch => { ch.castShadow = true; });
   return g;
@@ -4769,7 +4771,7 @@ function lbInit() {
   LB.jet = new THREE.Points(pg, new THREE.PointsMaterial({ color: '#bfeaff', size: 0.16, transparent: true, opacity: 0.9 })); sc.add(LB.jet);
   // buildings on a ring, doors facing the fountain
   LB.places = PLACES.map((p, i) => {
-    const a = i / PLACES.length * Math.PI * 2, R = 26, b = lbBuilding(p);
+    const a = (p.ang !== undefined ? p.ang : i / 7) * Math.PI * 2, R = 26, b = lbBuilding(p);
     b.position.set(Math.sin(a) * R, 0, -Math.cos(a) * R); b.rotation.y = -a; sc.add(b);
     const dir = new THREE.Vector3(-Math.sin(a), 0, Math.cos(a));
     const door = b.position.clone().add(dir.clone().multiplyScalar(4.4));
@@ -4825,14 +4827,14 @@ function lbResize() { if (!LB.renderer) return; LB.renderer.setPixelRatio(OPTS.g
 function lbPopulate() {
   const sc = LB.scene;
   for (const a of [LB.me, LB.pet, ...LB.npcs.map(n => n.av)]) if (a) sc.remove(a);
-  LB.me = lbAvatar(profile.look, profile.name + (profile.id === ADMIN_ID ? ' 👑' : ''), '#ff5fa2'); LB.me.position.set(0, 0, 9); sc.add(LB.me);
+  LB.me = lbAvatar(profile.look, profile.name + (profile.id === ADMIN_ID ? ' 👑' : '') + (myTitle() ? ' · ' + myTitle() : ''), '#ff5fa2'); LB.me.position.set(0, 0, 9); sc.add(LB.me);
   // backpack on my back
   { const B = BAGS[inv.bagOn] || BAGS.small, bp = new THREE.Group(); bp.add(lbM(new THREE.BoxGeometry(0.52, 0.6, 0.26), toon(B.col), 0, 0, 0)); bp.add(lbM(new THREE.BoxGeometry(0.36, 0.26, 0.08), toon(mix(B.col, '#000000', 0.12)), 0, -0.1, -0.16)); bp.add(lbM(new THREE.SphereGeometry(0.04, 8, 6), toon('#ffd23f'), 0, 0.06, -0.21)); bp.position.set(0, 1.12, -0.36); LB.me.userData.A.body.add(bp); }
   const pk = normLook(profile.look).pet; LB.pet = pk !== 'none' ? lbPet(pk) : null; if (pk === 'dragon') LB.pet.scale.setScalar(1.4); if (LB.pet) { LB.pet.position.set(1, 0, 10); sc.add(LB.pet); }
   // friends from invite codes (their own characters) + a few townspeople
   const people = friends.slice(0, 6).map(f => { const look = f.look || lbRandomLook(); return { look, name: '👭 ' + f.name, col: '#8b5cf6', info: { kind: 'friend', name: f.name, look, id: f.id, money: f.money, served: f.served, f, at: f.at } }; });
   const pool = [...GIRL_NAMES, ...BOY_NAMES].filter(nm => nm !== profile.name && !friends.some(f => f.name === nm));
-  while (people.length < 8) { const look = lbRandomLook(), nm = pool.splice(Math.floor(Math.random() * pool.length), 1)[0]; people.push({ look, name: nm, col: '#64748b', info: npcInfo(nm, look) }); }
+  while (people.length < 8) { const look = lbRandomLook(), nm = pool.splice(Math.floor(Math.random() * pool.length), 1)[0], inf = npcInfo(nm, look); people.push({ look, name: nm + ' · ' + inf.title, col: '#64748b', info: inf }); }
   LB.npcs = people.map(p => {
     const av = lbAvatar(p.look, p.name, p.col), a = Math.random() * 6.28, R = 6 + Math.random() * 10;
     av.position.set(Math.sin(a) * R, 0, Math.cos(a) * R); av.userData.info = p.info; sc.add(av);
@@ -4852,7 +4854,7 @@ function enterLobby() {
 function lbPlaceById(id) { return LB.places.find(p => p.id === id); }
 function lbEnter(p) {
   if (p.id === 'salon') { go('title'); newCustomer(served === 0); return; }
-  if (p.id === 'market' || p.id === 'hospital' || p.id === 'home') return lbGoInside(p.id);
+  if (p.id === 'market' || p.id === 'hospital' || p.id === 'home' || p.id === 'school') return lbGoInside(p.id);
   LB.place = p; scene = 'place'; fade = 0.6; sfx('pop');
 }
 // keep a point out of the fountain and the buildings, inside the town
@@ -4867,11 +4869,11 @@ function lbCollide(v, rad = 0.5) {
   for (const p of LB.places) { const dx = v.x - p.pos.x, dz = v.z - p.pos.z, dd = Math.hypot(dx, dz); if (dd < 5.6 + rad) { const k = (5.6 + rad) / (dd || 1); v.x = p.pos.x + dx * k; v.z = p.pos.z + dz * k; } }
 }
 function lbRebuildMe() {
-  const o = LB.me, n = lbAvatar(profile.look, profile.name + (profile.id === ADMIN_ID ? ' 👑' : ''), '#ff5fa2'); n.position.copy(o.position); n.rotation.copy(o.rotation); LB.scene.remove(o); LB.scene.add(n); LB.me = n;
+  const o = LB.me, n = lbAvatar(profile.look, profile.name + (profile.id === ADMIN_ID ? ' 👑' : '') + (myTitle() ? ' · ' + myTitle() : ''), '#ff5fa2'); n.position.copy(o.position); n.rotation.copy(o.rotation); LB.scene.remove(o); LB.scene.add(n); LB.me = n;
 }
 function lbUpdate(dt) {
   if (!LB.ok) return;
-  { const lk = JSON.stringify(profile.look); if (LB.lookKey && LB.lookKey !== lk && LB.me) lbRebuildMe(); LB.lookKey = lk; }
+  { const lk = JSON.stringify([profile.look, myTitle()]); if (LB.lookKey && LB.lookKey !== lk && LB.me) lbRebuildMe(); LB.lookKey = lk; }
   const n = needs(), tired = n.hunger <= 0 || n.sleep <= 0;
   // needs go down while you are out in the town
   if (scene === 'lobby' || scene === 'job' || (scene === 'place' && LB.sleepT <= 0)) { n.hunger = Math.max(0, n.hunger - dt * 0.28); n.sleep = Math.max(0, n.sleep - dt * 0.17); }
@@ -5038,6 +5040,7 @@ function drawLobby() {
     if (LB.acts) ACT_LIST.forEach(([id, t], i) => btn(cx0 + 78, 596 - i * 46, 190, 42, t, () => { mpEmote(11 + i); LB.acts = false; }, { size: 17 }));
     if (LB.acts) btn(cx0 + 78, 596 - ACT_LIST.length * 46, 190, 42, (LB.me && LB.me.userData.A.disguise ? '👁️ Görün' : '🫥 Saklan'), () => { mpEmote(LB.me && LB.me.userData.A.disguise ? 25 : 19 + Math.floor(Math.random() * 6)); LB.acts = false; }, { size: 17, col: '#d9f7d0' });
     if (LB.prof) drawProfile();
+    if (SCH) schDraw();
   } else if (scene === 'place') drawPlace();
   else if (scene === 'job') drawJob();
 }
@@ -5464,6 +5467,19 @@ function openFridge() {
   modal.querySelectorAll('[data-f]').forEach(b => { b.onclick = () => { const k = b.dataset.f; if (bagUsed() >= bagCap()) { sfx('no'); return say('Çantan dolu! 🎒'); } inv.fridge[k]--; inv.food[k] = (inv.food[k] || 0) + 1; save(); sfx('pop'); openFridge(); }; });
   const fa = $('fall'); if (fa) fa.onclick = () => { for (const [k, n] of bag) { const m = Math.min(n, FRIDGE_CAP - fridgeUsed()); if (m <= 0) break; inv.food[k] -= m; inv.fridge[k] = (inv.fridge[k] || 0) + m; } save(); sfx('done'); openFridge(); };
 }
+
+// ================= 🧰 storage box at home: keep the toys and things from your bag =================
+const BOX_CAP = 120;
+const boxUsed = () => Object.values(inv.box || {}).reduce((a, v) => a + v, 0);
+function openBox() {
+  inv.box = inv.box || {}; inv.things = inv.things || {};
+  const bag = Object.entries(inv.things).filter(([, n]) => n > 0), bx = Object.entries(inv.box).filter(([, n]) => n > 0), st = 'width:auto;display:inline-block;margin:3px;padding:8px 10px;font-size:15px';
+  openModal('<h2>🧰 Eşya kutusu</h2><p>🎒 Çanta: <b>' + bagUsed() + '/' + bagCap() + '</b> • 🧰 Kutu: <b>' + boxUsed() + '/' + BOX_CAP + '</b></p><h3>🎒 Çantan (kutuya koy)</h3><div style="max-height:22vh;overflow:auto">' + (bag.length ? bag.map(([k, n]) => '<button class="mb y" style="' + st + '" data-b="' + k + '">' + THINGS[k][0] + ' ' + THINGS[k][1] + ' ×' + n + '</button>').join('') : '<p>Çantanda eşya yok</p>') + '</div>' + (bag.length ? '<button class="mb g" style="' + st + '" id="ball">⬇️ Hepsini kutuya koy</button>' : '') + '<h3>🧰 Kutuda (çantaya al)</h3><div style="max-height:22vh;overflow:auto">' + (bx.length ? bx.map(([k, n]) => '<button class="mb y" style="' + st + '" data-f="' + k + '">' + THINGS[k][0] + ' ' + THINGS[k][1] + ' ×' + n + '</button>').join('') : '<p>Kutu boş</p>') + '</div><p style="font-size:13px">Yiyecekler kutuya girmez, onları 🧊 dolaba koy</p><button class="mb s" id="bclose">Kapat</button>');
+  $('bclose').onclick = closeModal;
+  modal.querySelectorAll('[data-b]').forEach(b => { b.onclick = () => { const k = b.dataset.b; if (boxUsed() >= BOX_CAP) { sfx('no'); return say('Kutu dolu! 🧰'); } inv.things[k]--; inv.box[k] = (inv.box[k] || 0) + 1; save(); sfx('pop'); openBox(); }; });
+  modal.querySelectorAll('[data-f]').forEach(b => { b.onclick = () => { const k = b.dataset.f; if (bagUsed() >= bagCap()) { sfx('no'); return say('Çantan dolu! 🎒'); } inv.box[k]--; inv.things[k] = (inv.things[k] || 0) + 1; save(); sfx('pop'); openBox(); }; });
+  const ba = $('ball'); if (ba) ba.onclick = () => { for (const [k, n] of bag) { const m = Math.min(n, BOX_CAP - boxUsed()); if (m <= 0) break; inv.things[k] -= m; inv.box[k] = (inv.box[k] || 0) + m; } save(); sfx('done'); openBox(); };
+}
 let CK = null;
 const ckHave = r => Object.entries(r.need).every(([k, n]) => foodHave(k) >= n);
 function openCook() { CK = { ph: 'pick', last: performance.now(), t: 0 }; }
@@ -5602,6 +5618,8 @@ function lbBuildHome() {
   spots.push({ x: O.x, z: O.z + 9.1, exit: 'home' });
   spots.push({ x: O.x - 10.0, z: O.z + 7.2, furn: 'wardrobe' }, { x: O.x + 7.5, z: O.z - 7.6, furn: 'tv' }, { x: O.x + 7.5, z: O.z - 3.4, furn: 'rest' }, { x: O.x + 10.4, z: O.z + 1.2, furn: 'read' });
   if (HZ.extra === 'piano') spots.push({ x: O.x + 9.0, z: O.z + 6.4, furn: 'piano' }); if (HZ.extra === 'aquarium') spots.push({ x: O.x + 10.1, z: O.z + 6.2, furn: 'fish' }); if (HZ.extra === 'fireplace') spots.push({ x: O.x + 10.3, z: O.z + 6.2, furn: 'warm' });
+  // storage box in the back-left corner
+  { const cx = -11.7, cz = -8.5; bx(1.7, 0.9, 1.0, '#a8703c', cx, 0.45, cz); bx(1.8, 0.28, 1.1, '#c98b5a', cx, 1.02, cz); bx(1.8, 0.1, 1.15, '#e0b04a', cx, 0.62, cz); bx(0.22, 0.3, 0.1, '#ffd23f', cx, 0.75, cz + 0.55); const sb = lbSignPlane('🧰 Eşya kutusu', '#a8703c', 2.2, 0.6); sb.position.set(cx, 2.1, -9.7); g.add(sb); obs.push([cx - 1, cx + 1, cz - 0.7, cz + 0.7]); spots.push({ x: O.x + cx + 1.4, z: O.z + cz + 1.2, furn: 'box' }); }
   const nFixed = obs.length; lbPlaceItems(g, O, spots, obs, 'home');
   LB.rooms.home = { O, w: 26, d: 20, g, spots, obs, fixedN: nFixed, spawn: new THREE.Vector3(O.x, 0, O.z + 7.4) };
 }
@@ -5731,6 +5749,7 @@ function furnActs(fn) {
     read: [['📚 Kitap oku', () => { sfx('pop'); say(books[Math.floor(Math.random() * books.length)]); questEvent('read'); }, '#8be07e']],
     piano: [['🎹 Piyano çal', () => { ['coin', 'pop', 'coin', 'done'].forEach((s, i) => setTimeout(() => sfx(s), i * 220)); sparkle(640, 330, 14); questEvent('piano'); say('🎶 Ne güzel çalıyorsun!'); }, '#1c1c24']],
     wardrobe: [['👗 Gardırobu aç • kıyafet değiştir', openDesigner, '#ff5fa2']],
+    box: [['🧰 Eşya kutusu • eşyalarını koy', openBox, '#c98b5a']],
     fish: [['🐠 Balıkları besle', () => { sfx('pop'); sparkle(640, 330, 10); questEvent('fish'); say('🐠 Balıklar yemi çok sevdi!'); }, '#5ac8ff']],
     cook: [['🍳 Yemek pişir', openCook, '#ff8a3d']], fridge: [['🧊 Dolap (yemek sakla)', openFridge, '#5aa9ff']],
     warm: [['🔥 Şömine başında ısın', () => { sfx('pop'); say('🔥 Ne sıcacık! Kendini çok iyi hissettin'); lbRest(); }, '#ff8a3d']],
@@ -5804,6 +5823,37 @@ function lbBuildInteriors() {
     spots.push({ x: O.x, z: O.z + 7.1, exit: 'hospital' });
     LB.rooms.hospital = { O, w: 22, d: 16, g, spots, obs, spawn: new THREE.Vector3(O.x, 0, O.z + 5.6) };
   }
+  // 🏫 school
+  {
+    const O = new THREE.Vector3(-240, 0, 0), g = lbRoom(O, 24, 18, '#fff1d6', '#d8c19a', '#c8ae84'), spots = [], obs = [];
+    const s = lbSignPlane('🏫 YV Okulu', '#2d7ff9', 6, 1.2); s.position.set(0, 5.2, -8.75); g.add(s);
+    // blackboard
+    g.add(lbM(new THREE.BoxGeometry(9.4, 3.2, 0.2), toon('#8a5a3a'), 0, 2.6, -8.8));
+    { const bd = new THREE.Mesh(new THREE.PlaneGeometry(8.8, 2.7), new THREE.MeshBasicMaterial({ map: lbTex(512, 160, (c, w, h) => { c.fillStyle = '#2f6f55'; c.fillRect(0, 0, w, h); c.fillStyle = 'rgba(255,255,255,.9)'; c.font = '800 44px ' + FONT; c.textAlign = 'center'; c.fillText('Bugünün dersi', w / 2, 56); c.font = '800 38px ' + FONT; c.fillText('2 + 3 = 5   A B C   🌍 🔬', w / 2, 112); }) })); bd.position.set(0, 2.6, -8.68); g.add(bd); }
+    // teacher desk with a globe and the teacher
+    g.add(lbM(new THREE.BoxGeometry(3.4, 1.0, 1.4), toon('#a8703c'), 0, 0.5, -5.6)); g.add(lbM(new THREE.BoxGeometry(3.5, 0.12, 1.5), toon('#c98b5a'), 0, 1.05, -5.6));
+    g.add(lbM(new THREE.SphereGeometry(0.34, 14, 10), toon('#5ac8ff'), 1.1, 1.5, -5.6)); g.add(lbM(new THREE.CylinderGeometry(0.05, 0.12, 0.3, 8), toon('#4a3a5a'), 1.1, 1.2, -5.6));
+    const teacher = lbAvatar({ girl: true, outfit: 'apron', cloth: '#8b5cf6', hair: '#3a2314', hairdo: 'topknot', len: 'mid' }, '👩‍🏫 Öğretmen Ayşe', '#2d7ff9');
+    teacher.position.set(O.x - 1.8, 0, O.z - 6.8); teacher.rotation.y = 0; LB.scene.add(teacher); LB.staff.push(teacher);
+    obs.push([-1.8, 1.8, -6.4, -4.8]);
+    // pupils' desks in rows
+    const stu = ['Mira', 'Efe', 'Ada', 'Kerem'];
+    for (let r = 0; r < 2; r++) for (let c = 0; c < 4; c++) {
+      const x = -7.5 + c * 5, z = -1.4 + r * 3.8;
+      g.add(lbM(new THREE.BoxGeometry(2.2, 0.12, 1.2), toon('#e8c99a'), x, 0.85, z)); for (const [dx, dz] of [[-0.95, -0.45], [0.95, -0.45], [-0.95, 0.45], [0.95, 0.45]]) g.add(lbM(new THREE.BoxGeometry(0.1, 0.8, 0.1), toon('#8a5a3a'), x + dx, 0.4, z + dz));
+      g.add(lbM(new THREE.BoxGeometry(0.8, 0.08, 0.6), toon(['#ff6fb5', '#5ac8ff', '#ffd23f', '#8be07e'][(r * 4 + c) % 4]), x - 0.3, 0.95, z));
+      g.add(lbM(new THREE.BoxGeometry(0.8, 0.1, 0.8), toon('#5ac8ff'), x, 0.5, z + 1.0)); g.add(lbM(new THREE.BoxGeometry(0.8, 0.7, 0.1), toon('#5ac8ff'), x, 0.9, z + 1.4));
+      obs.push([x - 1.2, x + 1.2, z - 0.7, z + 0.7]);
+      if (r === 0 && c < 4 && c !== 1) { const pu = lbAvatar(lbRandomLook(), '🎒 ' + stu[c] + ' · Öğrenci', '#64748b'); pu.position.set(O.x + x, 0.0, O.z + z + 1.0); pu.rotation.y = Math.PI; LB.scene.add(pu); LB.staff.push(pu); }
+    }
+    // bookshelf, clock, ABC banner, plants
+    g.add(lbM(new THREE.BoxGeometry(0.7, 3.2, 3), toon('#c98b5a'), 11.6, 1.6, -3)); for (let r2 = 0; r2 < 4; r2++) for (let k = 0; k < 6; k++) g.add(lbM(new THREE.BoxGeometry(0.4, 0.5 + (k % 3) * 0.1, 0.25), toon(['#ff6fb5', '#5ac8ff', '#ffd23f', '#8be07e', '#b18cff', '#ff8a3d'][(k + r2) % 6]), 11.3, 0.7 + r2 * 0.75, -4.2 + k * 0.45)); obs.push([11, 12.2, -4.6, -1.4]);
+    { const ab = lbSignPlane('A B C Ç D E F G Ğ H', '#ff8a3d', 6, 0.8); ab.position.set(-6.5, 4.4, -8.72); g.add(ab); const cl = lbSignPlane('🕘 Ders zamanı', '#2fbf71', 3, 0.8); cl.position.set(6.5, 4.4, -8.72); g.add(cl); }
+    g.add(lbM(new THREE.CylinderGeometry(0.4, 0.3, 0.6, 10), toon('#c9764a'), -11.2, 0.3, 7.6)); for (let i = 0; i < 5; i++) g.add(lbM(new THREE.SphereGeometry(0.3, 8, 6), toon('#4fb35a'), -11.2 + (i % 3 - 1) * 0.25, 0.9 + (i % 2) * 0.3, 7.6));
+    spots.push({ x: O.x, z: O.z - 3.4, school: true });
+    spots.push({ x: O.x, z: O.z + 8.1, exit: 'school' });
+    LB.rooms.school = { O, w: 24, d: 18, g, spots, obs, spawn: new THREE.Vector3(O.x, 0, O.z + 6.6) };
+  }
   lbDecorRooms(); lbBuildHome(); if (houseCur().floors === 2) lbBuildHome2();
 }
 function lbGoInside(id) {
@@ -5813,6 +5863,7 @@ function lbGoInside(id) {
   if (LB.pet) LB.pet.position.set(R.spawn.x + 1, 0, R.spawn.z + 1);
   LB.cam.position.set(R.spawn.x, 5.2, R.spawn.z + 7);
   if (id === 'market') say('Raflardan istediğini sepete at, kasada öde 🛒');
+  else if (id === 'school') say('🏫 Okula hoş geldin! Sıraya otur, derse gir 📚');
   else if (id === 'home') say('Evine hoş geldin! 🏠 Ocakta yemek pişir, yatakta uyu');
   else say('Hastaneye hoş geldin! Danışmaya uğra 🏥');
 }
@@ -5848,6 +5899,7 @@ function lbNearSpot() {
 // what you can do at the spot you stand at: [label, action, colour]
 function spotActions(sp) {
   if (sp.exit) return [['🚪 Dışarı çık', lbGoOutside, '#27b36a']];
+  if (sp.school) return [['🎒 Derse gir', () => openSchool(), '#2d7ff9'], ['📋 Karnem', () => openSchool('card'), '#ff8a3d']];
   if (sp.catalog) return [['🛍️ Büyük Raf • tüm ürünler', showCatalog, '#ff5fa2']];
   if (sp.furn) return furnActs(sp.furn);
   if (sp.houses) return [['🏡 Evler • ev satın al', showHouses, '#e8434f']];
@@ -6090,6 +6142,9 @@ const QUEST_POOL = [
   { id: 'step_brows', text: 'Bir müşterinin kaşını al ✨', goal: 1, reward: 20 },
   { id: 'step_shave', text: 'Bir müşteriyi tıraş et 🪒', goal: 1, reward: 25 },
   { id: 'step_cut', text: 'Bir müşterinin saçını kes ✂️', goal: 1, reward: 25 },
+  { id: 'lesson1', text: 'Okulda bir derse gir 🏫', goal: 1, reward: 25 },
+  { id: 'lesson3', text: 'Okulda 3 ders bitir 📚', goal: 3, reward: 70 },
+  { id: 'perfect1', text: 'Bir derste 5 sorunun hepsini bil ⭐', goal: 1, reward: 45 },
   { id: 'furn1', text: 'Evine bir mobilya yerleştir 🛋️', goal: 1, reward: 25 },
   { id: 'furn3', text: 'Evine 3 mobilya yerleştir 🛋️', goal: 3, reward: 60 },
   { id: 'rest2', text: 'Evde 2 kez dinlen 😌', goal: 2, reward: 20 },
@@ -6117,7 +6172,7 @@ function quests() {
 }
 const QUEST_ALIAS = { walk: ['walk800'], jump: ['jump50'], emote: ['emote15'], swim: ['swim90'], serve: ['serve8'], luna: ['luna4'], goal: ['goal6'], volley: ['volley6'], eat: ['eat5'], lobbytime: ['lobby10'], mynails: ['mynails3'] };
 Object.entries({ walk: 'walk2000', jump: 'jump100', emote: 'emote30', swim: 'swim180', serve: 'serve12', luna: 'luna6', goal: 'goal10', volley: 'volley10', eat: 'eat8', lobbytime: 'lobby20', park: 'park8', market: 'market6', job: 'job5', artdraw: 'artdraw100', shop: 'shop5' }).forEach(([k, v]) => { (QUEST_ALIAS[k] = QUEST_ALIAS[k] || []).push(v); });
-(QUEST_ALIAS.cook = QUEST_ALIAS.cook || []).push('cook4'); QUEST_ALIAS.furn = ['furn1', 'furn3']; QUEST_ALIAS.rest = ['rest2']; QUEST_ALIAS.read = ['read1']; QUEST_ALIAS.piano = ['piano1']; QUEST_ALIAS.fish = ['fish1']; QUEST_ALIAS.tp = ['tp1']; (QUEST_ALIAS.parkour = QUEST_ALIAS.parkour || []).push('pk2'); (QUEST_ALIAS.swim = QUEST_ALIAS.swim || []).push('swim60'); (QUEST_ALIAS.park = QUEST_ALIAS.park || []).push('park2'); (QUEST_ALIAS.parkour = QUEST_ALIAS.parkour || []).push('parkour3');
+(QUEST_ALIAS.cook = QUEST_ALIAS.cook || []).push('cook4'); QUEST_ALIAS.furn = ['furn1', 'furn3']; QUEST_ALIAS.lesson = ['lesson1', 'lesson3']; QUEST_ALIAS.perfect = ['perfect1']; QUEST_ALIAS.rest = ['rest2']; QUEST_ALIAS.read = ['read1']; QUEST_ALIAS.piano = ['piano1']; QUEST_ALIAS.fish = ['fish1']; QUEST_ALIAS.tp = ['tp1']; (QUEST_ALIAS.parkour = QUEST_ALIAS.parkour || []).push('pk2'); (QUEST_ALIAS.swim = QUEST_ALIAS.swim || []).push('swim60'); (QUEST_ALIAS.park = QUEST_ALIAS.park || []).push('park2'); (QUEST_ALIAS.parkour = QUEST_ALIAS.parkour || []).push('parkour3');
 function questEvent(id, amt = 1) {
   if (!profile) return;
   if (QUEST_ALIAS[id] && !questEvent.busy) { questEvent.busy = 1; QUEST_ALIAS[id].forEach(a => questEvent(a, amt)); questEvent.busy = 0; }
@@ -6164,11 +6219,14 @@ function canCloud() { return rich() || !!(profile && profile.id === CLOUD_ID); }
 const BOY_OUTFITS = ['football', 'suit', 'police', 'firefighter', 'pirate', 'ninja', 'royal', 'knight', 'wizard', 'vampire', 'samurai', 'angel', 'diamond', 'cosmic', 'dragonarmor', 'whitedeer', 'cloud', 'farmer', 'doctor', 'bunny', 'tiger', 'witch', 'ball', 'sunking', 'icequeen', 'elf', 'robotsuit', 'pharaoh', 'unicornsuit', 'snowman', 'pumpkin', 'candy', 'crystal', 'lava', 'poseidon', 'fox', 'panda', 'frog', 'bee', 'ladybug', 'rocker', 'ballet', 'scientist', 'racer', 'dino', 'kimono', 'sailor']; // outfits that need the shop / look like a boy in the preview
 const PET_LABEL = { none: 'Yok', bunny: '🐰 Tavşan', cat: '🐱 Kedi', dog: '🐶 Köpek', snake: '🐍 Yılan', duck: '🦆 Ördek', dragon: '🐉 Ejderha', penguin: '🐧 Penguen', unicorn: '🦄 Unicorn', turtle: '🐢 Kaplumbağa', owl: '🦉 Baykuş', fox: '🦊 Tilki', panda: '🐼 Panda' };
 // made-up but steady details for townspeople (same name -> same numbers)
+const NPC_TITLES = ['Doktor 🩺', 'Öğretmen 📚', 'Aşçı 🍳', 'Pilot ✈️', 'İtfaiyeci 🚒', 'Polis 👮', 'Çiftçi 🌾', 'Dondurmacı 🍦', 'Çiçekçi 🌷', 'Kuaför 💇', 'Ressam 🎨', 'Müzisyen 🎵', 'Öğrenci 🎒', 'Öğrenci 🎒', 'Sporcu ⚽', 'Fırıncı 🥖'];
+const TITLE_KEYS = [...Object.keys(JOB_NAMES), 'student'], TITLE_TXT = { ...JOB_NAMES, student: 'Öğrenci 🎒' };
+const myTitle = () => profile && profile.job ? JOB_NAMES[profile.job] : profile && profile.school && profile.school.done > 0 ? 'Öğrenci 🎒' : '';
 const NPC_MONEY = { Su: 1000 }; // townspeople with a chosen amount
 function npcInfo(name, look) {
   let h = 7; for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) % 1000003;
   const jobs = [null, ...Object.keys(JOB_NAMES)];
-  return { kind: 'npc', name, look, id: String(100000 + h % 900000), money: NPC_MONEY[name] || 40 + (h % 97) * 37, served: h % 60, job: jobs[h % jobs.length] };
+  return { kind: 'npc', name, look, id: String(100000 + h % 900000), money: NPC_MONEY[name] || 40 + (h % 97) * 37, served: h % 60, job: jobs[h % jobs.length], title: NPC_TITLES[(h >> 3) % NPC_TITLES.length] };
 }
 // who did the tap land on? (the mesh itself, or the ground right next to someone)
 function lbPickPerson(rc, hit) {
@@ -6200,8 +6258,8 @@ function drawProfile() {
   const tag = P.kind === 'me' ? '⭐ Sensin' : P.kind === 'friend' ? '👭 Arkadaşın' : P.kind === 'online' ? (P.host ? '🟢 Çevrimiçi • lobinin sahibi' : '🟢 Çevrimiçi') : '🏙️ Kasabadan';
   text(P.kind === 'online' ? tag : `#${P.id}  •  ${tag}`, 556, 212, 18, '#6b5a70', 'left', 800);
   btn(870, 128, 130, 44, '✖ Kapat', () => { LB.prof = null; }, { size: 17 });
-  const rows = [...(P.kind === 'me' ? [['⭐', 'Seviyesi', String(myLevel()), '#8a5a00']] : P.kind === 'online' ? [['⭐', 'Seviyesi', String(P.lvl || 1), '#8a5a00']] : []), ['💰', 'Parası', `${fmtMoney(P.money)} TL`, '#23884f'], ['💅', 'Baktığı müşteri', `${P.served || 0}`, '#3a2340'], ['💼', 'İşi', JOB_NAMES[P.job] || 'İşi yok', '#3a2340'], ['🐾', 'Hayvanı', PET_LABEL[L.pet] || 'Yok', '#3a2340']];
-  if (P.kind === 'online') { rows[1][2] = '—'; rows[2][2] = '—'; rows[3][2] = '—'; }
+  const rows = [...(P.kind === 'me' ? [['⭐', 'Seviyesi', String(myLevel()), '#8a5a00']] : P.kind === 'online' ? [['⭐', 'Seviyesi', String(P.lvl || 1), '#8a5a00']] : []), ['💰', 'Parası', `${fmtMoney(P.money)} TL`, '#23884f'], ['💅', 'Baktığı müşteri', `${P.served || 0}`, '#3a2340'], ['💼', 'İşi', JOB_NAMES[P.job] || P.title || 'İşi yok', '#3a2340'], ['🐾', 'Hayvanı', PET_LABEL[L.pet] || 'Yok', '#3a2340']];
+  if (P.kind === 'online') { rows[1][2] = '—'; rows[2][2] = '—'; rows[3][2] = P.title || 'İşi yok'; }
   if (P.kind === 'me') rows.push(['💎', 'Elması', P.gems < 0 ? '∞' : fmt(P.gems), '#2d6fd6']);
   rows.forEach(([ico, k, v, col], i) => {
     const y = 236 + i * 56;
@@ -6459,6 +6517,133 @@ function drawVolleyHud() {
   fitText(`🏐 Sen ${S.me}  -  ${S.opp} Deniz`, 494, 50, 24, 296, '#3a2340', 800);
 }
 
+
+// ================= 🏫 school: lessons with quick questions =================
+let SCH = null;
+const shuf = a => a.map(v => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map(x => x[1]);
+const SCH_LESSONS = [
+  { id: 'math', icon: '🔢', name: 'Matematik', col: '#ff6fb5' },
+  { id: 'tr', icon: '🔤', name: 'Türkçe', col: '#8b5cf6' },
+  { id: 'fen', icon: '🔬', name: 'Fen Bilgisi', col: '#2fbf71' },
+  { id: 'hayat', icon: '🌍', name: 'Hayat Bilgisi', col: '#ff8a3d' },
+  { id: 'resim', icon: '🎨', name: 'Resim', col: '#e8434f' },
+  { id: 'ing', icon: '🗣️', name: 'İngilizce', col: '#2d7ff9' },
+];
+const SCH_BANK = {
+  tr: [['Büyük kelimesinin zıttı hangisi?', 'Küçük', 'Uzun', 'Kalın'], ['Sıcak kelimesinin zıttı hangisi?', 'Soğuk', 'Ilık', 'Kaynar'], ['Gece kelimesinin zıttı hangisi?', 'Gündüz', 'Akşam', 'Sabah'], ['Hızlı kelimesinin zıttı hangisi?', 'Yavaş', 'Çabuk', 'Koşan'], ['Açık kelimesinin zıttı hangisi?', 'Kapalı', 'Geniş', 'Boş'],
+    ['Hangisi bir meyvedir?', 'Elma', 'Masa', 'Kalem', 'Araba'], ['Hangisi bir hayvandır?', 'Kedi', 'Bardak', 'Çanta', 'Sandalye'], ['Hangisi bir renktir?', 'Mavi', 'Kitap', 'Kapı', 'Ayakkabı'], ['“Kitap” kelimesi kaç heceli? (ki-tap)', '2', '1', '3', '4'], ['“Okul” kelimesinin ilk harfi hangisi?', 'O', 'K', 'U', 'L'],
+    ['Hangisi bir sebzedir?', 'Havuç', 'Elma', 'Çilek', 'Muz'], ['“Kedi” kelimesinde kaç harf var?', '4', '3', '5', '6'], ['Cümle sonuna ne konur? “Bugün hava çok güzel_”', 'Nokta', 'Soru işareti', 'Virgül'], ['Küçük harfle başlayan kelime hangisi? (cümle ortasında)', 'masa', 'Masa', 'MASA'], ['Gün kelimesinin çoğulu hangisi?', 'Günler', 'Gün', 'Günü']],
+  fen: [['Gündüz bize ışık veren yıldız hangisi?', 'Güneş', 'Ay', 'Dünya', 'Mars'], ['Suyun donmuş haline ne denir?', 'Buz', 'Buhar', 'Bulut'], ['Bitkiler neyle beslenir?', 'Su ve güneş', 'Şeker', 'Süt', 'Çikolata'], ['Dünyamızın uydusu hangisidir?', 'Ay', 'Güneş', 'Mars', 'Venüs'], ['Hangisi yumurtlayan bir hayvandır?', 'Tavuk', 'Kedi', 'İnek', 'Koyun'],
+    ['Gökkuşağında kaç renk vardır?', '7', '5', '3', '10'], ['Arılar ne yapar?', 'Bal', 'Süt', 'Yumurta', 'Ipek'], ['Hangisi bir memeli hayvandır?', 'Kedi', 'Balık', 'Kartal', 'Kertenkele'], ['Balıklar nerede yaşar?', 'Suda', 'Ağaçta', 'Çölde', 'Bulutta'], ['Hangisi sıvı maddedir?', 'Su', 'Taş', 'Odun', 'Demir'],
+    ['Kuşlar nasıl hareket eder?', 'Uçar', 'Yüzer', 'Sürünür'], ['Dünya neyin etrafında döner?', 'Güneş', 'Ay', 'Mars'], ['Kelebek hangi yavrudan çıkar?', 'Tırtıl', 'Solucan', 'Yılan'], ['Havadaki hangi gazı soluruz?', 'Oksijen', 'Altın', 'Şeker'], ['Mıknatıs neyi çeker?', 'Demir', 'Kâğıt', 'Plastik']],
+  hayat: [['Pazartesiden sonra hangi gün gelir?', 'Salı', 'Çarşamba', 'Cuma'], ['Haftada kaç gün vardır?', '7', '5', '6', '10'], ['Yaz aylarından biri hangisi?', 'Temmuz', 'Ocak', 'Aralık', 'Kasım'], ['Kışın gökten ne yağar?', 'Kar', 'Dolu', 'Yaprak'], ['Trafik ışığında yeşil ne demek?', 'Geç', 'Dur', 'Bekle'],
+    ['Karşıdan karşıya nereden geçilir?', 'Yaya geçidinden', 'Arabaların arasından', 'Köşeden koşarak'], ['Dişler günde kaç kez fırçalanır?', '2', '0', '10'], ['Bir yılda kaç mevsim vardır?', '4', '2', '3', '12'], ['Türkiye\'nin başkenti neresidir?', 'Ankara', 'İstanbul', 'İzmir', 'Antalya'], ['Yemekten önce ne yapmalıyız?', 'Elimizi yıkamalıyız', 'Koşmalıyız', 'Uyumalıyız'],
+    ['Cumartesiden önce hangi gün gelir?', 'Cuma', 'Pazar', 'Salı'], ['Bir yılda kaç ay vardır?', '12', '10', '7', '24'], ['Kırmızı trafik ışığında ne yapılır?', 'Durulur', 'Koşulur', 'Zıplanır'], ['Hangisi bayram günüdür?', '23 Nisan', '5 Mart', '10 Ocak'], ['Çöpümüzü nereye atarız?', 'Çöp kutusuna', 'Yere', 'Denize']],
+  resim: [['Kırmızı + Sarı = ?', 'Turuncu', 'Yeşil', 'Mor', 'Pembe'], ['Mavi + Sarı = ?', 'Yeşil', 'Turuncu', 'Kahverengi'], ['Kırmızı + Mavi = ?', 'Mor', 'Yeşil', 'Turuncu'], ['Beyaz + Kırmızı = ?', 'Pembe', 'Gri', 'Mavi'], ['Siyah + Beyaz = ?', 'Gri', 'Pembe', 'Mor'],
+    ['Gökkuşağının ilk rengi hangisi?', 'Kırmızı', 'Mavi', 'Yeşil'], ['Muzun rengi nedir?', 'Sarı', 'Mavi', 'Mor'], ['Çimenin rengi nedir?', 'Yeşil', 'Kırmızı', 'Sarı'], ['Hangisi ana renklerden biridir?', 'Kırmızı', 'Pembe', 'Gri', 'Turuncu'], ['Boya yapmak için ne kullanırız?', 'Fırça', 'Makas', 'Cetvel'],
+    ['Domatesin rengi nedir?', 'Kırmızı', 'Mavi', 'Mor'], ['Hangisi sıcak bir renktir?', 'Kırmızı', 'Mavi', 'Mor'], ['Sarı + Mavi karıştırınca hangi renk olur?', 'Yeşil', 'Mor', 'Kırmızı'], ['Gökyüzünün gündüz rengi nedir?', 'Mavi', 'Yeşil', 'Siyah'], ['Çizgi çizmek için hangisini kullanırız?', 'Kalem', 'Kaşık', 'Terlik']],
+  ing: [['“Cat” ne demek?', 'Kedi', 'Köpek', 'Kuş', 'Balık'], ['“Dog” ne demek?', 'Köpek', 'Kedi', 'At'], ['“Apple” ne demek?', 'Elma', 'Armut', 'Muz', 'Portakal'], ['“Red” ne demek?', 'Kırmızı', 'Mavi', 'Sarı'], ['“Book” ne demek?', 'Kitap', 'Kalem', 'Masa'],
+    ['“Water” ne demek?', 'Su', 'Süt', 'Ateş'], ['“Sun” ne demek?', 'Güneş', 'Ay', 'Yıldız'], ['“House” ne demek?', 'Ev', 'Okul', 'Araba'], ['“Thank you” ne demek?', 'Teşekkürler', 'Merhaba', 'Güle güle'], ['“One” sayısı kaçtır?', '1', '2', '3', '10'],
+    ['“Hello” ne demek?', 'Merhaba', 'Güle güle', 'Teşekkürler'], ['“Blue” ne demek?', 'Mavi', 'Yeşil', 'Kırmızı'], ['“Three” sayısı kaçtır?', '3', '1', '5'], ['“Bird” ne demek?', 'Kuş', 'Balık', 'Kedi'], ['“Milk” ne demek?', 'Süt', 'Su', 'Çay']],
+};
+function schQuestions(id) {
+  const mk = (q, ans, wr) => { const opts = shuf([ans, ...shuf(wr).slice(0, 3)]); return { q, opts, a: opts.indexOf(ans) }; };
+  if (id === 'math') {
+    const gr = Math.min(3, 1 + Math.floor(myLevel() / 4)), ri = (a, b) => Math.floor(a + Math.random() * (b - a + 1)), out = [];
+    for (let i = 0; i < 5; i++) {
+      let q, ans;
+      if (i < 2) { const a = ri(2, 6 + gr * 4), b = ri(2, 6 + gr * 4); q = a + ' + ' + b + ' = ?'; ans = a + b; }
+      else if (i === 2) { const a = ri(8, 12 + gr * 5), b = ri(1, a - 1); q = a + ' − ' + b + ' = ?'; ans = a - b; }
+      else { const a = ri(2, 4 + gr * 2), b = ri(2, 9); q = a + ' × ' + b + ' = ?'; ans = a * b; }
+      const wr = new Set(); for (const d of [1, -1, 2, -2, 10, 3, -3]) if (ans + d >= 0) wr.add(ans + d);
+      out.push(mk(q, String(ans), [...wr].map(String)));
+    }
+    return out;
+  }
+  return shuf(SCH_BANK[id]).slice(0, 5).map(r => mk(r[0], r[1], r.slice(2)));
+}
+const schData = () => { const p = profile.school = profile.school || { done: 0, best: {}, day: '', paid: 0 }; return p; };
+const SCH_TITLES = [[0, '🌱 Yeni öğrenci'], [5, '📘 Çalışkan öğrenci'], [15, '🌟 Başarılı öğrenci'], [30, '🏅 Okul yıldızı'], [60, '🏆 Okul birincisi']];
+const schTitle = () => { const d = schData().done; let t = SCH_TITLES[0][1]; for (const [n, nm] of SCH_TITLES) if (d >= n) t = nm; return t; };
+function openSchool(ph) { SCH = { ph: ph || 'menu', t0: 0 }; sfx('pop'); }
+function schStart(L) { SCH = { ph: 'quiz', L, qs: schQuestions(L.id), i: 0, right: 0, pick: -1, t0: 0 }; sfx('pop'); }
+function schAnswer(k) {
+  const S = SCH; if (S.pick >= 0) return; S.pick = k; S.t0 = performance.now();
+  if (k === S.qs[S.i].a) { S.right++; sfx('coin'); sparkle(640, 330, 10); } else sfx('no');
+}
+function schFinish() {
+  const S = SCH, d = schData(), r = S.right, t = todayKey();
+  if (d.day !== t) { d.day = t; d.paid = 0; }
+  let pay = r * 3 + (r === 5 ? 10 : 0), note = '';
+  if (d.paid >= 6) { pay = 0; note = 'Bugünkü harçlık bitti ama çalışmak güzel! ⭐'; } else d.paid++;
+  if (pay && !rich()) money += pay; else if (pay) money += pay;
+  d.done++; d.best[S.L.id] = Math.max(d.best[S.L.id] || 0, r); save(); questEvent('lesson'); if (r === 5) questEvent('perfect');
+  S.ph = 'result'; S.pay = pay; S.note = note; if (r >= 3) { sfx('done'); sparkle(640, 300, 24); }
+}
+function schDraw() {
+  const S = SCH; if (!S) return;
+  ctx.fillStyle = 'rgba(40,20,50,.5)'; ctx.fillRect(0, 0, W, H);
+  btn(0, 0, W, H, '', () => { }, { hidden: true });
+  ctx.fillStyle = '#fffdf6'; rr(220, 40, 840, 640, 28); ctx.fill(); ctx.strokeStyle = '#2d7ff9'; ctx.lineWidth = 8; ctx.stroke();
+  const close = () => { SCH = null; };
+  if (S.ph === 'menu') {
+    text('🏫 Okul', 640, 100, 40, '#2d7ff9', 'center', 800);
+    text('Bir ders seç! Her ders 5 soru. Doğru cevap başına 3 TL, hepsi doğruysa +10 TL', 640, 138, 17, '#6b5a70', 'center', 700);
+    btn(910, 56, 130, 44, '✖ Kapat', close, { size: 17 });
+    const d = schData();
+    SCH_LESSONS.forEach((L, i) => {
+      const x = 250 + (i % 3) * 268, y = 170 + Math.floor(i / 3) * 190, best = d.best[L.id] || 0;
+      ctx.fillStyle = mix(L.col, '#ffffff', 0.82); rr(x, y, 250, 172, 20); ctx.fill(); ctx.strokeStyle = L.col; ctx.lineWidth = 4; ctx.stroke();
+      emoji(L.icon, x + 125, y + 54, 56); text(L.name, x + 125, y + 104, 22, '#3a2340', 'center', 800);
+      text(best ? '⭐'.repeat(best) + '☆'.repeat(5 - best) : '☆☆☆☆☆', x + 125, y + 128, 16, '#b8860b', 'center', 800);
+      btn(x + 40, y + 134, 170, 34, '▶ Derse başla', () => schStart(L), { col: L.col, fg: '#ffffff', size: 15 });
+    });
+    text(schTitle() + ' • ' + d.done + ' ders bitirdi', 640, 580, 20, '#3a2340', 'center', 800);
+    btn(480, 604, 320, 52, '📋 Karnem', () => { S.ph = 'card'; }, { col: '#ff8a3d', fg: '#ffffff', size: 20 });
+  } else if (S.ph === 'quiz') {
+    const Q = S.qs[S.i];
+    ctx.fillStyle = mix(S.L.col, '#ffffff', 0.7); rr(240, 56, 800, 70, 22); ctx.fill();
+    text(S.L.icon + ' ' + S.L.name, 280, 102, 30, '#3a2340', 'left', 800);
+    text('Soru ' + (S.i + 1) + ' / 5   ✅ ' + S.right, 1000, 100, 22, '#3a2340', 'right', 800);
+    btn(240, 640, 120, 34, '⬅ Çık', () => { S.ph = 'menu'; }, { size: 14 });
+    ctx.fillStyle = '#ffffff'; rr(260, 150, 760, 150, 22); ctx.fill(); ctx.strokeStyle = '#e1d8c4'; ctx.lineWidth = 3; ctx.stroke();
+    fitText(Q.q, 290, 238, 36, 700, '#3a2340', 800);
+    Q.opts.forEach((o, k) => {
+      const x = 260 + (k % 2) * 390, y = 336 + Math.floor(k / 2) * 110;
+      let col = '#fff0f7', fg = '#3a2340';
+      if (S.pick >= 0) { if (k === Q.a) { col = '#2fbf71'; fg = '#ffffff'; } else if (k === S.pick) { col = '#e8434f'; fg = '#ffffff'; } }
+      btn(x, y, 370, 92, o, () => schAnswer(k), { col, fg, size: 28 });
+    });
+    if (S.pick >= 0) {
+      text(S.pick === Q.a ? '🎉 Doğru!' : '😕 Doğrusu yeşil olan', 640, 590, 26, S.pick === Q.a ? '#23884f' : '#c0392b', 'center', 800);
+      if (performance.now() - S.t0 > 1100) { S.pick = -1; if (++S.i >= 5) schFinish(); }
+    }
+  } else if (S.ph === 'result') {
+    text('🏫 Ders bitti!', 640, 120, 40, '#2d7ff9', 'center', 800);
+    text(S.L.icon + ' ' + S.L.name, 640, 180, 30, '#3a2340', 'center', 800);
+    text('⭐'.repeat(S.right) + '☆'.repeat(5 - S.right), 640, 270, 60, '#b8860b', 'center', 800);
+    text(S.right + ' / 5 doğru', 640, 340, 34, '#3a2340', 'center', 800);
+    text(S.right === 5 ? '🏆 Harika! Hepsini bildin!' : S.right >= 3 ? '👏 Aferin, çok iyi!' : '💪 Bir daha dene, olacak!', 640, 400, 26, '#d6337f', 'center', 800);
+    text(S.pay ? '🎁 Harçlık: +' + S.pay + ' TL' : S.note, 640, 450, 24, '#23884f', 'center', 800);
+    btn(300, 520, 300, 62, '🔁 Tekrar', () => schStart(S.L), { col: '#2d7ff9', fg: '#ffffff', size: 24 });
+    btn(680, 520, 300, 62, '📚 Derslere dön', () => { S.ph = 'menu'; }, { col: '#ff8a3d', fg: '#ffffff', size: 24 });
+  } else if (S.ph === 'card') {
+    const d = schData();
+    text('📋 Karnem', 640, 100, 40, '#ff8a3d', 'center', 800);
+    text(profile.name + ' • ' + schTitle(), 640, 140, 22, '#3a2340', 'center', 800);
+    btn(910, 56, 130, 44, '✖ Kapat', close, { size: 17 });
+    SCH_LESSONS.forEach((L, i) => {
+      const y = 170 + i * 62, best = d.best[L.id] || 0;
+      ctx.fillStyle = mix(L.col, '#ffffff', 0.85); rr(280, y, 720, 54, 14); ctx.fill();
+      emoji(L.icon, 312, y + 28, 30); text(L.name, 350, y + 36, 22, '#3a2340', 'left', 800);
+      text(best ? '⭐'.repeat(best) + '☆'.repeat(5 - best) : 'Henüz girmedin', 970, y + 36, 22, '#b8860b', 'right', 800);
+    });
+    text('Toplam ' + d.done + ' ders bitirdin', 640, 570, 22, '#3a2340', 'center', 800);
+    const next = SCH_TITLES.find(t => t[0] > d.done); text(next ? 'Sonraki unvan için ' + (next[0] - d.done) + ' ders daha: ' + next[1] : '👑 En yüksek unvandasın!', 640, 604, 18, '#6b5a70', 'center', 700);
+    btn(480, 620, 320, 46, '⬅ Derslere dön', () => { S.ph = 'menu'; }, { col: '#2d7ff9', fg: '#ffffff', size: 18 });
+  }
+}
+
 // ================= 🌐 shared lobby (Firebase Realtime Database, anonymous sign-in) =================
 // Paste the web app config from the Firebase console here (Project settings > General > Your apps),
 // e.g. const FIREBASE_CONFIG = { apiKey: '...', authDomain: '...', databaseURL: '...', projectId: '...', appId: '...' };
@@ -6524,7 +6709,7 @@ function mpLeave(keep) {
 }
 function mpPayload() {
   const me = LB.me, p = me.position, num = (v, a, b) => clamp(Number.isFinite(v) ? Math.round(v * 100) / 100 : 0, a, b);
-  return { n: String(profile.name || 'Oyuncu').slice(0, 20), l: JSON.stringify([...encodeLook(profile.look), Math.min(myLevel(), 9999)]).slice(0, 300), x: num(p.x, -499, 499), z: num(p.z, -499, 499), r: num(Math.atan2(Math.sin(me.rotation.y), Math.cos(me.rotation.y)) + 8 * headIdx(), -1000, 1000), y: num(p.y, 0, 9.9), e: clamp(MP.e | 0, 0, 29), m: MP.m, h: !MP.host, t: MP.fb.database.ServerValue.TIMESTAMP };
+  return { n: String(profile.name || 'Oyuncu').slice(0, 20), l: JSON.stringify([...encodeLook(profile.look), Math.min(myLevel(), 9999), myTitle() ? TITLE_KEYS.indexOf(profile.job || 'student') + 1 : 0]).slice(0, 300), x: num(p.x, -499, 499), z: num(p.z, -499, 499), r: num(Math.atan2(Math.sin(me.rotation.y), Math.cos(me.rotation.y)) + 8 * headIdx(), -1000, 1000), y: num(p.y, 0, 9.9), e: clamp(MP.e | 0, 0, 29), m: MP.m, h: !MP.host, t: MP.fb.database.ServerValue.TIMESTAMP };
 }
 function mpEmote(i) {
   if (i < 0 || !MP_SAY[i]) return; if (i < 19) questEvent('emote');
@@ -6540,12 +6725,12 @@ function mpPeer(key, v) {
   const lookStr = typeof v.l === 'string' ? v.l : '', name = String(v.n || 'Oyuncu').slice(0, 20);
   if (!pe || pe.l !== lookStr || pe.n !== name) {
     const first = !pe; if (pe) { LB.scene.remove(pe.av); if (pe.pet) LB.scene.remove(pe.pet); }
-    let look = null, lvl = 1; try { const la = JSON.parse(lookStr); look = decodeLook(la); lvl = Math.max(1, Math.min(9999, Math.floor(+la[25]) || 1)); } catch (e) { }
+    let look = null, lvl = 1, title = ''; try { const la = JSON.parse(lookStr); look = decodeLook(la); lvl = Math.max(1, Math.min(9999, Math.floor(+la[25]) || 1)); title = TITLE_TXT[TITLE_KEYS[(Math.floor(+la[26]) || 0) - 1]] || ''; } catch (e) { }
     look = look || normLook({}); MP.arts = MP.arts || {}; if (MP.arts[key]) look = normLook({ ...look, art: MP.arts[key] });
     if (MP.arts[key] === undefined) { MP.arts[key] = ''; try { Promise.resolve(MP.db.ref('arts/' + key).once('value')).then(sn => { const a = sn.val(); if (artOk(a)) { MP.arts[key] = a; const q = MP.peers[key]; if (q) q.l = null; } }).catch(() => { }); } catch (e) { } }
-    const av = lbAvatar(look, '🌐 ' + (lvl > 1 ? '⭐' + lvl + ' ' : '') + name, '#8b5cf6');
+    const av = lbAvatar(look, '🌐 ' + (lvl > 1 ? '⭐' + lvl + ' ' : '') + name + (title ? ' · ' + title : ''), '#8b5cf6');
     av.position.set(+v.x || 0, 0, +v.z || 0); av.rotation.y = +v.r || 0; LB.scene.add(av);
-    av.userData.info = { kind: 'online', name, look, id: '—', lvl };
+    av.userData.info = { kind: 'online', name, look, id: '—', lvl, title };
     pe = MP.peers[key] = { av, l: lookStr, n: name, m: v.m, tx: 0, tz: 0, tr: 0, ty: 0, seen: 0, host: false };
     if (look.pet && look.pet !== 'none') { const pt = lbPet(look.pet); if (look.pet === 'dragon') pt.scale.setScalar(1.4); pt.position.set(av.position.x + 1, 0, av.position.z); LB.scene.add(pt); pe.pet = pt; }
     if (first) say(`🌐 ${name} lobiye geldi!`);
@@ -7296,7 +7481,7 @@ function lbTeleHome() {
   LB.pkRun = null; LB.fly = false; LB.jumpV = 0; LB.me.position.y = 0; LB.where = 'town'; sparkle(640, 360, 24); questEvent('tp'); lbGoInside('home'); say('✨ Eve ışınlandın! 🏡');
 }
 function drawLunaUi() {
-  if (scene === 'lobby' && LB.me && !LB.ride && !LB.edit && !CK && !FG && !(LB.sleepT > 0) && !String(LB.where).startsWith('home')) btn(1062, 288, 200, 48, '🏠 Eve ışınlan', lbTeleHome, { col: '#ffe36e', size: 18 });
+  if (scene === 'lobby' && LB.me && !LB.ride && !LB.edit && !CK && !FG && !SCH && !(LB.sleepT > 0) && !String(LB.where).startsWith('home')) btn(1062, 288, 200, 48, '🏠 Eve ışınlan', lbTeleHome, { col: '#ffe36e', size: 18 });
   if (scene === 'lobby' && LB.where === 'town' && LB.pkRun) { ctx.fillStyle = 'rgba(255,255,255,.94)'; rr(520, 16, 240, 50, 25); ctx.fill(); ctx.strokeStyle = '#ff5fa2'; ctx.lineWidth = 3; ctx.stroke(); text('⏱️ ' + LB.pkRun.t.toFixed(1) + ' sn' + (profile.pkBest ? '  🥇' + profile.pkBest : ''), 640, 50, 22, '#3a2340', 'center', 800); btn(930, 590, 190, 52, '🏁 Başa dön', lbPkReset, { size: 18 }); }
   if (LB.sleepT > 0 && scene === 'lobby') { ctx.fillStyle = `rgba(20,20,60,${Math.min(0.85, 0.3 + (4 - LB.sleepT) * 0.2)})`; ctx.fillRect(0, 0, W, H); for (let i = 0; i < 3; i++) text('Z', 640 + i * 40 + Math.sin(T * 2 + i) * 10, 360 - i * 40 - ((T * 30) % 40), 40 + i * 12, '#ffffff', 'center', 800); text('😴 Uyuyorsun...', 640, 470, 30, '#ffffff', 'center', 800); return; }
   if (CK && scene === 'lobby') return ckDraw();
