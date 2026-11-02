@@ -5010,7 +5010,7 @@ function drawLobby() {
     if (!TOUCH) EMO.forEach((e, i) => btn(16 + i * 58, 650, 52, 52, e, () => mpEmote(MP_SAY.indexOf(e)), { size: 24 }));
     else if (LB.phr) EMO.forEach((e, i) => btn(cx0 + i * 52, 340, 48, 48, e, () => { mpEmote(MP_SAY.indexOf(e)); LB.phr = false; }, { size: 22 }));
     btn(cx0, 650, 70, 52, '💬', () => { LB.phr = !LB.phr; LB.acts = false; }, { active: LB.phr, size: 24 });
-    if (LB.phr) ['Merhaba!', 'Nasılsın?', 'Hadi oynayalım!', 'Çok güzelsin!', 'Görüşürüz!'].forEach((t, i) => btn(cx0, 596 - i * 50, 200, 44, t, () => { mpEmote(MP_SAY.indexOf(t)); LB.phr = false; }, { size: 17 }));
+    if (LB.phr) ['Merhaba!', 'Nasılsın?', 'Hadi oynayalım!', 'Çok güzelsin!', 'Görüşürüz!', 'Beni izle!'].forEach((t, i) => btn(cx0, 596 - i * 50, 200, 44, t, () => { mpEmote(MP_SAY.indexOf(t)); LB.phr = false; }, { size: 17 }));
     if (LB.nearSpot) spotActions(LB.nearSpot).forEach(([t, fn, col], i, arr) => btn(640 - arr.length * 185 + i * 370 + 10, 600, 350, 60, t, fn, { col, fg: col === '#fff0f7' ? '#3a2340' : '#ffffff', size: 17 }));
     if (LB.where === 'market') {
       ctx.fillStyle = 'rgba(255,255,255,.92)'; rr(1062, 130, 200, 60 + Math.max(1, LB.basket.length) * 24, 16); ctx.fill();
@@ -6676,7 +6676,7 @@ function schDraw() {
 // While it is null the game works offline exactly like before. (Firebase web config is not a secret; the database rules protect the data.)
 const FIREBASE_CONFIG = { apiKey: "AIzaSyBwaULPorTF3-RYkoBYEpFvyIFodFrB0Fw", authDomain: "yv-oyunlar.firebaseapp.com", databaseURL: "https://yv-oyunlar-default-rtdb.europe-west1.firebasedatabase.app", projectId: "yv-oyunlar", storageBucket: "yv-oyunlar.firebasestorage.app", messagingSenderId: "150653381048", appId: "1:150653381048:web:7cece7cdcf39e03ecac74d" };
 // quick chat: players only send an index into this list (no free text)
-const MP_SAY = ['👋', '😊', '😂', '💖', '👍', '🍦', 'Merhaba!', 'Nasılsın?', 'Hadi oynayalım!', 'Çok güzelsin!', 'Görüşürüz!', '💃', '🤸', '🙌', '🌀', '👋', '🪑', '🥋', '🙃', '🌳', '📦', '🛢️', '🪨', '🎃', '🚧', '👁️'];
+const MP_SAY = ['👋', '😊', '😂', '💖', '👍', '🍦', 'Merhaba!', 'Nasılsın?', 'Hadi oynayalım!', 'Çok güzelsin!', 'Görüşürüz!', '💃', '🤸', '🙌', '🌀', '👋', '🪑', '🥋', '🙃', '🌳', '📦', '🛢️', '🪨', '🎃', '🚧', '👁️', 'Beni izle!'];
 const MP = { state: 'off', fb: null, db: null, uid: null, busy: null, joining: false, room: null, host: null, target: null, ref: null, listRef: null, peers: {}, since: 9, force: false, lastPos: null, e: 0, m: 0, watch: {} };
 const mpCfg = () => window.__fbMock ? { mock: true } : window.__fbOff ? null : FIREBASE_CONFIG; // __fbOff: tests only
 // my own lobby key: random, only friends who got my invite code know it
