@@ -112,3 +112,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v102 | versions/v102-daha-cok-gorev.html | 📋 Günde 6 görev (bonus 100 TL) + 10 yeni görev (mobilya, dinlen, kitap, piyano, balık, ışınlan…) |
 | v103 | versions/v103-okul.html | 🏫 Okul (6 ders, karne, harçlık), insanların işi isim etiketinde yazar, evde 🧰 eşya kutusu |
 | v104 | versions/v104-sira.html | 🪑 Sıraya otur: boş sıralara yaklaşınca "Sıraya otur • derse gir" düğmesi, ders ekranı açılır |
+| v105 | versions/v105-ac-uyku.html | 🍔 Açlık 3 kat yavaş düşer; 😴 uyku gün boyu dolu kalır, sadece akşama doğru 50'ye iner |
