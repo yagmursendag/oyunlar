@@ -5844,6 +5844,7 @@ function lbBuildInteriors() {
       g.add(lbM(new THREE.BoxGeometry(0.8, 0.08, 0.6), toon(['#ff6fb5', '#5ac8ff', '#ffd23f', '#8be07e'][(r * 4 + c) % 4]), x - 0.3, 0.95, z));
       g.add(lbM(new THREE.BoxGeometry(0.8, 0.1, 0.8), toon('#5ac8ff'), x, 0.5, z + 1.0)); g.add(lbM(new THREE.BoxGeometry(0.8, 0.7, 0.1), toon('#5ac8ff'), x, 0.9, z + 1.4));
       obs.push([x - 1.2, x + 1.2, z - 0.7, z + 0.7]);
+      if (!(r === 0 && c !== 1)) spots.push({ x: O.x + x, z: O.z + z + 1.7, seat: true, sx: O.x + x, sz: O.z + z + 1.0 });
       if (r === 0 && c < 4 && c !== 1) { const pu = lbAvatar(lbRandomLook(), '🎒 ' + stu[c] + ' · Öğrenci', '#64748b'); pu.position.set(O.x + x, 0.0, O.z + z + 1.0); pu.rotation.y = Math.PI; LB.scene.add(pu); LB.staff.push(pu); }
     }
     // bookshelf, clock, ABC banner, plants
@@ -5899,6 +5900,7 @@ function lbNearSpot() {
 // what you can do at the spot you stand at: [label, action, colour]
 function spotActions(sp) {
   if (sp.exit) return [['🚪 Dışarı çık', lbGoOutside, '#27b36a']];
+  if (sp.seat) return [['🪑 Sıraya otur • derse gir', () => { const me = LB.me; me.position.set(sp.sx, 0, sp.sz); me.rotation.y = Math.PI; LB.target = null; lbAction(me, 'sit'); openSchool(); }, '#2d7ff9']];
   if (sp.school) return [['🎒 Derse gir', () => openSchool(), '#2d7ff9'], ['📋 Karnem', () => openSchool('card'), '#ff8a3d']];
   if (sp.catalog) return [['🛍️ Büyük Raf • tüm ürünler', showCatalog, '#ff5fa2']];
   if (sp.furn) return furnActs(sp.furn);

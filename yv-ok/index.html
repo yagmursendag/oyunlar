@@ -98,7 +98,7 @@ function buildCells(x, y, d, len) {
   const cells = [[x, y]];
   let b = [-DIRS[d][0], -DIRS[d][1]];          // backward step direction
   for (let k = 1; k < len; k++) {
-    if (k >= 2 && Math.random() < (k === 2 ? .6 : .4) + .3 * hardness()) b = Math.random() < .5 ? [b[1], -b[0]] : [-b[1], b[0]];
+    if (k >= 2 && Math.random() < (k === 2 ? .6 : .4) + (brutal() ? .45 : .3 * hardness())) b = Math.random() < .5 ? [b[1], -b[0]] : [-b[1], b[0]];
     const nx = cells[k - 1][0] + b[0], ny = cells[k - 1][1] + b[1];
     if (!inb(nx, ny) || grid[ny][nx] || cells.some(([cx, cy]) => cx === nx && cy === ny)) return null;
     cells.push([nx, ny]);
@@ -119,12 +119,12 @@ function makePath(a) {
 }
 
 function buildBoard() {
-  size = brutal() ? Math.min((ultra ? 15 : 13) + Math.floor(level / 10), ultra ? 17 : 15) : ultra ? Math.min(10 + Math.floor(level / 3), 12) : Math.min(5 + Math.floor(level * .75), 12);
+  size = brutal() ? Math.min((ultra ? 12 : 10) + Math.floor(level / 10), ultra ? 13 : 11) : ultra ? Math.min(10 + Math.floor(level / 3), 12) : Math.min(5 + Math.floor(level * .75), 12);
   grid = Array.from({length: size}, () => Array(size).fill(null));
   arrows = [];
   const target = Math.floor(size * size * (0.6 + 0.38 * hardness()));
   let bag = [], filled = 0, lastOk = 0;
-  for (let tries = 0; tries < (brutal() ? 40000 : 60000) && filled < target; tries++) {
+  for (let tries = 0; tries < (brutal() ? 12000 : 60000) && filled < target; tries++) {
     // lengths come from a shuffled bag, a length is used up only when it fits
     if (!bag.length) {
       const h = hardness();
@@ -178,15 +178,26 @@ function blockDist(a) {
   return 0;
 }
 
+// number of bends in an arrow's body
+function countTurns(a) {
+  let t = 0;
+  for (let i = 2; i < a.cells.length; i++)
+    if (a.cells[i][0] - a.cells[i - 1][0] !== a.cells[i - 1][0] - a.cells[i - 2][0] ||
+        a.cells[i][1] - a.cells[i - 1][1] !== a.cells[i - 1][1] - a.cells[i - 2][1]) t++;
+  return t;
+}
+
 // normal levels: one board. Very hard levels: build many boards and keep the most tangled one
 function generate() {
   if (!brutal()) { buildBoard(); return; }
   let best = null, bestScore = -1e9;
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < 200; i++) {
     buildBoard();
     const {rounds, firstFree} = solveDepth();
     const decoys = arrows.reduce((n, a) => n + (blockDist(a) >= 3 ? 1 : 0), 0);   // blocked, but only from far away
-    const score = rounds * 12 - firstFree * 8 + arrows.length + decoys * 4;
+    const turns = arrows.reduce((n, a) => n + countTurns(a), 0);
+    const freeShare = firstFree / arrows.length;                 // fewer free arrows at the start = more tangled
+    const score = rounds * 12 - freeShare * 150 + arrows.length + decoys * 6 + turns * 2;
     if (score > bestScore) { bestScore = score; best = {grid, arrows, size}; }
   }
   ({grid, arrows, size} = best);
@@ -212,7 +223,7 @@ function hud() {
 
 function start(newGame) {
   if (newGame) { level = 1; score = 0; }
-  lives = brutal() ? (ultra ? 3 : 4) : ultra ? 2 : 3;
+  lives = 3;
   hints = brutal() ? (ultra ? 0 : 1) : ultra ? 0 : level < 3 ? 3 : 2; over = false; hintArrow = null;
   $('overlay').style.display = 'none';
   generate(); resize(); hud();

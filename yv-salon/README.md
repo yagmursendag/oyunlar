@@ -111,3 +111,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v101 | versions/v101-kaleci-kolay.html | ⚽ Kaleci kolaylaştı: daha yavaş, daha az tutuyor |
 | v102 | versions/v102-daha-cok-gorev.html | 📋 Günde 6 görev (bonus 100 TL) + 10 yeni görev (mobilya, dinlen, kitap, piyano, balık, ışınlan…) |
 | v103 | versions/v103-okul.html | 🏫 Okul (6 ders, karne, harçlık), insanların işi isim etiketinde yazar, evde 🧰 eşya kutusu |
+| v104 | versions/v104-sira.html | 🪑 Sıraya otur: boş sıralara yaklaşınca "Sıraya otur • derse gir" düğmesi, ders ekranı açılır |
