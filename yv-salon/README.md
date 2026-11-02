@@ -115,3 +115,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v105 | versions/v105-ac-uyku.html | 🍔 Açlık 3 kat yavaş düşer; 😴 uyku gün boyu dolu kalır, sadece akşama doğru 50'ye iner |
 | v106 | versions/v106-full-odul.html | 🌟 Açlık ve uyku ikisi de tam doluyken +5 TL (en sık 2 dakikada bir) |
 | v107 | versions/v107-tenefus.html | 📚 Derslerde 10 soru, ders sonunda 🔔 tenefüs (balon patlatma) |
+| v108 | versions/v108-ac-orta.html | Açlık hızı orta ayara getirildi |
