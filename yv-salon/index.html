@@ -6147,7 +6147,7 @@ const QUEST_POOL = [
   { id: 'step_cut', text: 'Bir müşterinin saçını kes ✂️', goal: 1, reward: 25 },
   { id: 'lesson1', text: 'Okulda bir derse gir 🏫', goal: 1, reward: 25 },
   { id: 'lesson3', text: 'Okulda 3 ders bitir 📚', goal: 3, reward: 70 },
-  { id: 'perfect1', text: 'Bir derste 5 sorunun hepsini bil ⭐', goal: 1, reward: 45 },
+  { id: 'perfect1', text: 'Bir derste 10 sorunun hepsini bil ⭐', goal: 1, reward: 45 },
   { id: 'furn1', text: 'Evine bir mobilya yerleştir 🛋️', goal: 1, reward: 25 },
   { id: 'furn3', text: 'Evine 3 mobilya yerleştir 🛋️', goal: 3, reward: 60 },
   { id: 'rest2', text: 'Evde 2 kez dinlen 😌', goal: 2, reward: 20 },
@@ -6553,17 +6553,17 @@ function schQuestions(id) {
   const mk = (q, ans, wr) => { const opts = shuf([ans, ...shuf(wr).slice(0, 3)]); return { q, opts, a: opts.indexOf(ans) }; };
   if (id === 'math') {
     const gr = Math.min(3, 1 + Math.floor(myLevel() / 4)), ri = (a, b) => Math.floor(a + Math.random() * (b - a + 1)), out = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 10; i++) {
       let q, ans;
-      if (i < 2) { const a = ri(2, 6 + gr * 4), b = ri(2, 6 + gr * 4); q = a + ' + ' + b + ' = ?'; ans = a + b; }
-      else if (i === 2) { const a = ri(8, 12 + gr * 5), b = ri(1, a - 1); q = a + ' − ' + b + ' = ?'; ans = a - b; }
+      if (i < 3) { const a = ri(2, 6 + gr * 4), b = ri(2, 6 + gr * 4); q = a + ' + ' + b + ' = ?'; ans = a + b; }
+      else if (i < 6) { const a = ri(8, 12 + gr * 5), b = ri(1, a - 1); q = a + ' − ' + b + ' = ?'; ans = a - b; }
       else { const a = ri(2, 4 + gr * 2), b = ri(2, 9); q = a + ' × ' + b + ' = ?'; ans = a * b; }
       const wr = new Set(); for (const d of [1, -1, 2, -2, 10, 3, -3]) if (ans + d >= 0) wr.add(ans + d);
       out.push(mk(q, String(ans), [...wr].map(String)));
     }
     return out;
   }
-  return shuf(SCH_BANK[id]).slice(0, 5).map(r => mk(r[0], r[1], r.slice(2)));
+  return shuf(SCH_BANK[id]).slice(0, 10).map(r => mk(r[0], r[1], r.slice(2)));
 }
 const schData = () => { const p = profile.school = profile.school || { done: 0, best: {}, day: '', paid: 0 }; return p; };
 const SCH_TITLES = [[0, '🌱 Yeni öğrenci'], [5, '📘 Çalışkan öğrenci'], [15, '🌟 Başarılı öğrenci'], [30, '🏅 Okul yıldızı'], [60, '🏆 Okul birincisi']];
@@ -6574,13 +6574,16 @@ function schAnswer(k) {
   const S = SCH; if (S.pick >= 0) return; S.pick = k; S.t0 = performance.now();
   if (k === S.qs[S.i].a) { S.right++; sfx('coin'); sparkle(640, 330, 10); } else sfx('no');
 }
+function schRecess() {
+  SCH = { ph: 'recess', L: SCH.L, t0: performance.now(), last: performance.now(), sp: 0, balls: [], popped: 0, over: false }; sfx('done'); say('🔔 Tenefüs zili! Balonları patlat 🎈');
+}
 function schFinish() {
   const S = SCH, d = schData(), r = S.right, t = todayKey();
   if (d.day !== t) { d.day = t; d.paid = 0; }
-  let pay = r * 3 + (r === 5 ? 10 : 0), note = '';
+  let pay = r * 2 + (r === 10 ? 10 : 0), note = '';
   if (d.paid >= 6) { pay = 0; note = 'Bugünkü harçlık bitti ama çalışmak güzel! ⭐'; } else d.paid++;
   if (pay && !rich()) money += pay; else if (pay) money += pay;
-  d.done++; d.best[S.L.id] = Math.max(d.best[S.L.id] || 0, r); save(); questEvent('lesson'); if (r === 5) questEvent('perfect');
+  d.done++; d.best[S.L.id] = Math.max(d.best[S.L.id] || 0, Math.round(r / 2)); save(); questEvent('lesson'); if (r === 10) questEvent('perfect');
   S.ph = 'result'; S.pay = pay; S.note = note; if (r >= 3) { sfx('done'); sparkle(640, 300, 24); }
 }
 function schDraw() {
@@ -6591,7 +6594,7 @@ function schDraw() {
   const close = () => { SCH = null; };
   if (S.ph === 'menu') {
     text('🏫 Okul', 640, 100, 40, '#2d7ff9', 'center', 800);
-    text('Bir ders seç! Her ders 5 soru. Doğru cevap başına 3 TL, hepsi doğruysa +10 TL', 640, 138, 17, '#6b5a70', 'center', 700);
+    text('Bir ders seç! Her ders 10 soru. Doğru cevap başına 2 TL, hepsi doğruysa +10 TL', 640, 138, 17, '#6b5a70', 'center', 700);
     btn(910, 56, 130, 44, '✖ Kapat', close, { size: 17 });
     const d = schData();
     SCH_LESSONS.forEach((L, i) => {
@@ -6607,7 +6610,7 @@ function schDraw() {
     const Q = S.qs[S.i];
     ctx.fillStyle = mix(S.L.col, '#ffffff', 0.7); rr(240, 56, 800, 70, 22); ctx.fill();
     text(S.L.icon + ' ' + S.L.name, 280, 102, 30, '#3a2340', 'left', 800);
-    text('Soru ' + (S.i + 1) + ' / 5   ✅ ' + S.right, 1000, 100, 22, '#3a2340', 'right', 800);
+    text('Soru ' + (S.i + 1) + ' / 10   ✅ ' + S.right, 1000, 100, 22, '#3a2340', 'right', 800);
     btn(240, 640, 120, 34, '⬅ Çık', () => { S.ph = 'menu'; }, { size: 14 });
     ctx.fillStyle = '#ffffff'; rr(260, 150, 760, 150, 22); ctx.fill(); ctx.strokeStyle = '#e1d8c4'; ctx.lineWidth = 3; ctx.stroke();
     fitText(Q.q, 290, 238, 36, 700, '#3a2340', 800);
@@ -6619,17 +6622,37 @@ function schDraw() {
     });
     if (S.pick >= 0) {
       text(S.pick === Q.a ? '🎉 Doğru!' : '😕 Doğrusu yeşil olan', 640, 590, 26, S.pick === Q.a ? '#23884f' : '#c0392b', 'center', 800);
-      if (performance.now() - S.t0 > 1100) { S.pick = -1; if (++S.i >= 5) schFinish(); }
+      if (performance.now() - S.t0 > 1100) { S.pick = -1; if (++S.i >= 10) schFinish(); }
     }
   } else if (S.ph === 'result') {
     text('🏫 Ders bitti!', 640, 120, 40, '#2d7ff9', 'center', 800);
     text(S.L.icon + ' ' + S.L.name, 640, 180, 30, '#3a2340', 'center', 800);
-    text('⭐'.repeat(S.right) + '☆'.repeat(5 - S.right), 640, 270, 60, '#b8860b', 'center', 800);
-    text(S.right + ' / 5 doğru', 640, 340, 34, '#3a2340', 'center', 800);
-    text(S.right === 5 ? '🏆 Harika! Hepsini bildin!' : S.right >= 3 ? '👏 Aferin, çok iyi!' : '💪 Bir daha dene, olacak!', 640, 400, 26, '#d6337f', 'center', 800);
+    { const st = Math.round(S.right / 2); text('⭐'.repeat(st) + '☆'.repeat(5 - st), 640, 270, 60, '#b8860b', 'center', 800); }
+    text(S.right + ' / 10 doğru', 640, 340, 34, '#3a2340', 'center', 800);
+    text(S.right === 10 ? '🏆 Harika! Hepsini bildin!' : S.right >= 6 ? '👏 Aferin, çok iyi!' : '💪 Bir daha dene, olacak!', 640, 400, 26, '#d6337f', 'center', 800);
     text(S.pay ? '🎁 Harçlık: +' + S.pay + ' TL' : S.note, 640, 450, 24, '#23884f', 'center', 800);
     btn(300, 520, 300, 62, '🔁 Tekrar', () => schStart(S.L), { col: '#2d7ff9', fg: '#ffffff', size: 24 });
-    btn(680, 520, 300, 62, '📚 Derslere dön', () => { S.ph = 'menu'; }, { col: '#ff8a3d', fg: '#ffffff', size: 24 });
+    btn(680, 520, 300, 62, '🔔 Tenefüse çık', () => schRecess(), { col: '#ff8a3d', fg: '#ffffff', size: 24 });
+  } else if (S.ph === 'recess') {
+    const now = performance.now(), dt = Math.min(0.05, (now - S.last) / 1000), left = Math.max(0, 12 - (now - S.t0) / 1000); S.last = now;
+    ctx.fillStyle = '#d9f1ff'; rr(228, 48, 824, 624, 24); ctx.fill();
+    ctx.fillStyle = '#bfe8a0'; rr(228, 590, 824, 82, 24); ctx.fill();
+    text('🔔 Tenefüs!', 640, 104, 40, '#2d7ff9', 'center', 800);
+    text(left > 0 ? '🎈 Balonları patlat! Kalan: ' + Math.ceil(left) + ' sn   •   Patlayan: ' + S.popped : '😊 Tenefüs bitti! ' + S.popped + ' balon patlattın', 640, 146, 22, '#3a2340', 'center', 800);
+    if (left > 0) {
+      S.sp -= dt; if (S.sp <= 0) { S.sp = 0.45; S.balls.push({ x: rand(280, 1000), y: 650, vy: rand(70, 130), r: rand(28, 40), col: pick(['#ff6fb5', '#ffd23f', '#5ac8ff', '#8be07e', '#b18cff', '#ff8a3d']) }); }
+      for (const b of S.balls) b.y -= b.vy * dt;
+      S.balls = S.balls.filter(b => b.y > 170);
+      for (const b of S.balls) {
+        ctx.strokeStyle = '#8a7a8a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(b.x, b.y + b.r * 1.2); ctx.lineTo(b.x + 6, b.y + b.r * 2.4); ctx.stroke();
+        ctx.fillStyle = b.col; ctx.beginPath(); ctx.ellipse(b.x, b.y, b.r, b.r * 1.2, 0, 0, 7); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.45)'; ctx.beginPath(); ctx.ellipse(b.x - b.r * 0.35, b.y - b.r * 0.45, b.r * 0.2, b.r * 0.32, 0, 0, 7); ctx.fill();
+        btn(b.x - b.r - 8, b.y - b.r * 1.2 - 8, b.r * 2 + 16, b.r * 2.4 + 16, '', () => { const i = S.balls.indexOf(b); if (i < 0) return; S.balls.splice(i, 1); S.popped++; sfx('pop'); sparkle(b.x, b.y, 8); }, { hidden: true });
+      }
+    } else {
+      if (!S.over) { S.over = true; const n = needs(); n.sleep = Math.min(100, n.sleep + 5); n.hunger = Math.min(100, n.hunger + 3); save(); sfx('done'); }
+      text('Biraz dinlendin, enerjin yerine geldi 💖', 640, 300, 26, '#d6337f', 'center', 800);
+      btn(480, 380, 320, 64, '📚 Derslere dön', () => { SCH = { ph: 'menu' }; }, { col: '#2d7ff9', fg: '#ffffff', size: 24 });
+    }
   } else if (S.ph === 'card') {
     const d = schData();
     text('📋 Karnem', 640, 100, 40, '#ff8a3d', 'center', 800);
