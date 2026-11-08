@@ -121,3 +121,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v111 | versions/v111-mavi-kopek.html | Mavi Köpek Kıyafeti (mavi tüylü, sarkık kulaklı) mağazaya eklendi |
 | v112 | versions/v112-kopek-ailesi.html | Köpek ailesi kıyafetleri: turuncu, koyu mavi, kahverengi köpek |
 | v114 | versions/v114-bluey-aile.html | Köpek kıyafetlerine Bluey, Bingo, Bandit, Chilli adları verildi |
+| v115 | versions/v115-cizgi-film-zirhi.html | Çizgi Film Zırhı (35500 TL), Bluey ailesi renklerinde döner |
