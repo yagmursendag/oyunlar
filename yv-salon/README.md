@@ -122,3 +122,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v112 | versions/v112-kopek-ailesi.html | Köpek ailesi kıyafetleri: turuncu, koyu mavi, kahverengi köpek |
 | v114 | versions/v114-bluey-aile.html | Köpek kıyafetlerine Bluey, Bingo, Bandit, Chilli adları verildi |
 | v115 | versions/v115-cizgi-film-zirhi.html | Çizgi Film Zırhı (35500 TL), Bluey ailesi renklerinde döner |
+| v116 | versions/v116-donus.html | Çizgi Film Zırhı giyince "Dönüş" düğmesi: Bluey, Bingo, Bandit, Chilli köpek karakterine dönüşme |

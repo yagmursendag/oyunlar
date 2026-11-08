@@ -4257,7 +4257,46 @@ function lbLabel(textStr, bg, fg, scaleY = 0.42) {
 }
 
 // ---------- a 3D version of a character look ----------
+
+// Cartoon dog characters (Bluey family) for the Cartoon Armor transform button
+const TOON_CH = [
+  { n: 'Bluey', e: '🐶', c: '#5aa9e0', d: '#3f7fc0', k: '#f2d9a8' },
+  { n: 'Bingo', e: '🐕', c: '#ee8f4e', d: '#c26a2e', k: '#f7dfb0' },
+  { n: 'Bandit', e: '🐕‍🦺', c: '#3f6fa8', d: '#2b4f80', k: '#d9c9a0' },
+  { n: 'Chilli', e: '🦮', c: '#d9a05a', d: '#a8742f', k: '#f3e2bd' }
+];
+function myToonIdx() { return profile && profile.look && profile.look.outfit === 'toonarmor' && profile.toonForm >= 0 && profile.toonForm < 4 ? profile.toonForm : -1; }
+function lbMyLook() { const t = myToonIdx(); return t >= 0 ? { ...profile.look, toon: t } : profile.look; }
+function toonCycle() { const t = myToonIdx(); profile.toonForm = t >= 3 ? -1 : t + 1; try { save(); } catch (e) { } sparkle(640, 360, 24); const nt = myToonIdx(); say(nt >= 0 ? '✨ ' + TOON_CH[nt].n + ' oldun! ' + TOON_CH[nt].e : '✨ Yine insan oldun!'); }
+function lbDogAvatar(idx, name, tagCol) {
+  const C = TOON_CH[idx], g = new THREE.Group(), A = { legs: [], arms: [], phase: Math.random() * 6, walk: 0 };
+  const m1 = toon(C.c), md = toon(C.d), mk = toon(C.k), mb = toon('#2a2230'), mw = toon('#ffffff');
+  const body = new THREE.Group(); g.add(body); A.body = body;
+  for (const s of [-1, 1]) {
+    const lg = new THREE.Group(); lg.position.set(s * 0.15, 0.72, 0); body.add(lg); A.legs.push(lg);
+    lg.add(lbM(new THREE.CylinderGeometry(0.1, 0.09, 0.62, 10), m1, 0, -0.31, 0)); lg.add(lbM(new THREE.SphereGeometry(0.13, 10, 8), md, 0, -0.66, 0.05));
+    const ar = new THREE.Group(); ar.position.set(s * 0.44, 1.55, 0); body.add(ar); A.arms.push(ar);
+    ar.add(lbM(new THREE.CylinderGeometry(0.08, 0.07, 0.62, 10), m1, 0, -0.3, 0)); ar.add(lbM(new THREE.SphereGeometry(0.1, 10, 8), md, 0, -0.64, 0));
+  }
+  const tb = lbM(new THREE.SphereGeometry(0.46, 14, 12), m1, 0, 1.2, 0); tb.scale.set(1, 1.15, 0.8); body.add(tb);
+  const bl = lbM(new THREE.SphereGeometry(0.34, 12, 10), mk, 0, 1.15, 0.2); bl.scale.set(0.9, 1.1, 0.5); body.add(bl);
+  const tl = lbM(new THREE.CylinderGeometry(0.06, 0.1, 0.8, 8), m1, 0, 1.0, -0.5); tl.rotation.x = -0.9; body.add(tl); body.add(lbM(new THREE.SphereGeometry(0.09, 8, 6), md, 0, 1.38, -0.8));
+  const head = new THREE.Group(); head.position.y = 1.95; body.add(head); A.head = head;
+  const hs = lbM(new THREE.SphereGeometry(0.44, 16, 12), m1, 0, 0, 0); hs.scale.set(1.1, 1, 1); head.add(hs);
+  const mz = lbM(new THREE.SphereGeometry(0.22, 12, 10), mk, 0, -0.12, 0.36); mz.scale.set(1.1, 0.8, 1.2); head.add(mz);
+  head.add(lbM(new THREE.SphereGeometry(0.07, 8, 6), mb, 0, -0.04, 0.6));
+  for (const s of [-1, 1]) {
+    head.add(lbM(new THREE.SphereGeometry(0.1, 10, 8), mw, s * 0.18, 0.1, 0.38)); head.add(lbM(new THREE.SphereGeometry(0.05, 8, 6), mb, s * 0.18, 0.1, 0.46));
+    const e = lbM(new THREE.ConeGeometry(0.16, 0.5, 8), md, s * 0.3, 0.5, 0); e.rotation.z = -s * 0.35; head.add(e);
+    const ei = lbM(new THREE.ConeGeometry(0.08, 0.32, 6), mk, s * 0.3, 0.46, 0.06); ei.rotation.z = -s * 0.35; head.add(ei);
+  }
+  if (name) { const tag = lbLabel(name, tagCol || '#ff5fa2', '#ffffff'); tag.position.y = 3.0; g.add(tag); A.tag = tag; }
+  if (LITE) { const bs = new THREE.Mesh(new THREE.CircleGeometry(0.5, 16), new THREE.MeshBasicMaterial({ map: lbSoftTex(), color: '#000000', transparent: true, opacity: 0.38, depthWrite: false })); bs.rotation.x = -Math.PI / 2; bs.position.y = 0.04; g.add(bs); }
+  g.scale.setScalar(1.05); g.userData.A = A; if (lbOutlineOn()) lbOutline(g);
+  return g;
+}
 function lbAvatar(look, name, tagCol) {
+  if (look && look.toon >= 0 && look.toon < 4) return lbDogAvatar(look.toon, name, tagCol);
   const L = normLook(look), g = new THREE.Group(), A = { legs: [], arms: [], phase: Math.random() * 6, walk: 0 };
   const galaxy = L.outfit === 'galaxy', sp = ['rainbow', 'mermaid', 'fairy', 'winter'].includes(L.outfit) ? L.outfit : null, sp2 = { swim: L.cloth, chef: '#ffffff', cowgirl: '#c98b5a', astronaut: '#e6e9ef', football: L.cloth, suit: '#2a2f45', police: '#4a74c9', firefighter: '#d63a2f', pirate: '#ffffff', ninja: '#2a2a38', royal: '#e0b030', knight: '#aeb7c4', wizard: '#4b2a9a', vampire: '#1a1424', samurai: '#7a1f2b', angel: '#ffffff', diamond: '#bfe9ff', cosmic: '#14122e', dragonarmor: '#3b0f14', whitedeer: '#ffffff', cloud: '#eaf5ff', farmer: '#d8473c', doctor: '#ffffff', bunny: '#ffffff', tiger: '#ff9a2a', witch: '#2a1f3a', ball: '#ff9ccf', sunking: '#ffb62e', icequeen: '#cfeaff', elf: '#4fb35a', robotsuit: '#c3cbd6', pharaoh: '#f4ecd2', unicornsuit: '#ffd6f2', snowman: '#ffffff', pumpkin: '#ff8a1f', candy: '#ff7ab8', crystal: '#9fe8ff', lava: '#3a1a1a', poseidon: '#1fa7c9', fox: '#ff8a2a', panda: '#f4f4f4', frog: '#5fcf5a', bluedog: '#5aa9e0', toonarmor: '#c9cfd8', tandog: '#d9a05a', navydog: '#3f6fa8', orangedog: '#ee8f4e', bee: '#ffd23f', ladybug: '#e8434f', rocker: '#2a2a33', ballet: '#ffc9e4', scientist: '#ffffff', racer: '#e8434f', dino: '#4fbf6a', kimono: '#ff8fb8', sailor: '#ffffff' }[L.outfit];
   const spTex = sp && lbTex(64, 128, (c, w, h) => {
@@ -4844,7 +4883,7 @@ function lbResize() { if (!LB.renderer) return; LB.renderer.setPixelRatio(OPTS.g
 function lbPopulate() {
   const sc = LB.scene;
   for (const a of [LB.me, LB.pet, ...LB.npcs.map(n => n.av)]) if (a) sc.remove(a);
-  LB.me = lbAvatar(profile.look, profile.name + (profile.id === ADMIN_ID ? ' 👑' : '') + (myTitle() ? ' · ' + myTitle() : ''), '#ff5fa2'); LB.me.position.set(0, 0, 9); sc.add(LB.me);
+  LB.me = lbAvatar(lbMyLook(), profile.name + (profile.id === ADMIN_ID ? ' 👑' : '') + (myTitle() ? ' · ' + myTitle() : ''), '#ff5fa2'); LB.me.position.set(0, 0, 9); sc.add(LB.me);
   // backpack on my back
   { const B = BAGS[inv.bagOn] || BAGS.small, bp = new THREE.Group(); bp.add(lbM(new THREE.BoxGeometry(0.52, 0.6, 0.26), toon(B.col), 0, 0, 0)); bp.add(lbM(new THREE.BoxGeometry(0.36, 0.26, 0.08), toon(mix(B.col, '#000000', 0.12)), 0, -0.1, -0.16)); bp.add(lbM(new THREE.SphereGeometry(0.04, 8, 6), toon('#ffd23f'), 0, 0.06, -0.21)); bp.position.set(0, 1.12, -0.36); LB.me.userData.A.body.add(bp); }
   const pk = normLook(profile.look).pet; LB.pet = pk !== 'none' ? lbPet(pk) : null; if (pk === 'dragon') LB.pet.scale.setScalar(1.4); if (LB.pet) { LB.pet.position.set(1, 0, 10); sc.add(LB.pet); }
@@ -4886,11 +4925,11 @@ function lbCollide(v, rad = 0.5) {
   for (const p of LB.places) { const dx = v.x - p.pos.x, dz = v.z - p.pos.z, dd = Math.hypot(dx, dz); if (dd < 5.6 + rad) { const k = (5.6 + rad) / (dd || 1); v.x = p.pos.x + dx * k; v.z = p.pos.z + dz * k; } }
 }
 function lbRebuildMe() {
-  const o = LB.me, n = lbAvatar(profile.look, profile.name + (profile.id === ADMIN_ID ? ' 👑' : '') + (myTitle() ? ' · ' + myTitle() : ''), '#ff5fa2'); n.position.copy(o.position); n.rotation.copy(o.rotation); LB.scene.remove(o); LB.scene.add(n); LB.me = n;
+  const o = LB.me, n = lbAvatar(lbMyLook(), profile.name + (profile.id === ADMIN_ID ? ' 👑' : '') + (myTitle() ? ' · ' + myTitle() : ''), '#ff5fa2'); n.position.copy(o.position); n.rotation.copy(o.rotation); LB.scene.remove(o); LB.scene.add(n); LB.me = n;
 }
 function lbUpdate(dt) {
   if (!LB.ok) return;
-  { const lk = JSON.stringify([profile.look, myTitle()]); if (LB.lookKey && LB.lookKey !== lk && LB.me) lbRebuildMe(); LB.lookKey = lk; }
+  { const lk = JSON.stringify([profile.look, myTitle(), myToonIdx()]); if (LB.lookKey && LB.lookKey !== lk && LB.me) lbRebuildMe(); LB.lookKey = lk; }
   const n = needs(), tired = n.hunger <= 0 || n.sleep <= 0;
   // needs go down while you are out in the town
   if (scene === 'lobby' || scene === 'job' || (scene === 'place' && LB.sleepT <= 0)) { n.hunger = Math.max(0, n.hunger - dt * 0.2); { const dt0 = profile.dayT != null ? profile.dayT : 0.4; if (dt0 > 0.55 && dt0 < 0.78 && n.sleep > 50) n.sleep = Math.max(50, n.sleep - dt * 0.6); } }
@@ -6752,7 +6791,7 @@ function mpLeave(keep) {
 }
 function mpPayload() {
   const me = LB.me, p = me.position, num = (v, a, b) => clamp(Number.isFinite(v) ? Math.round(v * 100) / 100 : 0, a, b);
-  return { n: String(profile.name || 'Oyuncu').slice(0, 20), l: JSON.stringify([...encodeLook(profile.look), Math.min(myLevel(), 9999), myTitle() ? TITLE_KEYS.indexOf(profile.job || 'student') + 1 : 0]).slice(0, 300), x: num(p.x, -499, 499), z: num(p.z, -499, 499), r: num(Math.atan2(Math.sin(me.rotation.y), Math.cos(me.rotation.y)) + 8 * headIdx(), -1000, 1000), y: num(p.y, 0, 9.9), e: clamp(MP.e | 0, 0, 29), m: MP.m, h: !MP.host, t: MP.fb.database.ServerValue.TIMESTAMP };
+  return { n: String(profile.name || 'Oyuncu').slice(0, 20), l: JSON.stringify([...encodeLook(profile.look), Math.min(myLevel(), 9999), myTitle() ? TITLE_KEYS.indexOf(profile.job || 'student') + 1 : 0, myToonIdx() + 1]).slice(0, 300), x: num(p.x, -499, 499), z: num(p.z, -499, 499), r: num(Math.atan2(Math.sin(me.rotation.y), Math.cos(me.rotation.y)) + 8 * headIdx(), -1000, 1000), y: num(p.y, 0, 9.9), e: clamp(MP.e | 0, 0, 29), m: MP.m, h: !MP.host, t: MP.fb.database.ServerValue.TIMESTAMP };
 }
 function mpEmote(i) {
   if (i < 0 || !MP_SAY[i]) return; if (i < 19) questEvent('emote');
@@ -6768,7 +6807,7 @@ function mpPeer(key, v) {
   const lookStr = typeof v.l === 'string' ? v.l : '', name = String(v.n || 'Oyuncu').slice(0, 20);
   if (!pe || pe.l !== lookStr || pe.n !== name) {
     const first = !pe; if (pe) { LB.scene.remove(pe.av); if (pe.pet) LB.scene.remove(pe.pet); }
-    let look = null, lvl = 1, title = ''; try { const la = JSON.parse(lookStr); look = decodeLook(la); lvl = Math.max(1, Math.min(9999, Math.floor(+la[25]) || 1)); title = TITLE_TXT[TITLE_KEYS[(Math.floor(+la[26]) || 0) - 1]] || ''; } catch (e) { }
+    let look = null, lvl = 1, title = ''; try { const la = JSON.parse(lookStr); look = decodeLook(la); lvl = Math.max(1, Math.min(9999, Math.floor(+la[25]) || 1)); title = TITLE_TXT[TITLE_KEYS[(Math.floor(+la[26]) || 0) - 1]] || ''; const tf = Math.floor(+la[27]) || 0; if (look && tf > 0 && tf <= 4) look = { ...look, toon: tf - 1 }; } catch (e) { }
     look = look || normLook({}); MP.arts = MP.arts || {}; if (MP.arts[key]) look = normLook({ ...look, art: MP.arts[key] });
     if (MP.arts[key] === undefined) { MP.arts[key] = ''; try { Promise.resolve(MP.db.ref('arts/' + key).once('value')).then(sn => { const a = sn.val(); if (artOk(a)) { MP.arts[key] = a; const q = MP.peers[key]; if (q) q.l = null; } }).catch(() => { }); } catch (e) { } }
     const av = lbAvatar(look, '🌐 ' + (lvl > 1 ? '⭐' + lvl + ' ' : '') + name + (title ? ' · ' + title : ''), '#8b5cf6');
@@ -7525,6 +7564,7 @@ function lbTeleHome() {
 }
 function drawLunaUi() {
   if (scene === 'lobby' && LB.me && !LB.ride && !LB.edit && !CK && !FG && !SCH && !(LB.sleepT > 0) && !String(LB.where).startsWith('home')) btn(1062, 288, 200, 48, '🏠 Eve ışınlan', lbTeleHome, { col: '#ffe36e', size: 18 });
+  if (scene === 'lobby' && LB.me && profile.look && profile.look.outfit === 'toonarmor' && !LB.ride && !LB.edit && !CK && !FG && !SCH && !(LB.sleepT > 0) && !String(LB.where).startsWith('home')) { const ti = myToonIdx(); btn(1062, 342, 200, 48, ti >= 0 ? '🔄 Dönüş: ' + TOON_CH[ti].n : '🔄 Dönüş yap', toonCycle, { col: '#b388ff', fg: '#ffffff', size: 18 }); }
   if (scene === 'lobby' && LB.where === 'town' && LB.pkRun) { ctx.fillStyle = 'rgba(255,255,255,.94)'; rr(520, 16, 240, 50, 25); ctx.fill(); ctx.strokeStyle = '#ff5fa2'; ctx.lineWidth = 3; ctx.stroke(); text('⏱️ ' + LB.pkRun.t.toFixed(1) + ' sn' + (profile.pkBest ? '  🥇' + profile.pkBest : ''), 640, 50, 22, '#3a2340', 'center', 800); btn(930, 590, 190, 52, '🏁 Başa dön', lbPkReset, { size: 18 }); }
   if (LB.sleepT > 0 && scene === 'lobby') { ctx.fillStyle = `rgba(20,20,60,${Math.min(0.85, 0.3 + (4 - LB.sleepT) * 0.2)})`; ctx.fillRect(0, 0, W, H); for (let i = 0; i < 3; i++) text('Z', 640 + i * 40 + Math.sin(T * 2 + i) * 10, 360 - i * 40 - ((T * 30) % 40), 40 + i * 12, '#ffffff', 'center', 800); text('😴 Uyuyorsun...', 640, 470, 30, '#ffffff', 'center', 800); return; }
   if (CK && scene === 'lobby') return ckDraw();
