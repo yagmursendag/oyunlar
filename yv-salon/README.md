@@ -119,3 +119,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v109 | versions/v109-beni-izle.html | Hazır yazılara "Beni izle!" eklendi |
 | v110 | versions/v110-beni-ara-bul.html | Hazır yazılara "Beni ara!" ve "Beni bul!" eklendi |
 | v111 | versions/v111-mavi-kopek.html | Mavi Köpek Kıyafeti (mavi tüylü, sarkık kulaklı) mağazaya eklendi |
+| v112 | versions/v112-kopek-ailesi.html | Köpek ailesi kıyafetleri: turuncu, koyu mavi, kahverengi köpek |
