@@ -649,10 +649,40 @@ function nextStep() {
   startStep();
 }
 function openShop(tab) { shopFrom = scene; if (tab) shopTab = tab; go('shop'); }
-const ownsItem = it => it.kind === 'bag' ? inv.bags.includes(it.id) : it.kind === 'thing' ? false : it.kind === 'pet' ? inv.pets.includes(it.id) : it.kind === 'outfit' ? inv.outfits.includes(it.id) : it.kind === 'jewel' ? has('jewels', it.id) : it.kind === 'tools' || it.kind === 'decor' ? has(it.kind, it.id) : false;
+const ownsItem = it => it.kind === 'bag' ? inv.bags.includes(it.id) : it.kind === 'thing' ? false : it.kind === 'pet' ? (inv.pets.includes(it.id) || (inv.eggs || []).some(e => e.id === it.id)) : it.kind === 'outfit' ? inv.outfits.includes(it.id) : it.kind === 'jewel' ? has('jewels', it.id) : it.kind === 'tools' || it.kind === 'decor' ? has(it.kind, it.id) : false;
+// Pet eggs: a bought pet is an egg that hatches after one day; 3 pets can merge into a rideable mount
+const EGG_MS = 864e5;
+SHOP.forEach(it => { if (it.kind === 'pet') { it.name = it.name + ' Yumurtası'; it.desc = '1 günde çatlar • 3 pet birleşince binek olur'; } });
+function hatchCheck() {
+  if (typeof inv === 'undefined' || !inv || !Array.isArray(inv.eggs) || !inv.eggs.length) return;
+  const now = Date.now(), due = inv.eggs.filter(e => e.at <= now); if (!due.length) return;
+  inv.eggs = inv.eggs.filter(e => e.at > now);
+  for (const e of due) { if (!inv.pets.includes(e.id)) inv.pets.push(e.id); say('🐣 Yumurtan çatladı: ' + (PET_LABEL[e.id] || e.id) + '!'); }
+  save(); try { sfx('done'); sparkle(640, 360, 30); } catch (x) { }
+}
+setInterval(hatchCheck, 4000);
+let PM_SEL = [];
+function openPets() {
+  hatchCheck(); inv.eggs = inv.eggs || []; inv.mounts = inv.mounts || []; PM_SEL = PM_SEL.filter(k => inv.pets.includes(k));
+  const st = 'width:auto;display:inline-block;margin:3px;padding:8px 10px;font-size:15px';
+  const left = e => { const m = Math.max(1, Math.ceil((e.at - Date.now()) / 60000)); return m >= 60 ? Math.floor(m / 60) + ' sa ' + (m % 60) + ' dk' : m + ' dk'; };
+  const eggs = inv.eggs.length ? inv.eggs.map(e => '<div>🥚 ' + (PET_LABEL[e.id] || e.id) + ' yumurtası — ' + left(e) + ' sonra çatlar</div>').join('') : '<p>Yumurtan yok. Mağazadaki evcil hayvan bölümünden yumurta al 🥚</p>';
+  const pets = inv.pets.map(k => '<button class="mb ' + (PM_SEL.includes(k) ? 'g' : '') + '" style="' + st + '" data-p="' + k + '">' + (PET_LABEL[k] || k) + '</button>').join('');
+  const mounts = inv.mounts.map(k => { const on = profile.mounted && profile.mount === k; return '<button class="mb ' + (on ? 'g' : '') + '" style="' + st + '" data-m="' + k + '">' + (on ? '⬇️ İn' : '⬆️ Bin') + ': ' + (PET_LABEL[k] || k) + '</button>'; }).join('') || '<p>Henüz binek yok. 3 peti birleştir!</p>';
+  openModal('<h2>🥚 Yumurtalar & Binek</h2><h3>Yumurtalar</h3>' + eggs + '<h3>Petlerin (birleştirmek için 3 tane seç)</h3>' + pets + '<br><button class="mb g" id="pmerge" ' + (PM_SEL.length === 3 ? '' : 'disabled') + '>✨ Birleştir (' + PM_SEL.length + '/3)</button><h3>Binekler</h3>' + mounts + '<br><button class="mb" id="pclose">Kapat</button>');
+  $('pclose').onclick = closeModal;
+  modal.querySelectorAll('[data-p]').forEach(b => { b.onclick = () => { const k = b.dataset.p; if (PM_SEL.includes(k)) PM_SEL = PM_SEL.filter(x => x !== k); else if (PM_SEL.length < 3) PM_SEL.push(k); sfx('pop'); openPets(); }; });
+  modal.querySelectorAll('[data-m]').forEach(b => { b.onclick = () => { const k = b.dataset.m; if (profile.mounted && profile.mount === k) profile.mounted = false; else { profile.mount = k; profile.mounted = true; } save(); sfx('done'); closeModal(); say(profile.mounted ? '🐎 Bineğe bindin! Daha hızlısın' : 'Bineğten indin'); }; });
+  $('pmerge').onclick = () => {
+    if (PM_SEL.length !== 3) return; const kind = PM_SEL[0];
+    if (inv.mounts.includes(kind)) { sfx('no'); return say('Bu binek zaten var! Başka bir pet ilk sıraya seç'); }
+    for (const k of PM_SEL) { inv.pets = inv.pets.filter(x => x !== k); if (profile.look && profile.look.pet === k) profile.look.pet = 'none'; }
+    inv.mounts.push(kind); PM_SEL = []; save(); sfx('done'); sparkle(640, 360, 40); say('✨ 3 pet birleşti: ' + (PET_LABEL[kind] || kind) + ' bineği!'); openPets();
+  };
+}
 // give an item to this player (from the shop or from a gift)
 function grantItem(it) {
-  if (it.kind === 'pet') inv.pets.push(it.id);
+  if (it.kind === 'pet') { inv.eggs = inv.eggs || []; inv.eggs.push({ id: it.id, at: Date.now() + EGG_MS }); }
   else if (it.kind === 'outfit') inv.outfits.push(it.id);
   else if (it.kind === 'bag') { inv.bags.push(it.id); inv.bagOn = it.id; }
   else if (it.kind === 'jewel') inv.jewels.push(it.id);
@@ -665,12 +695,12 @@ function buy(it, withGems) {
   if (withGems) {
     if (!rich() && (inv.gems || 0) < it.gems) { sfx('no'); return say(`${fmt(it.gems - (inv.gems || 0))} 💎 daha lazım! Her hafta 5 elmas al`); }
     if (!rich()) inv.gems -= it.gems;
-    grantItem(it); questEvent('shop'); questEvent('shop3'); save(); sfx('done'); sparkle(ptr.x, ptr.y, 30); return say(`${itemName(it)} senin! 🎉`);
+    grantItem(it); questEvent('shop'); questEvent('shop3'); save(); sfx('done'); sparkle(ptr.x, ptr.y, 30); return say(it.kind === 'pet' ? '🥚 Yumurta aldın! 1 gün sonra çatlayacak' : `${itemName(it)} senin! 🎉`);
   }
   if (!rich() && money < it.price) { sfx('no'); return say(`${fmt(it.price - money)} TL daha lazım! 💸 Çalış, para kazan`); }
   if (!rich()) money -= it.price;
   if (it.kind === 'thing') { inv.things[it.id] = (inv.things[it.id] || 0) + 1; questEvent('shop'); questEvent('shop3'); save(); sfx('coin'); sparkle(ptr.x, ptr.y, 14); return say(`${it.name} çantana girdi! 🎒`); }
-  if (it.kind === 'pet' || it.kind === 'outfit' || it.kind === 'bag') { grantItem(it); questEvent('shop'); questEvent('shop3'); save(); sfx('done'); sparkle(ptr.x, ptr.y, 30); return say(`${itemName(it)} senin! 🎉`); }
+  if (it.kind === 'pet' || it.kind === 'outfit' || it.kind === 'bag') { grantItem(it); questEvent('shop'); questEvent('shop3'); save(); sfx('done'); sparkle(ptr.x, ptr.y, 30); return say(it.kind === 'pet' ? '🥚 Yumurta aldın! 1 gün sonra çatlayacak' : `${itemName(it)} senin! 🎉`); }
   if (it.kind === 'polish') inv.polish[it.id] = (inv.polish[it.id] || 0) + POLISH_USES;
   else if (it.kind === 'cream') inv.creams++;
   else if (it.kind === 'supply') inv.supplies[it.id] = (inv.supplies[it.id] || 0) + SUPPLIES[it.id].uses;
@@ -3159,7 +3189,7 @@ function drawSalon() {
   }
 }
 function drawShopPreview(it, x, y) {
-  if (it.kind === 'pet') drawPet(it.id, x, y + 50, it.id === 'dragon' ? 0.55 : 0.75);
+  if (it.kind === 'pet') { ctx.save(); ctx.translate(x, y + 20); const hu = [...it.id].reduce((a, c) => a + c.charCodeAt(0), 0) % 360; ctx.fillStyle = 'hsl(' + hu + ',70%,85%)'; ctx.strokeStyle = 'hsl(' + hu + ',50%,55%)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(0, 0, 38, 50, 0, 0, 6.283); ctx.fill(); ctx.stroke(); ctx.fillStyle = 'hsl(' + hu + ',70%,65%)'; for (let k = 0; k < 5; k++) { ctx.beginPath(); ctx.arc(-18 + k * 9, -20 + (k % 2) * 28, 7, 0, 6.283); ctx.fill(); } ctx.restore(); text('?', x, y + 32, 34, '#ffffff', 'center', 100); }
   else if (it.kind === 'outfit') { const oc = outfitChar(it.id); drawHead(oc, x, y - 30, 0.15, { body: () => drawBody(oc, 0, 1), mood: 1 }); }
   else if (it.kind === 'bag') drawBackpack(x, y - 36, BAGS[it.id].col, 1, it.id);
   else if (it.kind === 'thing') emoji(THINGS[it.id][0], x, y, 64);
@@ -4957,11 +4987,17 @@ function lbUpdate(dt) {
     else if (LB.target) { const dx = LB.target.x - me.position.x, dz = LB.target.z - me.position.z, d = Math.hypot(dx, dz); if (d < 0.3) LB.target = null; else { vx = dx / d; vz = dz / d; } }
   }
   if (LB.ride) { if (vx || vz) lbDismount(); else { vx = 0; vz = 0; } }
-  const spd = tired ? 2.4 : LB.fly ? 9 : LB.hop && LB.hop.on ? 3 : LB.swim ? 3.4 : 5.5;
+  const spd = tired ? 2.4 : LB.fly ? 9 : LB.hop && LB.hop.on ? 3 : LB.swim ? 3.4 : 5.5 * (profile.mounted && profile.mount ? 1.6 : 1);
   me.position.x += vx * spd * dt; me.position.z += vz * spd * dt; LB.vel = [vx * spd, vz * spd];
   if (LB.where === 'town') { if (!(LB.fly && me.position.y > 4)) lbCollide(me.position); else { const hh = Math.hypot(me.position.x, me.position.z); if (hh > 95) { me.position.x *= 95 / hh; me.position.z *= 95 / hh; } } } else lbCollideRoom(me.position);
   if (vx || vz) { const ang = Math.atan2(vx, vz); me.rotation.y += Math.atan2(Math.sin(ang - me.rotation.y), Math.cos(ang - me.rotation.y)) * Math.min(1, dt * 12); }
   lbAnim(me, dt, vx || vz ? spd : 0);
+  { const mk = profile.mounted && profile.mount && (inv.mounts || []).includes(profile.mount) && !LB.ride && !(LB.sleepT > 0) ? profile.mount : null;
+    if (mk && (!LB.mountG || LB.mountK !== mk)) { if (LB.mountG) LB.scene.remove(LB.mountG); LB.mountG = lbPet(mk); LB.mountG.scale.setScalar(2.2); LB.scene.add(LB.mountG); LB.mountK = mk; }
+    if (!mk && LB.mountG) { LB.scene.remove(LB.mountG); LB.mountG = null; LB.mountK = null; }
+    if (LB.mountG && LB.mountG.parent !== LB.scene) LB.scene.add(LB.mountG);
+    if (LB.pet) LB.pet.visible = !LB.mountG;
+    if (LB.mountG) { const A = me.userData.A; LB.mountG.position.set(me.position.x, me.position.y + ((vx || vz) ? Math.abs(Math.sin(T * 10)) * 0.1 : 0), me.position.z); LB.mountG.rotation.y = me.rotation.y; A.body.position.y += 0.75; A.legs[0].rotation.x = A.legs[1].rotation.x = -1.3; } }
   lbSwim(me, dt); if (!LB.swim && (vx || vz) && scene === 'lobby') questEvent('walk', spd * dt); if (scene === 'lobby') questEvent('lobbytime', dt);
   if (!LB.ride) lbJumpUpdate(me, dt); lbRide(me, dt); lbParkUpdate(me, dt); lbPkUpdate(me, dt); lbLunaUpdate(me); lbLunaAnim(dt); lbLunaAnim2(dt); lbZoneQuests(me); lbFx(dt); lbGlintUpdate(); lbVolley(dt); lbFootball(dt); lbOuterAnim(dt);
   // pet follows
@@ -7565,6 +7601,7 @@ function lbTeleHome() {
 function drawLunaUi() {
   if (scene === 'lobby' && LB.me && !LB.ride && !LB.edit && !CK && !FG && !SCH && !(LB.sleepT > 0) && !String(LB.where).startsWith('home')) btn(1062, 288, 200, 48, '🏠 Eve ışınlan', lbTeleHome, { col: '#ffe36e', size: 18 });
   if (scene === 'lobby' && LB.me && profile.look && profile.look.outfit === 'toonarmor' && !LB.ride && !LB.edit && !CK && !FG && !SCH && !(LB.sleepT > 0) && !String(LB.where).startsWith('home')) { const ti = myToonIdx(); btn(1062, 342, 200, 48, ti >= 0 ? '🔄 Dönüş: ' + TOON_CH[ti].n : '🔄 Dönüş yap', toonCycle, { col: '#b388ff', fg: '#ffffff', size: 18 }); }
+  if (scene === 'lobby' && LB.me && !LB.ride && !LB.edit && !CK && !FG && !SCH && !(LB.sleepT > 0) && !String(LB.where).startsWith('home')) btn(1062, profile.look && profile.look.outfit === 'toonarmor' ? 396 : 342, 200, 48, '🥚 Evcil & Binek', openPets, { col: '#ffd6a5', size: 17 });
   if (scene === 'lobby' && LB.where === 'town' && LB.pkRun) { ctx.fillStyle = 'rgba(255,255,255,.94)'; rr(520, 16, 240, 50, 25); ctx.fill(); ctx.strokeStyle = '#ff5fa2'; ctx.lineWidth = 3; ctx.stroke(); text('⏱️ ' + LB.pkRun.t.toFixed(1) + ' sn' + (profile.pkBest ? '  🥇' + profile.pkBest : ''), 640, 50, 22, '#3a2340', 'center', 800); btn(930, 590, 190, 52, '🏁 Başa dön', lbPkReset, { size: 18 }); }
   if (LB.sleepT > 0 && scene === 'lobby') { ctx.fillStyle = `rgba(20,20,60,${Math.min(0.85, 0.3 + (4 - LB.sleepT) * 0.2)})`; ctx.fillRect(0, 0, W, H); for (let i = 0; i < 3; i++) text('Z', 640 + i * 40 + Math.sin(T * 2 + i) * 10, 360 - i * 40 - ((T * 30) % 40), 40 + i * 12, '#ffffff', 'center', 800); text('😴 Uyuyorsun...', 640, 470, 30, '#ffffff', 'center', 800); return; }
   if (CK && scene === 'lobby') return ckDraw();
