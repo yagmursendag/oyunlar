@@ -117,3 +117,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v107 | versions/v107-tenefus.html | 📚 Derslerde 10 soru, ders sonunda 🔔 tenefüs (balon patlatma) |
 | v108 | versions/v108-ac-orta.html | Açlık hızı orta ayara getirildi |
 | v109 | versions/v109-beni-izle.html | Hazır yazılara "Beni izle!" eklendi |
+| v110 | versions/v110-beni-ara-bul.html | Hazır yazılara "Beni ara!" ve "Beni bul!" eklendi |
