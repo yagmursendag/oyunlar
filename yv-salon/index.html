@@ -6370,7 +6370,7 @@ function drawProfile() {
   if (P.kind === 'friend') {
     if (P.at) { const d = new Date(P.at); text(`Bilgiler arkadaşının ${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()} tarihli kodundan`, 556, 532, 14, '#9a8fb0', 'left', 700); }
     btn(556, 546, 220, 50, '🏠 Salonuna git', () => { const f = P.f; LB.prof = null; save(); goVisit(f); }, { col: '#b18cff', fg: '#ffffff', size: 18 });
-  } else if (P.kind === 'online') btn(556, 546, 220, 50, '👋 Selam ver', () => { mpEmote(6); LB.prof = null; }, { col: '#27b36a', fg: '#ffffff', size: 18 });
+  } else if (P.kind === 'online') { btn(556, 546, 220, 50, '👋 Selam ver', () => { mpEmote(6); LB.prof = null; }, { col: '#27b36a', fg: '#ffffff', size: 18 }); if (P.uid) btn(786, 546, 220, 50, '🎁 Eşya ver', () => { LB.prof = null; openGiveItems(P); }, { col: '#ff8a3d', fg: '#ffffff', size: 18 }); }
   else if (P.kind === 'npc') btn(556, 546, 220, 50, '👋 Selam ver', () => { lbSay(LB.me, 'Merhaba!'); const av = P.av; setTimeout(() => lbSay(av, pick(['Merhaba! 😊', 'Selam! 👋', 'Nasılsın?', 'Saçın çok güzel! 💖'])), 900); LB.prof = null; }, { col: '#27b36a', fg: '#ffffff', size: 18 });
   else text('Başkalarına dokunup onların profiline de bakabilirsin 👆', 556, 578, 15, '#9a8fb0', 'left', 700);
 }
@@ -6853,7 +6853,7 @@ function mpPeer(key, v) {
     if (MP.arts[key] === undefined) { MP.arts[key] = ''; try { Promise.resolve(MP.db.ref('arts/' + key).once('value')).then(sn => { const a = sn.val(); if (artOk(a)) { MP.arts[key] = a; const q = MP.peers[key]; if (q) q.l = null; } }).catch(() => { }); } catch (e) { } }
     const av = lbAvatar(look, '🌐 ' + (lvl > 1 ? '⭐' + lvl + ' ' : '') + name + (title ? ' · ' + title : ''), '#8b5cf6');
     av.position.set(+v.x || 0, 0, +v.z || 0); av.rotation.y = +v.r || 0; LB.scene.add(av);
-    av.userData.info = { kind: 'online', name, look, id: '—', lvl, title };
+    av.userData.info = { kind: 'online', name, look, id: '—', lvl, title, uid: key };
     pe = MP.peers[key] = { av, l: lookStr, n: name, m: v.m, tx: 0, tz: 0, tr: 0, ty: 0, seen: 0, host: false };
     if (look.pet && look.pet !== 'none') { const pt = lbPet(look.pet); if (look.pet === 'dragon') pt.scale.setScalar(1.4); pt.position.set(av.position.x + 1, 0, av.position.z); LB.scene.add(pt); pe.pet = pt; }
     if (first) say(`🌐 ${name} lobiye geldi!`);
@@ -7357,10 +7357,35 @@ function mpLogVisit() {
     Promise.resolve(MP.db.ref('visits/' + MP.uid).set({ n: String(profile.name || '').slice(0, 20), id: String(profile.id || '').slice(0, 6), t: MP.fb.database.ServerValue.TIMESTAMP, c: Math.min(profile.visitN, 1000000) })).catch(() => { });
   } catch (e) { }
 }
+// Give bag items to a real online player: items go to their mailbox (post/<uid>) and they pick them up when they are in the game
+let GIVE_BUSY = false;
+function openGiveItems(P) {
+  inv.things = inv.things || {}; const list = Object.entries(inv.things).filter(([k, n]) => n > 0 && THINGS[k]);
+  const st = 'width:auto;display:inline-block;margin:3px;padding:8px 10px;font-size:15px';
+  openModal('<h2>🎁 ' + String(P.name).replace(/[<>&]/g, '') + ' kişisine eşya ver</h2>' + (list.length ? '<p>Çantandan vermek istediğin eşyaya bas (1 tane gider):</p>' + list.map(([k, n]) => '<button class="mb" style="' + st + '" data-g="' + k + '">' + THINGS[k][0] + ' ' + THINGS[k][1] + ' ×' + n + '</button>').join('') : '<p>Çantanda verilecek eşya yok 🎒 Marketten bir şey al.</p>') + '<br><button class="mb s" id="gvclose">Kapat</button>');
+  $('gvclose').onclick = closeModal;
+  modal.querySelectorAll('[data-g]').forEach(b => { b.onclick = async () => {
+    const k = b.dataset.g; if (GIVE_BUSY || !(inv.things[k] > 0)) return; GIVE_BUSY = true;
+    try {
+      if (!(await mpInit())) { GIVE_BUSY = false; return say('İnternet yok'); }
+      await MP.db.ref('post/' + P.uid).push({ n: String(profile.name || 'Oyuncu').slice(0, 20), k, c: 1, t: MP.fb.database.ServerValue.TIMESTAMP });
+      inv.things[k]--; save(); sfx('done'); sparkle(640, 360, 24); say('🎁 ' + THINGS[k][0] + ' ' + THINGS[k][1] + ' verildi: ' + P.name); closeModal();
+    } catch (e) { say('Gönderilemedi: Firebase kuralları güncel değil'); }
+    GIVE_BUSY = false;
+  }; });
+}
+function mpPostListen() {
+  try { MP.db.ref('post/' + MP.uid).on('child_added', sn => {
+    const m = sn.val(); try { sn.ref.remove(); } catch (e) { }
+    if (!m || !THINGS[m.k] || !profile) return;
+    const c = Math.max(1, Math.min(99, +m.c || 1)); inv.things = inv.things || {}; inv.things[m.k] = (inv.things[m.k] || 0) + c; save();
+    sfx('done'); sparkle(640, 300, 30); say('🎁 ' + String(m.n || 'Biri').slice(0, 20) + ' sana ' + THINGS[m.k][0] + ' ' + THINGS[m.k][1] + ' verdi!');
+  }); } catch (e) { }
+}
 // at game start: log the visit, show up as online, and listen for gifts from the admin
 async function mpBoot() {
   MP.quiet = true; const ok = await mpInit(); MP.quiet = false; if (!ok) return;
-  mpLogVisit();
+  mpLogVisit(); mpPostListen();
   try { const r = MP.db.ref('online/' + MP.uid); r.onDisconnect().remove(); r.set({ n: String(profile.name || '').slice(0, 20), t: MP.fb.database.ServerValue.TIMESTAMP }); } catch (e) { }
   try { MP.db.ref('gift').on('value', sn => {
     const g = sn.val(); if (!g || !g.id || !profile || profile.giftSeen === g.id) return; profile.giftSeen = g.id;

@@ -162,6 +162,30 @@
       "$other": {
         ".validate": false
       }
+    },
+    "post": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$id": {
+          ".write": "auth != null && ((!data.exists() && newData.exists()) || (auth.uid === $uid && !newData.exists()))",
+          ".validate": "newData.hasChildren(['n', 'k', 'c', 't'])",
+          "n": {
+            ".validate": "newData.isString() && newData.val().length <= 20"
+          },
+          "k": {
+            ".validate": "newData.isString() && newData.val().matches(/^[a-z0-9_]{1,20}$/)"
+          },
+          "c": {
+            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 99"
+          },
+          "t": {
+            ".validate": "newData.val() === now"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
     }
   }
 }

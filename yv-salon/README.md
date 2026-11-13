@@ -126,3 +126,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v117 | versions/v117-yumurta.html | Evcil hayvanlar yumurta oldu (1 günde çatlar), 3 pet birleşince binek, Evcil & Binek ekranı |
 | v118 | versions/v118-bluey-kilit.html | Bluey ailesi kıyafetleri 7 Aralık 2026'ya kadar kilitli |
 | v119 | versions/v119-pet-sinirsiz.html | Evcil hayvan yumurtalarından istediğin kadar alınabilir |
+| v120 | versions/v120-esya-ver.html | Çantadaki eşyayı çevrimiçi oyuncuya verme (posta kutusu, yeni Firebase kuralı gerekir) |
