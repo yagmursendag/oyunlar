@@ -124,3 +124,5 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v115 | versions/v115-cizgi-film-zirhi.html | Çizgi Film Zırhı (35500 TL), Bluey ailesi renklerinde döner |
 | v116 | versions/v116-donus.html | Çizgi Film Zırhı giyince "Dönüş" düğmesi: Bluey, Bingo, Bandit, Chilli köpek karakterine dönüşme |
 | v117 | versions/v117-yumurta.html | Evcil hayvanlar yumurta oldu (1 günde çatlar), 3 pet birleşince binek, Evcil & Binek ekranı |
+| v118 | versions/v118-bluey-kilit.html | Bluey ailesi kıyafetleri 7 Aralık 2026'ya kadar kilitli |
+| v119 | versions/v119-pet-sinirsiz.html | Evcil hayvan yumurtalarından istediğin kadar alınabilir |
