@@ -131,3 +131,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v122 | versions/v122-uzun-gun.html | Lobide gün 3 kat uzadı (6 dk yerine 18 dk) |
 | v123 | versions/v123-burun.html | Ana menü karakterinin burnu düzeltildi (yumuşak gölge, burun delikleri) |
 | v124 | versions/v124-surat.html | Ana menü karakterinin yüzü sadeleştirildi (gri lekeler kalktı, burun yumuşak) |
+| v125 | versions/v125-gercek-yuz.html | Ana menü karakterine gerçekçi yüz: badem gözler, doğal kaş ve dudak, yumuşak yanak |
