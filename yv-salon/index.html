@@ -6061,7 +6061,7 @@ function drawBag() {
 }
 
 // ================= beach & sea, day and night, daily quests =================
-const DAY_LEN = 360; // seconds for a whole day in the lobby
+const DAY_LEN = 1080; // seconds for a whole day in the lobby
 // 0 = midnight, .25 sunrise, .5 noon, .75 sunset
 const dayLight = t => clamp((Math.sin((t - 0.25) * Math.PI * 2) + 0.2) / 0.5, 0, 1);
 const isNight = () => dayLight(profile && profile.dayT != null ? profile.dayT : 0.4) < 0.3;
