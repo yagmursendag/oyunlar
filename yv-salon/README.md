@@ -134,3 +134,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v125 | versions/v125-gercek-yuz.html | Ana menü karakterine gerçekçi yüz: badem gözler, doğal kaş ve dudak, yumuşak yanak |
 | v126 | versions/v126-binalar.html | Lobi: her bina kendi şeklinde (sera, kuleli büyük okul, düz çatılar), Polis Merkezi ve İtfaiye (iş + görev) eklendi |
 | v127 | versions/v127-beden.html | Ana menü karakteri: yüz eski çizgi film hâline döndü, beden detaylandı (ışık-gölge, kumaş kıvrımları, kol/bacak hacmi) |
+| v128 | versions/v128-telefon.html | Lobide telefon: yandaki düğmeler (Eve ışınla, Evcil & Binek, Dönüş, Ayarlar, Ana menü...) telefona taşındı |
