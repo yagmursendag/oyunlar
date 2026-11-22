@@ -130,3 +130,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v121 | versions/v121-gercekci-menu.html | Ana menüdeki karakter daha gerçekçi: küçük doğal gözler, yüz gölgesi, zemin gölgesi |
 | v122 | versions/v122-uzun-gun.html | Lobide gün 3 kat uzadı (6 dk yerine 18 dk) |
 | v123 | versions/v123-burun.html | Ana menü karakterinin burnu düzeltildi (yumuşak gölge, burun delikleri) |
+| v124 | versions/v124-surat.html | Ana menü karakterinin yüzü sadeleştirildi (gri lekeler kalktı, burun yumuşak) |
