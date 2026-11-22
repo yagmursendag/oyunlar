@@ -5164,12 +5164,9 @@ function drawLobby() {
   btn(16, 136, 200, 42, `📋 Görevler ${questBadge()}`, () => { questsOpen = true; }, { col: '#ffb86b', fg: '#ffffff', size: 17 }); levelPill(222, 136, 130, 42, 15);
   ctx.fillStyle = isNight() ? 'rgba(27,35,80,.88)' : 'rgba(255,255,255,.92)'; rr(16, 186, 200, 36, 18); ctx.fill();
   text(clockText(), 116, 210, 16, isNight() ? '#ffe68a' : '#3a2340', 'center', 800);
-  if (rich()) btn(16, 274, 200, 38, '👑 Son girenler', showVisits, { col: '#fff3c4', size: 16 });
-  btn(16, 230, 200, 38, '⚙️ Ayarlar', showSettings, { size: 16 });
   drawMpHud();
   fitText(profile.job ? `💼 İşin: ${JOB_NAMES[profile.job]}` : '💼 İşin yok — bir dükkanda işe gir', 30, 114, 16, 276, '#8b5cf6', 800);
   moneyPill(1062, 16);
-  btn(1062, 72, 200, 44, '🏠 Ana menü', () => { save(); go('title'); }, { size: 18 });
   if (scene === 'lobby') {
     // quick chat: emojis and ready-made sentences only (safe for kids)
     const EMO = ['👋', '😊', '😂', '💖', '👍', '🍦'];
@@ -5208,6 +5205,7 @@ function drawLobby() {
     btn(cx0 + 78, 650, 70, 52, '🎭', () => { LB.acts = !LB.acts; LB.phr = false; }, { active: LB.acts, size: 24 });
     if (LB.acts) ACT_LIST.forEach(([id, t], i) => btn(cx0 + 78, 596 - i * 46, 190, 42, t, () => { mpEmote(11 + i); LB.acts = false; }, { size: 17 }));
     if (LB.acts) btn(cx0 + 78, 596 - ACT_LIST.length * 46, 190, 42, (LB.me && LB.me.userData.A.disguise ? '👁️ Görün' : '🫥 Saklan'), () => { mpEmote(LB.me && LB.me.userData.A.disguise ? 25 : 19 + Math.floor(Math.random() * 6)); LB.acts = false; }, { size: 17, col: '#d9f7d0' });
+    drawPhone();
     if (LB.prof) drawProfile();
     if (SCH) schDraw();
   } else if (scene === 'place') drawPlace();
@@ -7717,10 +7715,59 @@ function lbTeleHome() {
   if (LB.where === 'market' && LB.basket.length) { sfx('no'); return say('Ödemeden çıkamazsın! 💳 Kasaya git ya da sepeti boşalt'); }
   LB.pkRun = null; LB.fly = false; LB.jumpV = 0; LB.me.position.y = 0; LB.where = 'town'; sparkle(640, 360, 24); questEvent('tp'); lbGoInside('home'); say('✨ Eve ışınlandın! 🏡');
 }
+// ---- 📱 the phone: a dark flat phone with app icons (replaces the loose side buttons)
+function phoneRoundRect(x, y, w, h, r) { rr(x, y, w, h, r); }
+function drawPhone() {
+  if (scene !== 'lobby' || !LB.me || LB.ride || LB.edit || CK || FG || SCH || LB.sleepT > 0) { LB.phone = false; return; }
+  if (!LB.phone) {
+    // small phone icon button under the map
+    ctx.save(); ctx.fillStyle = 'rgba(20,19,28,.92)'; phoneRoundRect(1112, 288, 150, 54, 16); ctx.fill(); ctx.strokeStyle = '#4a4766'; ctx.lineWidth = 2.5; ctx.stroke(); ctx.restore();
+    ctx.fillStyle = '#2b3a8f'; phoneRoundRect(1124, 297, 22, 36, 5); ctx.fill(); ctx.fillStyle = '#9fd0ff'; phoneRoundRect(1127, 301, 16, 24, 3); ctx.fill();
+    text('Telefon', 1210, 322, 18, '#ffffff', 'center', 800);
+    btn(1112, 288, 150, 54, '', () => { LB.phone = true; sfx('pop'); }, { hidden: true });
+    return;
+  }
+  btn(0, 0, W, H, '', () => { LB.phone = false; }, { hidden: true }); // tap outside = close
+  ctx.fillStyle = 'rgba(8,6,22,.5)'; ctx.fillRect(0, 0, W, H);
+  const px = 900, py = 44, pw = 310, ph = 636;
+  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = 36; ctx.fillStyle = '#12111a'; phoneRoundRect(px, py, pw, ph, 46); ctx.fill(); ctx.restore();
+  ctx.strokeStyle = '#3d3a55'; ctx.lineWidth = 3; phoneRoundRect(px, py, pw, ph, 46); ctx.stroke();
+  const wg = ctx.createLinearGradient(px, py, px + pw * 0.6, py + ph); wg.addColorStop(0, '#1f3a8a'); wg.addColorStop(0.5, '#5b3a9c'); wg.addColorStop(1, '#c4568a');
+  ctx.fillStyle = wg; phoneRoundRect(px + 10, py + 10, pw - 20, ph - 20, 38); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.07)'; ctx.beginPath(); ctx.arc(px + 230, py + 120, 120, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(px + 60, py + 470, 150, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#12111a'; phoneRoundRect(px + pw / 2 - 42, py + 18, 84, 22, 11); ctx.fill();
+  const tm = (clockText().match(/\d{1,2}:\d{2}/) || ['--:--'])[0];
+  text(tm, px + pw / 2, py + 108, 54, '#ffffff', 'center', 800);
+  text(clockText().replace(/\s*\d{1,2}:\d{2}/, ''), px + pw / 2, py + 136, 16, 'rgba(255,255,255,.8)', 'center', 700);
+  ctx.fillStyle = 'rgba(255,255,255,.16)'; phoneRoundRect(px + 28, py + 152, pw - 56, 34, 17); ctx.fill();
+  text('💰 ' + cash() + ' TL', px + pw / 2, py + 176, 17, '#ffe9a8', 'center', 800);
+  const inHome = String(LB.where).startsWith('home'), armor = profile.look && profile.look.outfit === 'toonarmor', ti = myToonIdx();
+  const nbq = String(questBadge() || '').trim();
+  const apps = [
+    ['🏠', 'Eve ışınla', lbTeleHome, '#ffb347', '#ff7a45', !inHome],
+    ['🥚', 'Evcil & Binek', openPets, '#ffd166', '#f4a259', true],
+    ['🔄', ti >= 0 ? TOON_CH[ti].n : 'Dönüş', toonCycle, '#b388ff', '#7c4dff', armor],
+    ['📋', 'Görevler', () => { questsOpen = true; }, '#5ec8a0', '#2f9e7a', true, nbq],
+    ['🎒', 'Çanta', () => { LB.bag = !LB.bag; }, '#7ab8ff', '#4a7fe0', true],
+    ['👭', 'Arkadaşlar', showFriends, '#ff8fb8', '#e0558a', true],
+    ['⚙️', 'Ayarlar', showSettings, '#b8c0d0', '#7d8aa6', true],
+    ['👑', 'Son girenler', showVisits, '#ffe27a', '#e0b030', rich()],
+    ['🚪', 'Ana menü', () => { save(); go('title'); }, '#ff6b6b', '#d63a4a', true]
+  ].filter(a => a[5]);
+  apps.forEach((a, i) => {
+    const col = i % 3, row = Math.floor(i / 3), x = px + 26 + col * 90, y = py + 212 + row * 108;
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.3)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 4;
+    const tg = ctx.createLinearGradient(x, y, x, y + 72); tg.addColorStop(0, a[3]); tg.addColorStop(1, a[4]); ctx.fillStyle = tg; phoneRoundRect(x, y, 72, 72, 20); ctx.fill(); ctx.restore();
+    ctx.fillStyle = 'rgba(255,255,255,.22)'; ctx.beginPath(); ctx.ellipse(x + 36, y + 14, 28, 9, 0, 0, Math.PI * 2); ctx.fill();
+    emoji(a[0], x + 36, y + 38, 36);
+    text(a[1], x + 36, y + 92, 13, '#ffffff', 'center', 800);
+    if (a[6]) { ctx.fillStyle = '#ff4f6b'; phoneRoundRect(x + 44, y - 6, 34, 20, 10); ctx.fill(); text(String(a[6]), x + 61, y + 9, 12, '#ffffff', 'center', 800); }
+    btn(x, y, 72, 92, '', () => { LB.phone = false; sfx('pop'); a[2](); }, { hidden: true });
+  });
+  ctx.fillStyle = 'rgba(255,255,255,.8)'; phoneRoundRect(px + pw / 2 - 52, py + ph - 32, 104, 6, 3); ctx.fill();
+  btn(px + pw / 2 - 70, py + ph - 48, 140, 36, '', () => { LB.phone = false; }, { hidden: true });
+}
 function drawLunaUi() {
-  if (scene === 'lobby' && LB.me && !LB.ride && !LB.edit && !CK && !FG && !SCH && !(LB.sleepT > 0) && !String(LB.where).startsWith('home')) btn(1062, 288, 200, 48, '🏠 Eve ışınlan', lbTeleHome, { col: '#ffe36e', size: 18 });
-  if (scene === 'lobby' && LB.me && profile.look && profile.look.outfit === 'toonarmor' && !LB.ride && !LB.edit && !CK && !FG && !SCH && !(LB.sleepT > 0) && !String(LB.where).startsWith('home')) { const ti = myToonIdx(); btn(1062, 342, 200, 48, ti >= 0 ? '🔄 Dönüş: ' + TOON_CH[ti].n : '🔄 Dönüş yap', toonCycle, { col: '#b388ff', fg: '#ffffff', size: 18 }); }
-  if (scene === 'lobby' && LB.me && !LB.ride && !LB.edit && !CK && !FG && !SCH && !(LB.sleepT > 0) && !String(LB.where).startsWith('home')) btn(1062, profile.look && profile.look.outfit === 'toonarmor' ? 396 : 342, 200, 48, '🥚 Evcil & Binek', openPets, { col: '#ffd6a5', size: 17 });
   if (scene === 'lobby' && LB.where === 'town' && LB.pkRun) { ctx.fillStyle = 'rgba(255,255,255,.94)'; rr(520, 16, 240, 50, 25); ctx.fill(); ctx.strokeStyle = '#ff5fa2'; ctx.lineWidth = 3; ctx.stroke(); text('⏱️ ' + LB.pkRun.t.toFixed(1) + ' sn' + (profile.pkBest ? '  🥇' + profile.pkBest : ''), 640, 50, 22, '#3a2340', 'center', 800); btn(930, 590, 190, 52, '🏁 Başa dön', lbPkReset, { size: 18 }); }
   if (LB.sleepT > 0 && scene === 'lobby') { ctx.fillStyle = `rgba(20,20,60,${Math.min(0.85, 0.3 + (4 - LB.sleepT) * 0.2)})`; ctx.fillRect(0, 0, W, H); for (let i = 0; i < 3; i++) text('Z', 640 + i * 40 + Math.sin(T * 2 + i) * 10, 360 - i * 40 - ((T * 30) % 40), 40 + i * 12, '#ffffff', 'center', 800); text('😴 Uyuyorsun...', 640, 470, 30, '#ffffff', 'center', 800); return; }
   if (CK && scene === 'lobby') return ckDraw();
