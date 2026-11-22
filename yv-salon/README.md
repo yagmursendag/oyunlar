@@ -129,3 +129,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v120 | versions/v120-esya-ver.html | Çantadaki eşyayı çevrimiçi oyuncuya verme (posta kutusu, yeni Firebase kuralı gerekir) |
 | v121 | versions/v121-gercekci-menu.html | Ana menüdeki karakter daha gerçekçi: küçük doğal gözler, yüz gölgesi, zemin gölgesi |
 | v122 | versions/v122-uzun-gun.html | Lobide gün 3 kat uzadı (6 dk yerine 18 dk) |
+| v123 | versions/v123-burun.html | Ana menü karakterinin burnu düzeltildi (yumuşak gölge, burun delikleri) |
