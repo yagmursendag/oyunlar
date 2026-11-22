@@ -649,7 +649,7 @@ function nextStep() {
   startStep();
 }
 function openShop(tab) { shopFrom = scene; if (tab) shopTab = tab; go('shop'); }
-const ownsItem = it => it.kind === 'bag' ? inv.bags.includes(it.id) : it.kind === 'thing' ? false : it.kind === 'pet' ? false : it.kind === 'outfit' ? inv.outfits.includes(it.id) : it.kind === 'jewel' ? has('jewels', it.id) : it.kind === 'tools' || it.kind === 'decor' ? has(it.kind, it.id) : false;
+const ownsItem = it => it.kind === 'bag' ? inv.bags.includes(it.id) : it.kind === 'thing' ? false : it.kind === 'pet' ? (inv.pets.includes(it.id) || (inv.eggs || []).some(e => e.id === it.id)) : it.kind === 'outfit' ? inv.outfits.includes(it.id) : it.kind === 'jewel' ? has('jewels', it.id) : it.kind === 'tools' || it.kind === 'decor' ? has(it.kind, it.id) : false;
 // Pet eggs: a bought pet is an egg that hatches after one day; 3 pets can merge into a rideable mount
 const EGG_MS = 864e5;
 SHOP.forEach(it => { if (it.kind === 'pet') { it.name = it.name + ' Yumurtası'; it.desc = '1 günde çatlar • 3 pet birleşince binek olur'; } });
@@ -657,26 +657,26 @@ function hatchCheck() {
   if (typeof inv === 'undefined' || !inv || !Array.isArray(inv.eggs) || !inv.eggs.length) return;
   const now = Date.now(), due = inv.eggs.filter(e => e.at <= now); if (!due.length) return;
   inv.eggs = inv.eggs.filter(e => e.at > now);
-  for (const e of due) { inv.pets.push(e.id); say('🐣 Yumurtan çatladı: ' + (PET_LABEL[e.id] || e.id) + '!'); }
+  for (const e of due) { if (!inv.pets.includes(e.id)) inv.pets.push(e.id); say('🐣 Yumurtan çatladı: ' + (PET_LABEL[e.id] || e.id) + '!'); }
   save(); try { sfx('done'); sparkle(640, 360, 30); } catch (x) { }
 }
 setInterval(hatchCheck, 4000);
 let PM_SEL = [];
 function openPets() {
-  hatchCheck(); inv.eggs = inv.eggs || []; inv.mounts = inv.mounts || []; PM_SEL = PM_SEL.filter(i => i < inv.pets.length);
+  hatchCheck(); inv.eggs = inv.eggs || []; inv.mounts = inv.mounts || []; PM_SEL = PM_SEL.filter(k => inv.pets.includes(k));
   const st = 'width:auto;display:inline-block;margin:3px;padding:8px 10px;font-size:15px';
   const left = e => { const m = Math.max(1, Math.ceil((e.at - Date.now()) / 60000)); return m >= 60 ? Math.floor(m / 60) + ' sa ' + (m % 60) + ' dk' : m + ' dk'; };
   const eggs = inv.eggs.length ? inv.eggs.map(e => '<div>🥚 ' + (PET_LABEL[e.id] || e.id) + ' yumurtası — ' + left(e) + ' sonra çatlar</div>').join('') : '<p>Yumurtan yok. Mağazadaki evcil hayvan bölümünden yumurta al 🥚</p>';
-  const pets = inv.pets.map((k, i) => '<button class="mb ' + (PM_SEL.includes(i) ? 'g' : '') + '" style="' + st + '" data-p="' + i + '">' + (PET_LABEL[k] || k) + '</button>').join('');
+  const pets = inv.pets.map(k => '<button class="mb ' + (PM_SEL.includes(k) ? 'g' : '') + '" style="' + st + '" data-p="' + k + '">' + (PET_LABEL[k] || k) + '</button>').join('');
   const mounts = inv.mounts.map(k => { const on = profile.mounted && profile.mount === k; return '<button class="mb ' + (on ? 'g' : '') + '" style="' + st + '" data-m="' + k + '">' + (on ? '⬇️ İn' : '⬆️ Bin') + ': ' + (PET_LABEL[k] || k) + '</button>'; }).join('') || '<p>Henüz binek yok. 3 peti birleştir!</p>';
   openModal('<h2>🥚 Yumurtalar & Binek</h2><h3>Yumurtalar</h3>' + eggs + '<h3>Petlerin (birleştirmek için 3 tane seç)</h3>' + pets + '<br><button class="mb g" id="pmerge" ' + (PM_SEL.length === 3 ? '' : 'disabled') + '>✨ Birleştir (' + PM_SEL.length + '/3)</button><h3>Binekler</h3>' + mounts + '<br><button class="mb" id="pclose">Kapat</button>');
   $('pclose').onclick = closeModal;
-  modal.querySelectorAll('[data-p]').forEach(b => { b.onclick = () => { const k = +b.dataset.p; if (PM_SEL.includes(k)) PM_SEL = PM_SEL.filter(x => x !== k); else if (PM_SEL.length < 3) PM_SEL.push(k); sfx('pop'); openPets(); }; });
+  modal.querySelectorAll('[data-p]').forEach(b => { b.onclick = () => { const k = b.dataset.p; if (PM_SEL.includes(k)) PM_SEL = PM_SEL.filter(x => x !== k); else if (PM_SEL.length < 3) PM_SEL.push(k); sfx('pop'); openPets(); }; });
   modal.querySelectorAll('[data-m]').forEach(b => { b.onclick = () => { const k = b.dataset.m; if (profile.mounted && profile.mount === k) profile.mounted = false; else { profile.mount = k; profile.mounted = true; } save(); sfx('done'); closeModal(); say(profile.mounted ? '🐎 Bineğe bindin! Daha hızlısın' : 'Bineğten indin'); }; });
   $('pmerge').onclick = () => {
-    if (PM_SEL.length !== 3) return; const kind = inv.pets[PM_SEL[0]];
+    if (PM_SEL.length !== 3) return; const kind = PM_SEL[0];
     if (inv.mounts.includes(kind)) { sfx('no'); return say('Bu binek zaten var! Başka bir pet ilk sıraya seç'); }
-    const rm = PM_SEL.slice(); inv.pets = inv.pets.filter((x, i) => !rm.includes(i)); if (profile.look && profile.look.pet && profile.look.pet !== 'none' && !inv.pets.includes(profile.look.pet)) profile.look.pet = 'none';
+    for (const k of PM_SEL) { inv.pets = inv.pets.filter(x => x !== k); if (profile.look && profile.look.pet === k) profile.look.pet = 'none'; }
     inv.mounts.push(kind); PM_SEL = []; save(); sfx('done'); sparkle(640, 360, 40); say('✨ 3 pet birleşti: ' + (PET_LABEL[kind] || kind) + ' bineği!'); openPets();
   };
 }
@@ -1395,6 +1395,7 @@ function capPath(bangs) {
   ctx.closePath();
 }
 const hexA = (h, a) => { const r = toRGB(h); return 'rgba(' + r[0] + ',' + r[1] + ',' + r[2] + ',' + a + ')'; };
+let REAL = false; // 'realistic' look: used on the title screen only
 function drawFace(c, mood) {
   ctx.lineCap = 'round';
   ctx.fillStyle = 'rgba(255,255,255,.2)'; ell(-26, -46, 22, 9, -0.45); ell(30, -48, 12, 5, 0.5); ctx.fillStyle = 'rgba(180,100,80,.12)'; ell(0, 22, 7, 4);
@@ -1414,7 +1415,7 @@ function drawFace(c, mood) {
   const blink = ((T + c.seed) % 3.6) < 0.12;
   for (const s of [-1, 1]) {
     const ex = s * 34, ey = 6;
-    ctx.save(); ctx.translate(ex, ey + 1); ctx.scale(1.17, 1.2); ctx.translate(-ex, -ey);
+    ctx.save(); ctx.translate(ex, ey + 1); if (REAL) ctx.scale(0.9, 0.95); else ctx.scale(1.17, 1.2); ctx.translate(-ex, -ey);
     if (blink) { ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(ex, ey, 12, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke(); ctx.restore(); continue; }
     const es = c.av ? c.av.eyeStyle : 'normal';
     if (es === 'happy') { ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(ex, ey + 8, 12, 1.15 * Math.PI, 1.85 * Math.PI); ctx.stroke(); ctx.restore(); continue; }
@@ -2206,6 +2207,7 @@ function drawHead(c, x, y, s, o = {}) {
   // head + face
   ctx.fillStyle = c.skin; ctx.strokeStyle = mix(c.skin, '#000000', 0.25); ctx.lineWidth = 4;
   ctx.beginPath(); ctx.ellipse(0, 0, 92, 100, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  if (REAL) { ctx.save(); ctx.beginPath(); ctx.ellipse(0, 0, 92, 100, 0, 0, Math.PI * 2); ctx.clip(); const rg = ctx.createRadialGradient(-22, -34, 8, 0, 10, 124); rg.addColorStop(0, 'rgba(255,255,255,.2)'); rg.addColorStop(0.55, 'rgba(255,255,255,0)'); rg.addColorStop(1, 'rgba(120,60,40,.3)'); ctx.fillStyle = rg; ctx.fillRect(-100, -110, 200, 220); ctx.strokeStyle = 'rgba(140,80,60,.4)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-5, 8); ctx.quadraticCurveTo(-11, 26, 0, 31); ctx.quadraticCurveTo(11, 26, 5, 8); ctx.stroke(); ctx.fillStyle = 'rgba(120,70,70,.12)'; ell(-34, 31, 18, 6); ell(34, 31, 18, 6); ctx.fillStyle = 'rgba(255,255,255,.22)'; ell(0, 20, 4, 9); ctx.restore(); }
   drawFace(c, mood);
   if (c.beard.length) {
     ctx.save(); ctx.beginPath(); ctx.ellipse(0, 0, 92, 100, 0, 0, Math.PI * 2); ctx.clip();
@@ -3390,11 +3392,6 @@ function drawVisit() {
 }
 // event notice: the cartoon event starts exactly two months after this version (7 December 2026)
 const EVENT_DAY = new Date(2026, 11, 7);
-// Bluey family outfits stay locked (hidden from shop and wardrobe) until the event day
-const BLUEY_IDS = ['bluedog', 'orangedog', 'navydog', 'tandog', 'toonarmor'];
-function eventOn() { const t0 = new Date(); t0.setHours(0, 0, 0, 0); return t0 >= EVENT_DAY; }
-if (!eventOn()) for (let i = SHOP.length - 1; i >= 0; i--) if (SHOP[i].kind === 'outfit' && BLUEY_IDS.includes(SHOP[i].id)) SHOP.splice(i, 1);
-setInterval(() => { try { if (!eventOn() && profile && profile.look && BLUEY_IDS.includes(profile.look.outfit)) { profile.look.outfit = 'dress'; profile.toonForm = -1; save(); } } catch (e) { } }, 2000);
 function drawEventBanner() {
   const t0 = new Date(); t0.setHours(0, 0, 0, 0); const days = Math.round((EVENT_DAY - t0) / 86400000);
   if (days < -3) return;
@@ -3426,7 +3423,7 @@ function drawTitle() {
   if (profile) btn(520, 164, 240, 44, `🔥 Seri: ${profile.streak ? profile.streak.s : 0} gün${streakDue() ? ' 🎁' : ''}`, showStreak, { col: '#ffe0b3', size: 16 });
   if (profile && streakAutoDay !== todayKey()) { streakAutoDay = todayKey(); if (streakDue()) setTimeout(showStreak, 600); }
   if (profile) { if (gemsReady()) btn(770, 164, 200, 44, `🎁 ${GEMS_PER_WEEK} 💎 elmasını al!`, claimGems, { col: '#5aa9ff', fg: '#ffffff', size: 16 }); else text(`💎 Yeni elmaslar: ${7 - (Math.floor(Date.now() / 86400000 + 3) % 7)} gün sonra`, 960, 192, 14, '#2d6fd6', 'right', 800); }
-  if (profile) { const o = owner(); drawPet(o.av.pet, 250, 654, 0.5); drawHead(o, 150, 650 - 620 * 0.5 + Math.sin(T * 2) * 3, 0.5, { body: () => drawBody(o, 0, 1), mood: 1 }); }
+  if (profile) { const o = owner(); drawPet(o.av.pet, 250, 654, 0.5); ctx.fillStyle = 'rgba(0,0,0,.2)'; ell(150, 655, 78, 13); REAL = true; try { drawHead(o, 150, 650 - 620 * 0.5 + Math.sin(T * 2) * 3, 0.5, { body: () => drawBody(o, 0, 1), mood: 1 }); } finally { REAL = false; } }
   btn(302, 410, 160, 80, '▶ Başla', () => newCustomer(served === 0), { col: '#ff5fa2', fg: '#ffffff', size: 28 });
   btn(472, 410, 160, 80, '🌳 Lobi', enterLobby, { col: '#2fbf71', fg: '#ffffff', size: 28 });
   btn(642, 410, 160, 80, '🛍️ Mağaza', () => openShop(), { col: '#ffe36e', size: 24 });
@@ -3948,9 +3945,9 @@ function drawDesigner() {
     { const mine = Object.entries(inv.custom || {}); if (mine.length) { fitText('Yeni kıyafetlerim', 560, y + 28, 18, 124, '#6b5a70', 800); mine.slice(0, 8).forEach(([id, v], i) => { const o = sxParse(sxPack({ ...DEFAULT_LOOK, ...v.o })); if (o) btn(690 + (i % 4) * 138, y + Math.floor(i / 4) * 40, 132, 36, '🆕 ' + v.n, () => { designLook = { ...designLook, ...o }; designChar = buildChar(designLook, profile.name); sfx('pop'); }, { size: 14, col: '#d6f5e3' }); }); y += 28 + Math.ceil(Math.min(8, mine.length) / 4) * 40; } }
     fitText('Kıyafet', 560, y + 28, 18, 124, '#6b5a70', 800);
     [['dress', '👗 Elbise'], ['gown', '👸 Prenses'], ['tutu', '🩰 Balerin'], ['tshirt', '👕 Tişört'], ['overalls', '👖 Tulum'], ['apron', '💅 Önlük'],
-      ['tracksuit', '🏃 Eşofman'], ['pajamas', '🌙 Pijama'], ['raincoat', '☔ Yağmurluk'], ['hero', '🦸 Kahraman'], ['jacket', '🧥 Kot ceket'], ['sweater', '🧶 Kazak'], ['galaxy', '👑 Yıldız Prensesi'], ['rainbow', '🌈 Gökkuşağı'], ['mermaid', '🧜 Deniz Kızı'], ['fairy', '🧚 Peri'], ['winter', '❄️ Kış Prensesi'], ['swim', '👙 Mayo'], ['chef', '🍳 Aşçı'], ['cowgirl', '🤠 Kovboy'], ['astronaut', '🚀 Astronot'], ['football', '⚽ Futbolcu'], ['suit', '🤵 Takım'], ['police', '👮 Polis'], ['firefighter', '🚒 İtfaiyeci'], ['pirate', '🏴‍☠️ Korsan'], ['ninja', '🥷 Ninja'], ['royal', '👑 Altın Hükümdar'], ['knight', '🛡️ Şövalye'], ['wizard', '🧙 Büyücü'], ['vampire', '🧛 Vampir'], ['samurai', '⚔️ Samuray'], ['angel', '😇 Melek'], ['diamond', '💎 Elmas'], ['farmer', '🧑‍🌾 Çiftçi'], ['doctor', '🩺 Doktor'], ['bunny', '🐰 Tavşan'], ['tiger', '🐯 Kaplan'], ['witch', '🧙‍♀️ Cadı'], ['ball', '👸 Balo'], ['sunking', '☀️ Güneş'], ['icequeen', '❄️ Buz Kraliçesi'], ['elf', '🧝 Elf'], ['robotsuit', '🤖 Robot'], ['pharaoh', '🔱 Firavun'], ['unicornsuit', '🦄 Tek Boynuz'], ['snowman', '⛄ Kardan Adam'], ['pumpkin', '🎃 Balkabağı'], ['candy', '🍭 Şeker'], ['crystal', '💎 Kristal'], ['lava', '🌋 Lav Ruhu'], ['poseidon', '🔱 Okyanus'], ['fox', '🦊 Tilki'], ['panda', '🐼 Panda'], ['frog', '🐸 Kurbağa'], ...(eventOn() ? [['bluedog', '🐶 Bluey'], ['toonarmor', '🛡️ Çizgi Film Zırhı'], ['tandog', '🦮 Chilli'], ['navydog', '🐕‍🦺 Bandit'], ['orangedog', '🐕 Bingo']] : []), ['bee', '🐝 Arı'], ['ladybug', '🐞 Uğur Böceği'], ['rocker', '🎸 Rockçı'], ['ballet', '🩰 Balerin'], ['scientist', '🔬 Bilim İnsanı'], ['racer', '🏎️ Yarışçı'], ['dino', '🦖 Dinozor'], ['kimono', '🎎 Kimono'], ['sailor', '⚓ Denizci'], ...(rich() ? [['cosmic', '🌌 Kozmik Admin'], ['dragonarmor', '🐲 Ejderha Zırhı'], ['whitedeer', '🦌 Beyaz Geyik']] : []), ...(canCloud() ? [['cloud', '☁️ Bulut']] : []), ...ATL_LABELS]
+      ['tracksuit', '🏃 Eşofman'], ['pajamas', '🌙 Pijama'], ['raincoat', '☔ Yağmurluk'], ['hero', '🦸 Kahraman'], ['jacket', '🧥 Kot ceket'], ['sweater', '🧶 Kazak'], ['galaxy', '👑 Yıldız Prensesi'], ['rainbow', '🌈 Gökkuşağı'], ['mermaid', '🧜 Deniz Kızı'], ['fairy', '🧚 Peri'], ['winter', '❄️ Kış Prensesi'], ['swim', '👙 Mayo'], ['chef', '🍳 Aşçı'], ['cowgirl', '🤠 Kovboy'], ['astronaut', '🚀 Astronot'], ['football', '⚽ Futbolcu'], ['suit', '🤵 Takım'], ['police', '👮 Polis'], ['firefighter', '🚒 İtfaiyeci'], ['pirate', '🏴‍☠️ Korsan'], ['ninja', '🥷 Ninja'], ['royal', '👑 Altın Hükümdar'], ['knight', '🛡️ Şövalye'], ['wizard', '🧙 Büyücü'], ['vampire', '🧛 Vampir'], ['samurai', '⚔️ Samuray'], ['angel', '😇 Melek'], ['diamond', '💎 Elmas'], ['farmer', '🧑‍🌾 Çiftçi'], ['doctor', '🩺 Doktor'], ['bunny', '🐰 Tavşan'], ['tiger', '🐯 Kaplan'], ['witch', '🧙‍♀️ Cadı'], ['ball', '👸 Balo'], ['sunking', '☀️ Güneş'], ['icequeen', '❄️ Buz Kraliçesi'], ['elf', '🧝 Elf'], ['robotsuit', '🤖 Robot'], ['pharaoh', '🔱 Firavun'], ['unicornsuit', '🦄 Tek Boynuz'], ['snowman', '⛄ Kardan Adam'], ['pumpkin', '🎃 Balkabağı'], ['candy', '🍭 Şeker'], ['crystal', '💎 Kristal'], ['lava', '🌋 Lav Ruhu'], ['poseidon', '🔱 Okyanus'], ['fox', '🦊 Tilki'], ['panda', '🐼 Panda'], ['frog', '🐸 Kurbağa'], ['bluedog', '🐶 Bluey'], ['toonarmor', '🛡️ Çizgi Film Zırhı'], ['tandog', '🦮 Chilli'], ['navydog', '🐕‍🦺 Bandit'], ['orangedog', '🐕 Bingo'], ['bee', '🐝 Arı'], ['ladybug', '🐞 Uğur Böceği'], ['rocker', '🎸 Rockçı'], ['ballet', '🩰 Balerin'], ['scientist', '🔬 Bilim İnsanı'], ['racer', '🏎️ Yarışçı'], ['dino', '🦖 Dinozor'], ['kimono', '🎎 Kimono'], ['sailor', '⚓ Denizci'], ...(rich() ? [['cosmic', '🌌 Kozmik Admin'], ['dragonarmor', '🐲 Ejderha Zırhı'], ['whitedeer', '🦌 Beyaz Geyik']] : []), ...(canCloud() ? [['cloud', '☁️ Bulut']] : []), ...ATL_LABELS]
       .forEach(([v, t], i) => { const special = ['galaxy', 'rainbow', 'mermaid', 'fairy', 'winter', 'swim', 'chef', 'cowgirl', 'astronaut', ...BOY_OUTFITS].includes(v), lock = special && !inv.outfits.includes(v) && !ADMIN_OUTFITS.includes(v) && v !== 'cloud'; btn(690 + (i % 5) * 111, y + 2 + Math.floor(i / 5) * 38, 105, 34, lock ? '🔒 ' + t.split(' ').slice(1).join(' ') : t, () => lock ? (say(t + ' mağazada! 🛍️'), openShop(['wizard', 'vampire', 'samurai', 'angel', 'icequeen', 'elf', 'robotsuit', 'pharaoh', 'unicornsuit', 'snowman', 'pumpkin', 'candy', 'frog', 'dino'].includes(v) ? 'sale' : ['galaxy', 'royal', 'sunking', 'crystal', 'lava', 'poseidon'].includes(v) ? (specialPick = v, 'special') : ['swim', 'chef', 'cowgirl', 'astronaut', ...BOY_OUTFITS].includes(v) ? 'clothes' : 'sale')) : setLook('outfit', v), { active: designLook.outfit === v, col: special ? '#ffe68a' : undefined, size: lock ? 13 : 15 }); });
-    y += 58 + (Math.ceil((72 - (eventOn() ? 0 : 5) + (rich() ? ADMIN_OUTFITS.length : 0) + (canCloud() ? 1 : 0)) / 5) - 1) * 38;
+    y += 58 + (Math.ceil((72 + (rich() ? ADMIN_OUTFITS.length : 0) + (canCloud() ? 1 : 0)) / 5) - 1) * 38;
     row('Desen', chips([['plain', 'Düz'], ['stripes', 'Çizgili'], ['dots', 'Puantiye'], ['hearts', 'Kalpli'], ['stars', 'Yıldızlı']], 'pattern', 104));
     row('Kıyafet rengi', swatches(AV.cloth, 'cloth'));
     row('Ayakkabı', swatches(AV.shoe, 'shoe'));
@@ -6370,7 +6367,7 @@ function drawProfile() {
   if (P.kind === 'friend') {
     if (P.at) { const d = new Date(P.at); text(`Bilgiler arkadaşının ${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()} tarihli kodundan`, 556, 532, 14, '#9a8fb0', 'left', 700); }
     btn(556, 546, 220, 50, '🏠 Salonuna git', () => { const f = P.f; LB.prof = null; save(); goVisit(f); }, { col: '#b18cff', fg: '#ffffff', size: 18 });
-  } else if (P.kind === 'online') { btn(556, 546, 220, 50, '👋 Selam ver', () => { mpEmote(6); LB.prof = null; }, { col: '#27b36a', fg: '#ffffff', size: 18 }); if (P.uid) btn(786, 546, 220, 50, '🎁 Eşya ver', () => { LB.prof = null; openGiveItems(P); }, { col: '#ff8a3d', fg: '#ffffff', size: 18 }); }
+  } else if (P.kind === 'online') btn(556, 546, 220, 50, '👋 Selam ver', () => { mpEmote(6); LB.prof = null; }, { col: '#27b36a', fg: '#ffffff', size: 18 });
   else if (P.kind === 'npc') btn(556, 546, 220, 50, '👋 Selam ver', () => { lbSay(LB.me, 'Merhaba!'); const av = P.av; setTimeout(() => lbSay(av, pick(['Merhaba! 😊', 'Selam! 👋', 'Nasılsın?', 'Saçın çok güzel! 💖'])), 900); LB.prof = null; }, { col: '#27b36a', fg: '#ffffff', size: 18 });
   else text('Başkalarına dokunup onların profiline de bakabilirsin 👆', 556, 578, 15, '#9a8fb0', 'left', 700);
 }
@@ -6853,7 +6850,7 @@ function mpPeer(key, v) {
     if (MP.arts[key] === undefined) { MP.arts[key] = ''; try { Promise.resolve(MP.db.ref('arts/' + key).once('value')).then(sn => { const a = sn.val(); if (artOk(a)) { MP.arts[key] = a; const q = MP.peers[key]; if (q) q.l = null; } }).catch(() => { }); } catch (e) { } }
     const av = lbAvatar(look, '🌐 ' + (lvl > 1 ? '⭐' + lvl + ' ' : '') + name + (title ? ' · ' + title : ''), '#8b5cf6');
     av.position.set(+v.x || 0, 0, +v.z || 0); av.rotation.y = +v.r || 0; LB.scene.add(av);
-    av.userData.info = { kind: 'online', name, look, id: '—', lvl, title, uid: key };
+    av.userData.info = { kind: 'online', name, look, id: '—', lvl, title };
     pe = MP.peers[key] = { av, l: lookStr, n: name, m: v.m, tx: 0, tz: 0, tr: 0, ty: 0, seen: 0, host: false };
     if (look.pet && look.pet !== 'none') { const pt = lbPet(look.pet); if (look.pet === 'dragon') pt.scale.setScalar(1.4); pt.position.set(av.position.x + 1, 0, av.position.z); LB.scene.add(pt); pe.pet = pt; }
     if (first) say(`🌐 ${name} lobiye geldi!`);
@@ -7357,35 +7354,10 @@ function mpLogVisit() {
     Promise.resolve(MP.db.ref('visits/' + MP.uid).set({ n: String(profile.name || '').slice(0, 20), id: String(profile.id || '').slice(0, 6), t: MP.fb.database.ServerValue.TIMESTAMP, c: Math.min(profile.visitN, 1000000) })).catch(() => { });
   } catch (e) { }
 }
-// Give bag items to a real online player: items go to their mailbox (post/<uid>) and they pick them up when they are in the game
-let GIVE_BUSY = false;
-function openGiveItems(P) {
-  inv.things = inv.things || {}; const list = Object.entries(inv.things).filter(([k, n]) => n > 0 && THINGS[k]);
-  const st = 'width:auto;display:inline-block;margin:3px;padding:8px 10px;font-size:15px';
-  openModal('<h2>🎁 ' + String(P.name).replace(/[<>&]/g, '') + ' kişisine eşya ver</h2>' + (list.length ? '<p>Çantandan vermek istediğin eşyaya bas (1 tane gider):</p>' + list.map(([k, n]) => '<button class="mb" style="' + st + '" data-g="' + k + '">' + THINGS[k][0] + ' ' + THINGS[k][1] + ' ×' + n + '</button>').join('') : '<p>Çantanda verilecek eşya yok 🎒 Marketten bir şey al.</p>') + '<br><button class="mb s" id="gvclose">Kapat</button>');
-  $('gvclose').onclick = closeModal;
-  modal.querySelectorAll('[data-g]').forEach(b => { b.onclick = async () => {
-    const k = b.dataset.g; if (GIVE_BUSY || !(inv.things[k] > 0)) return; GIVE_BUSY = true;
-    try {
-      if (!(await mpInit())) { GIVE_BUSY = false; return say('İnternet yok'); }
-      await MP.db.ref('post/' + P.uid).push({ n: String(profile.name || 'Oyuncu').slice(0, 20), k, c: 1, t: MP.fb.database.ServerValue.TIMESTAMP });
-      inv.things[k]--; save(); sfx('done'); sparkle(640, 360, 24); say('🎁 ' + THINGS[k][0] + ' ' + THINGS[k][1] + ' verildi: ' + P.name); closeModal();
-    } catch (e) { say('Gönderilemedi: Firebase kuralları güncel değil'); }
-    GIVE_BUSY = false;
-  }; });
-}
-function mpPostListen() {
-  try { MP.db.ref('post/' + MP.uid).on('child_added', sn => {
-    const m = sn.val(); try { sn.ref.remove(); } catch (e) { }
-    if (!m || !THINGS[m.k] || !profile) return;
-    const c = Math.max(1, Math.min(99, +m.c || 1)); inv.things = inv.things || {}; inv.things[m.k] = (inv.things[m.k] || 0) + c; save();
-    sfx('done'); sparkle(640, 300, 30); say('🎁 ' + String(m.n || 'Biri').slice(0, 20) + ' sana ' + THINGS[m.k][0] + ' ' + THINGS[m.k][1] + ' verdi!');
-  }); } catch (e) { }
-}
 // at game start: log the visit, show up as online, and listen for gifts from the admin
 async function mpBoot() {
   MP.quiet = true; const ok = await mpInit(); MP.quiet = false; if (!ok) return;
-  mpLogVisit(); mpPostListen();
+  mpLogVisit();
   try { const r = MP.db.ref('online/' + MP.uid); r.onDisconnect().remove(); r.set({ n: String(profile.name || '').slice(0, 20), t: MP.fb.database.ServerValue.TIMESTAMP }); } catch (e) { }
   try { MP.db.ref('gift').on('value', sn => {
     const g = sn.val(); if (!g || !g.id || !profile || profile.giftSeen === g.id) return; profile.giftSeen = g.id;
