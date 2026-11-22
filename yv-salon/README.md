@@ -137,3 +137,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v128 | versions/v128-telefon.html | Lobide telefon: yandaki düğmeler (Eve ışınla, Evcil & Binek, Dönüş, Ayarlar, Ana menü...) telefona taşındı |
 | v129 | versions/v129-ev-disaridan.html | Aldığın ev şehirde dışarıdan da o evin şeklinde görünür; okul kapısına yaklaşma hatası düzeltildi |
 | v130 | versions/v130-dogal-cevre.html | Doğal çevre: meşe/çam/huş/sonbahar ağaçları, çimen dokulu zemin, gerçekçi gökyüzü ve bulutlar; telefonda Piyano uygulaması |
+| v131 | versions/v131-mevsimler.html | Mevsimler (gerçek aya göre: ağaç, zemin, gökyüzü, yağan çiçek/yaprak/kar), parkur uzağa taşındı, mağazada Zırhlar sekmesi (Yakında) |
