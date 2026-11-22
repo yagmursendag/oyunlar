@@ -4286,14 +4286,16 @@ addEventListener('keyup', e => keys3.delete(e.code));
 addEventListener('blur', () => keys3.clear());
 
 const PLACES = [
-  { id: 'salon', name: 'Güzellik Salonu', icon: '💅', col: '#ffb3d6', roof: '#e0609f' },
-  { id: 'cafe', name: 'Kafe & Pastane', icon: '🍰', col: '#ffe0b8', roof: '#c9784a' },
-  { id: 'icecream', name: 'Dondurmacı', icon: '🍦', col: '#c9e9ff', roof: '#ff6fb5' },
-  { id: 'hospital', name: 'Hastane', icon: '🏥', col: '#ffffff', roof: '#e8434f' },
-  { id: 'flowers', name: 'Çiçekçi', icon: '🌷', col: '#d2f5dc', roof: '#2fa35a' },
-  { id: 'home', name: 'Evim', icon: '🏠', col: '#fff3b0', roof: '#8b5cf6' },
-  { id: 'market', name: 'Market', icon: '🛒', col: '#d7f0ff', roof: '#2d7ff9' },
-  { id: 'school', name: 'Okul', icon: '🏫', col: '#fff0b8', roof: '#2d7ff9', ang: 6.5 / 7 },
+  { id: 'salon', name: 'Güzellik Salonu', icon: '💅', col: '#ffb3d6', roof: '#e0609f', w: 9.5, d: 7, h: 6.5 },
+  { id: 'cafe', name: 'Kafe & Pastane', icon: '🍰', col: '#ffe0b8', roof: '#c9784a', w: 10, d: 8, h: 5, rad: 6.2 },
+  { id: 'icecream', name: 'Dondurmacı', icon: '🍦', col: '#c9e9ff', roof: '#ff6fb5', w: 7.5, d: 7.5, h: 4.5, rad: 5 },
+  { id: 'hospital', name: 'Hastane', icon: '🏥', col: '#ffffff', roof: '#e8434f', w: 12, d: 8, h: 9, rad: 7 },
+  { id: 'flowers', name: 'Çiçekçi', icon: '🌷', col: '#d2f5dc', roof: '#2fa35a', w: 9, d: 7, h: 3.8 },
+  { id: 'home', name: 'Evim', icon: '🏠', col: '#fff3b0', roof: '#8b5cf6', w: 8, d: 7, h: 5.5 },
+  { id: 'market', name: 'Market', icon: '🛒', col: '#d7f0ff', roof: '#2d7ff9', w: 13, d: 9, h: 5.5, rad: 7.4 },
+  { id: 'school', name: 'Okul', icon: '🏫', col: '#fff0b8', roof: '#2d7ff9', w: 17, d: 10, h: 8, ang: 6.5 / 7, R: 45, rad: 9.6 },
+  { id: 'police', name: 'Polis Merkezi', icon: '🚓', col: '#cfd8ea', roof: '#2b4f9a', w: 11, d: 8, h: 6.5, ang: 0.5 / 7, R: 48, rad: 6.8 },
+  { id: 'fire', name: 'İtfaiye', icon: '🚒', col: '#ffd9d3', roof: '#d93a2f', w: 13, d: 9, h: 6.5, ang: 5.5 / 7, R: 48, rad: 7.6 },
 ];
 // needs: 100 = full, they go down while you are in the lobby
 function needs() { if (!profile.needs) profile.needs = { hunger: 100, sleep: 100 }; return profile.needs; }
@@ -4822,24 +4824,41 @@ function lbRandomLook() {
 
 // ---------- building the town ----------
 function lbBuilding(p) {
-  const g = new THREE.Group(), w = 9, d = 7, h = p.id === 'hospital' ? 7.5 : 6;
+  const g = new THREE.Group(), w = p.w || 9, d = p.d || 7, h = p.h || (p.id === 'hospital' ? 7.5 : 6), flat = ['hospital', 'market', 'police', 'fire', 'school'].includes(p.id);
   g.add(lbM(new THREE.BoxGeometry(w, h, d), toon(p.col), 0, h / 2, 0));
   g.add(lbM(new THREE.BoxGeometry(w + 0.3, 0.5, d + 0.3), toon(mix(p.col, '#000000', 0.12)), 0, 0.25, 0));
-  // gable roof
-  const sh = new THREE.Shape(); sh.moveTo(-w / 2 - 0.6, 0); sh.lineTo(w / 2 + 0.6, 0); sh.lineTo(0, 3); sh.closePath();
-  const roof = lbM(new THREE.ExtrudeGeometry(sh, { depth: d + 1, bevelEnabled: false }), toon(p.roof), 0, h, -(d + 1) / 2); g.add(roof);
+  // every kind of place has its own roof shape
+  if (p.id === 'icecream') { const rc = lbM(new THREE.ConeGeometry(Math.max(w, d) * 0.66, 4.2, 4), toon(p.roof), 0, h + 2.1, 0); rc.rotation.y = Math.PI / 4; g.add(rc); }
+  else if (p.id === 'cafe') { const rc = lbM(new THREE.CylinderGeometry(0.5, Math.max(w, d) * 0.7, 3.2, 4), toon(p.roof), 0, h + 1.6, 0); rc.rotation.y = Math.PI / 4; g.add(rc); g.add(lbM(new THREE.BoxGeometry(1, 2.4, 1), toon(mix(p.col, '#000000', 0.25)), w / 2 - 1.4, h + 1.9, -1.4)); }
+  else if (p.id === 'flowers') { const sh2 = new THREE.Shape(); sh2.absarc(0, 0, d / 2 + 0.3, 0, Math.PI, false); sh2.closePath(); const gh = new THREE.Mesh(new THREE.ExtrudeGeometry(sh2, { depth: w + 0.4, bevelEnabled: false }), new THREE.MeshToonMaterial({ color: '#c9f3d8', transparent: true, opacity: 0.78, gradientMap: lbGrad, side: THREE.DoubleSide })); gh.rotation.y = Math.PI / 2; gh.position.set(-w / 2 - 0.2, h, 0); gh.castShadow = true; g.add(gh); for (let k = 0; k < 5; k++) { const rb = new THREE.Mesh(new THREE.TorusGeometry(d / 2 + 0.3, 0.07, 6, 18, Math.PI), toon(p.roof)); rb.rotation.y = Math.PI / 2; rb.position.set(-w / 2 + k * (w / 4), h, 0); g.add(rb); } }
+  else if (flat) { g.add(lbM(new THREE.BoxGeometry(w + 0.7, 0.6, d + 0.7), toon(p.roof), 0, h + 0.3, 0)); g.add(lbM(new THREE.BoxGeometry(w + 1.0, 0.3, d + 1.0), toon(mix(p.roof, '#ffffff', 0.35)), 0, h + 0.75, 0)); }
+  else {
+    const sh = new THREE.Shape(); sh.moveTo(-w / 2 - 0.6, 0); sh.lineTo(w / 2 + 0.6, 0); sh.lineTo(0, p.id === 'home' ? 3.8 : 3); sh.closePath();
+    const roof = lbM(new THREE.ExtrudeGeometry(sh, { depth: d + 1, bevelEnabled: false }), toon(p.roof), 0, h, -(d + 1) / 2); g.add(roof);
+    if (p.id === 'home') g.add(lbM(new THREE.BoxGeometry(1.1, 2.6, 1.1), toon('#b0765a'), -w / 4, h + 2.3, -1)); // chimney
+  }
   // door + knob + step
   g.add(lbM(new THREE.BoxGeometry(1.9, 2.9, 0.25), toon(mix(p.roof, '#000000', 0.15)), 0, 1.45, d / 2 + 0.05));
   g.add(lbM(new THREE.SphereGeometry(0.1, 10, 8), toon('#ffd23f'), 0.6, 1.4, d / 2 + 0.22));
   g.add(lbM(new THREE.BoxGeometry(3, 0.2, 1.2), toon('#e8dfe8'), 0, 0.1, d / 2 + 0.6));
   // windows
   const glass = new THREE.MeshToonMaterial({ color: '#bfe8ff', gradientMap: lbGrad, emissive: '#3a6f99', emissiveIntensity: 0.15 });
-  for (const s of [-1, 1]) {
-    g.add(lbM(new THREE.BoxGeometry(2.2, 1.9, 0.2), toon('#ffffff'), s * 2.9, h * 0.52, d / 2 + 0.05));
-    g.add(lbM(new THREE.BoxGeometry(1.8, 1.5, 0.22), glass, s * 2.9, h * 0.52, d / 2 + 0.07));
-    g.add(lbM(new THREE.BoxGeometry(2.4, 0.18, 0.5), toon('#ffffff'), s * 2.9, h * 0.52 - 1.05, d / 2 + 0.2));
-    if (p.id !== 'hospital') for (let k = 0; k < 3; k++) g.add(lbM(new THREE.SphereGeometry(0.16, 8, 6), toon(['#ff6fb5', '#ffd23f', '#b18cff'][k]), s * 2.9 - 0.6 + k * 0.6, h * 0.52 - 0.86, d / 2 + 0.28));
+  const wxs = w > 12 ? [-5.8, -3.3, 3.3, 5.8] : w < 8 ? [-2.4, 2.4] : [-2.9, 2.9];
+  if (p.id !== 'fire') for (const wx of wxs) for (const ry of (h >= 8 ? [0.34, 0.74] : [0.52])) {
+    g.add(lbM(new THREE.BoxGeometry(2.2, 1.9, 0.2), toon('#ffffff'), wx, h * ry, d / 2 + 0.05));
+    g.add(lbM(new THREE.BoxGeometry(1.8, 1.5, 0.22), glass, wx, h * ry, d / 2 + 0.07));
+    g.add(lbM(new THREE.BoxGeometry(2.4, 0.18, 0.5), toon('#ffffff'), wx, h * ry - 1.05, d / 2 + 0.2));
+    if (['salon', 'cafe', 'flowers', 'home'].includes(p.id)) for (let k = 0; k < 3; k++) g.add(lbM(new THREE.SphereGeometry(0.16, 8, 6), toon(['#ff6fb5', '#ffd23f', '#b18cff'][k]), wx - 0.6 + k * 0.6, h * ry - 0.86, d / 2 + 0.28));
   }
+  if (p.id === 'fire') for (const gx of [-w / 2 + 2.5, w / 2 - 2.5]) { g.add(lbM(new THREE.BoxGeometry(3.4, 3.6, 0.25), toon('#c9372c'), gx, 1.8, d / 2 + 0.06)); for (let k = 0; k < 5; k++) g.add(lbM(new THREE.BoxGeometry(3.2, 0.08, 0.3), toon('#8f2018'), gx, 0.5 + k * 0.62, d / 2 + 0.2)); }
+  if (p.id === 'police') { g.add(lbM(new THREE.BoxGeometry(w + 0.1, 0.5, d + 0.1), toon('#2b4f9a'), 0, h * 0.62, 0)); }
+  if (p.id === 'school') {
+    g.add(lbM(new THREE.BoxGeometry(3.2, 4.4, 3.2), toon('#ffe9a0'), 0, h + 2.2, 0)); const cap = lbM(new THREE.ConeGeometry(2.4, 2.2, 4), toon('#e8434f'), 0, h + 5.5, 0); cap.rotation.y = Math.PI / 4; g.add(cap);
+    const ck = lbSignPlane('🕘', '#ffffff', 1.5, 1.5); ck.position.set(0, h + 2.6, 1.65); g.add(ck);
+    g.add(lbM(new THREE.CylinderGeometry(0.07, 0.07, 6, 6), toon('#8a8a96'), w / 2 - 0.4, h + 3, d / 2 - 0.5)); g.add(lbM(new THREE.BoxGeometry(1.5, 0.95, 0.06), toon('#e8434f'), w / 2 + 0.35, h + 5.5, d / 2 - 0.5));
+    for (const cx of [-2.6, 2.6]) g.add(lbM(new THREE.CylinderGeometry(0.3, 0.3, 3.2, 10), toon('#ffffff'), cx, 1.6, d / 2 + 1.1));
+  }
+  if (p.id === 'fire') { g.add(lbM(new THREE.BoxGeometry(2.4, 5.5, 2.4), toon('#efe3d8'), -w / 2 + 1.6, h + 2.7, -d / 2 + 1.8)); const fc = lbM(new THREE.ConeGeometry(2.0, 1.8, 4), toon('#d93a2f'), -w / 2 + 1.6, h + 6.4, -d / 2 + 1.8); fc.rotation.y = Math.PI / 4; g.add(fc); }
   // striped awning
   if (['cafe', 'icecream', 'flowers', 'salon', 'school'].includes(p.id)) {
     const aw = new THREE.Mesh(new THREE.PlaneGeometry(w - 0.4, 1.4), new THREE.MeshToonMaterial({ gradientMap: lbGrad, side: THREE.DoubleSide, map: lbTex(256, 64, (gg, ww, hh) => { for (let i = 0; i < 8; i++) { gg.fillStyle = i % 2 ? '#ffffff' : p.roof; gg.fillRect(i * 32, 0, 32, hh); } gg.fillStyle = 'rgba(0,0,0,.08)'; gg.fillRect(0, hh - 8, ww, 8); }) }));
@@ -4852,14 +4871,16 @@ function lbBuilding(p) {
   }), transparent: true }));
   sign.position.set(0, h - 0.95, d / 2 + 0.2); g.add(sign);
   // a big prop on the roof so each place is easy to spot
-  const top = new THREE.Group(); top.position.set(0, h + 3.2, 0); g.add(top);
+  const top = new THREE.Group(); top.position.set(0, h + (flat ? 1.2 : p.id === 'icecream' ? 4.6 : p.id === 'cafe' ? 3.8 : p.id === 'flowers' ? d / 2 + 1 : 3.2), 0); g.add(top);
   if (p.id === 'icecream') { const cone = lbM(new THREE.ConeGeometry(0.6, 1.6, 16), toon('#e8b36a'), 0, 0.2, 0); cone.rotation.x = Math.PI; top.add(cone); top.add(lbM(new THREE.SphereGeometry(0.62, 16, 12), toon('#ff9ccf'), 0, 1.15, 0)); top.add(lbM(new THREE.SphereGeometry(0.5, 16, 12), toon('#fff4d6'), 0, 1.75, 0)); top.add(lbM(new THREE.SphereGeometry(0.14, 10, 8), toon('#e8434f'), 0, 2.25, 0)); }
   else if (p.id === 'cafe') { top.add(lbM(new THREE.CylinderGeometry(1, 1, 0.7, 24), toon('#f3d6a4'), 0, 0.35, 0)); top.add(lbM(new THREE.CylinderGeometry(1.02, 1.02, 0.18, 24), toon('#ff9ccf'), 0, 0.78, 0)); top.add(lbM(new THREE.SphereGeometry(0.2, 10, 8), toon('#e8434f'), 0, 1.0, 0)); }
   else if (p.id === 'hospital') { const cm = toon('#e8434f'); top.add(lbM(new THREE.BoxGeometry(0.5, 1.6, 0.3), cm, 0, 0.6, 0)); top.add(lbM(new THREE.BoxGeometry(1.6, 0.5, 0.3), cm, 0, 0.6, 0)); }
   else if (p.id === 'flowers') for (let i = 0; i < 5; i++) { const a = i * 1.26; top.add(lbM(new THREE.SphereGeometry(0.45, 12, 10), toon(['#ff6fb5', '#ffd23f', '#b18cff', '#ff8a3d', '#ff4f8b'][i]), Math.cos(a) * 0.7, 0.4, Math.sin(a) * 0.7)); }
   else if (p.id === 'home') { g.add(lbM(new THREE.BoxGeometry(0.8, 2, 0.8), toon('#c98b5a'), 2.4, h + 1.8, -1)); }
   else if (p.id === 'market') { top.add(lbM(new THREE.SphereGeometry(0.9, 18, 14), toon('#e8434f'), 0, 0.5, 0)); top.add(lbM(new THREE.CylinderGeometry(0.06, 0.06, 0.5, 8), toon('#6b4a3a'), 0, 1.5, 0)); const lf = lbM(new THREE.SphereGeometry(0.3, 10, 8), toon('#2fd27a'), 0.3, 1.5, 0); lf.scale.set(1, 0.4, 0.6); top.add(lf); }
-  else if (p.id === 'school') { for (let i = 0; i < 3; i++) top.add(lbM(new THREE.BoxGeometry(1.5 - i * 0.2, 0.32, 1.0), toon(['#e8434f', '#2d7ff9', '#2fbf71'][i]), 0, 0.1 + i * 0.32, 0)); top.add(lbM(new THREE.SphereGeometry(0.34, 12, 10), toon('#e8434f'), 0, 1.25, 0)); }
+  else if (p.id === 'school') { top.position.y = h + 9; top.add(lbM(new THREE.SphereGeometry(0.35, 12, 10), toon('#ffd23f'), 0, 0, 0)); }
+  else if (p.id === 'police') { for (const [sx, c] of [[-0.55, '#e8434f'], [0.55, '#2d7ff9']]) top.add(lbM(new THREE.SphereGeometry(0.42, 12, 10), new THREE.MeshToonMaterial({ color: c, emissive: c, emissiveIntensity: 0.55, gradientMap: lbGrad }), sx, 0.55, 0)); top.add(lbM(new THREE.BoxGeometry(1.9, 0.3, 0.8), toon('#222a3a'), 0, 0.1, 0)); }
+  else if (p.id === 'fire') { top.position.x = w / 2 - 1.8; const fl = lbM(new THREE.ConeGeometry(0.5, 1.4, 12), toon('#ff8a1f'), 0, 0.7, 0); top.add(fl); top.add(lbM(new THREE.ConeGeometry(0.3, 0.9, 12), toon('#ffd23f'), 0, 0.5, 0.05)); }
   else if (p.id === 'salon') { top.add(lbM(new THREE.BoxGeometry(0.9, 1.1, 0.9), toon('#ff5fa2'), 0, 0.3, 0)); top.add(lbM(new THREE.CylinderGeometry(0.28, 0.28, 0.9, 12), toon('#2a1f2e'), 0, 1.3, 0)); }
   top.children.forEach(ch => { ch.castShadow = true; });
   return g;
@@ -4899,12 +4920,12 @@ function lbInit() {
   LB.jet = new THREE.Points(pg, new THREE.PointsMaterial({ color: '#bfeaff', size: 0.16, transparent: true, opacity: 0.9 })); sc.add(LB.jet);
   // buildings on a ring, doors facing the fountain
   LB.places = PLACES.map((p, i) => {
-    const a = (p.ang !== undefined ? p.ang : i / 7) * Math.PI * 2, R = 26, b = lbBuilding(p);
+    const a = (p.ang !== undefined ? p.ang : i / 7) * Math.PI * 2, R = p.R || 26, b = lbBuilding(p);
     b.position.set(Math.sin(a) * R, 0, -Math.cos(a) * R); b.rotation.y = -a; sc.add(b);
     const dir = new THREE.Vector3(-Math.sin(a), 0, Math.cos(a));
-    const door = b.position.clone().add(dir.clone().multiplyScalar(4.4));
+    const door = b.position.clone().add(dir.clone().multiplyScalar((p.d || 7) / 2 + 0.9));
     // stone path from the plaza to the door
-    const path = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 9), new THREE.MeshToonMaterial({ map: tile, gradientMap: lbGrad })); path.rotation.x = -Math.PI / 2; path.rotation.z = -a; path.position.copy(b.position.clone().add(dir.clone().multiplyScalar(8.4))); path.position.y = 0.025; path.receiveShadow = true; sc.add(path);
+    const path = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 9), new THREE.MeshToonMaterial({ map: tile, gradientMap: lbGrad })); path.rotation.x = -Math.PI / 2; path.rotation.z = -a; path.position.copy(b.position.clone().add(dir.clone().multiplyScalar((p.d || 7) / 2 + 4.9))); path.position.y = 0.025; path.receiveShadow = true; sc.add(path);
     return { ...p, pos: b.position.clone(), door, a };
   });
   // benches and lamp posts around the fountain
@@ -4931,7 +4952,7 @@ function lbInit() {
   const FL = LITE ? 130 : 260, fl = new THREE.InstancedMesh(new THREE.SphereGeometry(0.2, 8, 6), toon('#ffffff'), FL), mtx = new THREE.Matrix4(), col = new THREE.Color();
   for (let i = 0; i < FL; i++) {
     const a = rnd() * Math.PI * 2, R = 18.6 + rnd() * 2.6; let x = Math.sin(a) * R, z = -Math.cos(a) * R;
-    if (LB.places.some(p => Math.abs(Math.atan2(Math.sin(a - p.a), Math.cos(a - p.a))) < 0.09) || Math.abs(Math.atan2(Math.sin(a - Math.PI), Math.cos(a - Math.PI))) < 0.1) x = z = 999; // keep the paths clear
+    if (LB.places.some(p => Math.abs(Math.atan2(Math.sin(a - p.a), Math.cos(a - p.a))) < (p.R ? 0.3 : 0.09)) || Math.abs(Math.atan2(Math.sin(a - Math.PI), Math.cos(a - Math.PI))) < 0.1) x = z = 999; // keep the paths clear
     mtx.makeTranslation(x, 0.25, z); fl.setMatrixAt(i, mtx); fl.setColorAt(i, col.set(['#ff6fb5', '#ffd23f', '#b18cff', '#ff8a3d', '#ffffff', '#ff4f8b'][i % 6]));
   }
   sc.add(fl);
@@ -4983,6 +5004,7 @@ function lbPlaceById(id) { return LB.places.find(p => p.id === id); }
 function lbEnter(p) {
   if (p.id === 'salon') { go('title'); newCustomer(served === 0); return; }
   if (p.id === 'market' || p.id === 'hospital' || p.id === 'home' || p.id === 'school') return lbGoInside(p.id);
+  if (p.id === 'police' || p.id === 'fire') return openStation(p.id);
   LB.place = p; scene = 'place'; fade = 0.6; sfx('pop');
 }
 // keep a point out of the fountain and the buildings, inside the town
@@ -4994,7 +5016,7 @@ function lbCollide(v, rad = 0.5) {
   for (const t of LB.trees || []) { const tx = v.x - t[0], tz = v.z - t[1], td = Math.hypot(tx, tz); if (td < t[2] + rad) { const k = (t[2] + rad) / (td || 1); v.x = t[0] + tx * k; v.z = t[1] + tz * k; } } // trees, windmill, playground
   for (const p of LB.pk || []) if (v.y < p.top - 0.3 && v.x > p.x0 - rad && v.x < p.x1 + rad && v.z > p.z0 - rad && v.z < p.z1 + rad) { const dl = v.x - (p.x0 - rad), dr = p.x1 + rad - v.x, dt2 = v.z - (p.z0 - rad), db = p.z1 + rad - v.z, mn = Math.min(dl, dr, dt2, db); if (mn === dl) v.x = p.x0 - rad; else if (mn === dr) v.x = p.x1 + rad; else if (mn === dt2) v.z = p.z0 - rad; else v.z = p.z1 + rad; }
   if (v.z > VB.z0 - 0.4 && v.z < VB.z1 + 0.4 && Math.abs(v.x - VB.cx) < 0.5) v.x = v.x < VB.cx ? VB.cx - 0.5 : VB.cx + 0.5; // volleyball net
-  for (const p of LB.places) { const dx = v.x - p.pos.x, dz = v.z - p.pos.z, dd = Math.hypot(dx, dz); if (dd < 5.6 + rad) { const k = (5.6 + rad) / (dd || 1); v.x = p.pos.x + dx * k; v.z = p.pos.z + dz * k; } }
+  for (const p of LB.places) { const dx = v.x - p.pos.x, dz = v.z - p.pos.z, dd = Math.hypot(dx, dz), pr = p.rad || 5.6; if (dd < pr + rad) { const k = (pr + rad) / (dd || 1); v.x = p.pos.x + dx * k; v.z = p.pos.z + dz * k; } }
 }
 function lbRebuildMe() {
   const o = LB.me, n = lbAvatar(lbMyLook(), profile.name + (profile.id === ADMIN_ID ? ' 👑' : '') + (myTitle() ? ' · ' + myTitle() : ''), '#ff5fa2'); n.position.copy(o.position); n.rotation.copy(o.rotation); LB.scene.remove(o); LB.scene.add(n); LB.me = n;
@@ -5098,7 +5120,7 @@ function lbUp() {
   const who = lbPickPerson(rc, hit); if (who) return lbOpenProfile(who);
   if (!hit) return;
   // tapping a building walks you to its door
-  const b = LB.where === 'town' && LB.places.find(p => Math.hypot(hit.x - p.pos.x, hit.z - p.pos.z) < 6.5);
+  const b = LB.where === 'town' && LB.places.find(p => Math.hypot(hit.x - p.pos.x, hit.z - p.pos.z) < (p.rad || 5.6) + 1);
   LB.target = b ? b.door.clone() : hit; if (LB.where === 'town') lbCollide(LB.target, 0.3); else lbCollideRoom(LB.target);
   LB.tapMark.position.set(LB.target.x, 0.05, LB.target.z); LB.tapMark.material.opacity = 1;
 }
@@ -5441,7 +5463,25 @@ function showCatalog() {
   modal.querySelectorAll('[data-t]').forEach(b => { b.onclick = () => { marketTab = +b.dataset.t; showCatalog(); }; });
   modal.querySelectorAll('[data-k]').forEach(b => { b.onclick = () => { if (LB.basket.length >= cap) { sfx('no'); return say('Sepet doldu! Kasaya git 💳'); } LB.basket.push(b.dataset.k); sfx('pop'); showCatalog(); }; });
 }
-const JOB_NAMES = { icecream: 'Dondurmacı', cake: 'Pastane', bouquet: 'Çiçekçi', doctor: 'Hastane doktoru' };
+const JOB_NAMES = { icecream: 'Dondurmacı', cake: 'Pastane', bouquet: 'Çiçekçi', doctor: 'Hastane doktoru', police: 'Polis 🚓', firefighter: 'İtfaiyeci 🚒' };
+// police station and fire station: take the job, then do short missions for pay
+const STATION = {
+  police: { job: 'police', title: '🚓 Polis Merkezi', pay: [10, 18], missions: ['Kayıp kedi sahibine ulaştırıldı 🐱', 'Trafikte yol açıldı 🚦', 'Parkta devriye atıldı 🌳', 'Kayıp çocuk ailesine teslim edildi 👧', 'Yaşlı teyze karşıdan geçirildi 👵'] },
+  fire: { job: 'firefighter', title: '🚒 İtfaiye İstasyonu', pay: [12, 22], missions: ['Kedi ağaçtan kurtarıldı 🐈', 'Küçük bir yangın söndürüldü 🔥', 'Kırık su borusu onarıldı 🔧', 'Okul bahçesine su verildi 💦', 'Balon bir çocuğa geri verildi 🎈'] }
+};
+let STATION_LAST = 0;
+function openStation(id) {
+  const S = STATION[id], mine = profile.job === S.job, other = profile.job && !mine, st = 'width:auto;display:inline-block;margin:4px;padding:10px 14px;font-size:17px';
+  openModal('<h2>' + S.title + '</h2><p>' + (mine ? 'Burada çalışıyorsun ✅ Görev yapıp para kazan!' : other ? 'Şu an başka bir işte çalışıyorsun. Önce oradan ayrılmalısın.' : 'Burada çalışmak ister misin? Maaş görev başına ' + S.pay[0] + '–' + S.pay[1] + ' TL.') + '</p>'
+    + (!profile.job ? '<button class="mb g" style="' + st + '" id="sjob">💼 İşe gir</button>' : '') + (mine ? '<button class="mb g" style="' + st + '" id="smis">🚨 Göreve çık</button><button class="mb" style="' + st + '" id="squit">🚪 İşten ayrıl</button>' : '') + '<button class="mb" style="' + st + '" id="sclose">Kapat</button>');
+  $('sclose').onclick = closeModal;
+  const a = $('sjob'); if (a) a.onclick = () => { takeJob(S.job); openStation(id); };
+  const q = $('squit'); if (q) q.onclick = () => { quitJob(); closeModal(); };
+  const m = $('smis'); if (m) m.onclick = () => {
+    const wait = 30000 - (Date.now() - STATION_LAST); if (wait > 0) { sfx('no'); return say('Biraz dinlen! ' + Math.ceil(wait / 1000) + ' sn sonra yeni görev ⏳'); }
+    STATION_LAST = Date.now(); const pay = S.pay[0] + Math.floor(Math.random() * (S.pay[1] - S.pay[0] + 1)); money += pay; save(); sfx('coin'); sparkle(640, 360, 20); say(pick(S.missions) + '  +' + pay + ' TL');
+  };
+}
 // ---- one job at a time ----
 function takeJob(k) {
   if (profile.job && profile.job !== k) { sfx('no'); return say(`Zaten ${JOB_NAMES[profile.job]} olarak çalışıyorsun. Önce oradan ayrıl!`); }
