@@ -1396,6 +1396,41 @@ function capPath(bangs) {
 }
 const hexA = (h, a) => { const r = toRGB(h); return 'rgba(' + r[0] + ',' + r[1] + ',' + r[2] + ',' + a + ')'; };
 let REAL = false; // 'realistic' look: used on the title screen only
+// realistic face for the title-screen owner: almond eyes, natural brows and lips
+function drawRealFace(c, mood) {
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const skin = c.skin, blink = ((T + c.seed) % 3.6) < 0.12, dk = mix(skin, '#5a2a22', 0.55), brow = mix(c.hairCol, '#000000', 0.25);
+  // soft cheeks
+  for (const sd of [-1, 1]) { const g = ctx.createRadialGradient(sd * 50, 30, 2, sd * 50, 30, 26); g.addColorStop(0, 'rgba(235,120,120,.26)'); g.addColorStop(1, 'rgba(235,120,120,0)'); ctx.fillStyle = g; circle(sd * 50, 30, 26); }
+  // brows: tapered arches
+  ctx.strokeStyle = brow; ctx.globalAlpha = 0.9;
+  for (const sd of [-1, 1]) { ctx.lineWidth = 4.8; ctx.beginPath(); ctx.moveTo(sd * 15, -25); ctx.quadraticCurveTo(sd * 31, mood < 0.34 ? -30 : -38, sd * 44, -31); ctx.stroke(); ctx.lineWidth = 3.4; ctx.beginPath(); ctx.moveTo(sd * 44, -31); ctx.quadraticCurveTo(sd * 52, -29, sd * 57, -24); ctx.stroke(); }
+  ctx.globalAlpha = 1;
+  // eyes
+  for (const sd of [-1, 1]) {
+    const ex = sd * 31, ey = 0; ctx.save(); ctx.translate(ex, ey); ctx.scale(1.28, 1.34); ctx.translate(-ex, -ey);
+    if (blink) { ctx.strokeStyle = '#2a1a1a'; ctx.lineWidth = 2.6; ctx.beginPath(); ctx.moveTo(ex - 16, ey + 1); ctx.quadraticCurveTo(ex, ey + 6, ex + 16, ey + 1); ctx.stroke(); ctx.restore(); continue; }
+    const eye = () => { ctx.beginPath(); ctx.moveTo(ex - 16, ey + 1); ctx.quadraticCurveTo(ex, ey - 13, ex + 16, ey + 1); ctx.quadraticCurveTo(ex, ey + 9, ex - 16, ey + 1); ctx.closePath(); };
+    ctx.strokeStyle = 'rgba(120,70,60,.4)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(ex - 15, ey - 6); ctx.quadraticCurveTo(ex, ey - 19, ex + 15, ey - 6); ctx.stroke(); // lid crease
+    ctx.save(); eye(); ctx.fillStyle = '#f6f1ec'; ctx.fill(); ctx.clip();
+    const ig = ctx.createRadialGradient(ex, ey, 1, ex, ey, 9); ig.addColorStop(0, mix(c.eyes, '#ffffff', 0.25)); ig.addColorStop(0.7, c.eyes); ig.addColorStop(1, mix(c.eyes, '#000000', 0.55)); ctx.fillStyle = ig; circle(ex, ey - 0.5, 8.6);
+    ctx.fillStyle = '#120a0a'; circle(ex, ey - 0.5, 3.6);
+    ctx.fillStyle = 'rgba(255,255,255,.9)'; circle(ex - 3, ey - 3.2, 1.9);
+    const sh = ctx.createLinearGradient(0, ey - 12, 0, ey + 2); sh.addColorStop(0, 'rgba(40,20,20,.45)'); sh.addColorStop(1, 'rgba(40,20,20,0)'); ctx.fillStyle = sh; ctx.fillRect(ex - 18, ey - 12, 36, 14);
+    ctx.restore();
+    ctx.strokeStyle = '#241414'; ctx.lineWidth = 2.6; ctx.beginPath(); ctx.moveTo(ex - 16, ey + 1); ctx.quadraticCurveTo(ex, ey - 13, ex + 16, ey + 1); ctx.stroke();
+    ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(ex + sd * 15, ey); ctx.quadraticCurveTo(ex + sd * 20, ey - 2, ex + sd * 23, ey - 6); ctx.stroke(); // outer lash flick
+    ctx.strokeStyle = 'rgba(120,70,60,.35)'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(ex - 14, ey + 3); ctx.quadraticCurveTo(ex, ey + 10, ex + 14, ey + 3); ctx.stroke(); ctx.restore();
+  }
+  // nose: shadow under the tip + nostrils
+  ctx.fillStyle = 'rgba(140,80,60,.14)'; ell(0, 27, 9, 3.6); ctx.fillStyle = 'rgba(110,55,45,.3)'; ell(-4.5, 27, 1.8, 1.2); ell(4.5, 27, 1.8, 1.2);
+  // mouth: natural lips with a small smile
+  const sm = mood < 0.34 ? -2 : 5, lc = mix(skin, '#b8424f', 0.55);
+  ctx.fillStyle = lc; ctx.beginPath(); ctx.moveTo(-17, 47 - sm * 0.4); ctx.quadraticCurveTo(-8, 42, 0, 44); ctx.quadraticCurveTo(8, 42, 17, 47 - sm * 0.4); ctx.quadraticCurveTo(0, 49 + sm, -17, 47 - sm * 0.4); ctx.fill();
+  ctx.fillStyle = mix(lc, '#ffffff', 0.12); ctx.beginPath(); ctx.moveTo(-16, 47 - sm * 0.4); ctx.quadraticCurveTo(0, 49 + sm, 16, 47 - sm * 0.4); ctx.quadraticCurveTo(0, 64 + sm * 0.5, -16, 47 - sm * 0.4); ctx.fill();
+  ctx.strokeStyle = mix(lc, '#000000', 0.45); ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(-17, 47 - sm * 0.4); ctx.quadraticCurveTo(0, 49 + sm, 17, 47 - sm * 0.4); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.28)'; ell(0, 54 + sm * 0.3, 5, 1.6);
+}
 function drawFace(c, mood) {
   ctx.lineCap = 'round';
   ctx.fillStyle = 'rgba(255,255,255,.2)'; ell(-26, -46, 22, 9, -0.45); ell(30, -48, 12, 5, 0.5); ctx.fillStyle = 'rgba(180,100,80,.12)'; ell(0, 22, 7, 4);
@@ -2207,8 +2242,8 @@ function drawHead(c, x, y, s, o = {}) {
   // head + face
   ctx.fillStyle = c.skin; ctx.strokeStyle = mix(c.skin, '#000000', 0.25); ctx.lineWidth = 4;
   ctx.beginPath(); ctx.ellipse(0, 0, 92, 100, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-  if (REAL) { ctx.save(); ctx.beginPath(); ctx.ellipse(0, 0, 92, 100, 0, 0, Math.PI * 2); ctx.clip(); const rg = ctx.createRadialGradient(-22, -34, 8, 0, 10, 124); rg.addColorStop(0, 'rgba(255,255,255,.2)'); rg.addColorStop(0.55, 'rgba(255,255,255,0)'); rg.addColorStop(1, 'rgba(120,60,40,.3)'); ctx.fillStyle = rg; ctx.fillRect(-100, -110, 200, 220); ctx.fillStyle = 'rgba(140,80,60,.14)'; ell(0, 28, 8, 3.5); ctx.restore(); }
-  drawFace(c, mood);
+  if (REAL) { ctx.save(); ctx.beginPath(); ctx.ellipse(0, 0, 92, 100, 0, 0, Math.PI * 2); ctx.clip(); const rg = ctx.createRadialGradient(-22, -34, 8, 0, 10, 124); rg.addColorStop(0, 'rgba(255,255,255,.2)'); rg.addColorStop(0.55, 'rgba(255,255,255,0)'); rg.addColorStop(1, 'rgba(120,60,40,.3)'); ctx.fillStyle = rg; ctx.fillRect(-100, -110, 200, 220); ctx.restore(); }
+  if (REAL) drawRealFace(c, mood); else drawFace(c, mood);
   if (c.beard.length) {
     ctx.save(); ctx.beginPath(); ctx.ellipse(0, 0, 92, 100, 0, 0, Math.PI * 2); ctx.clip();
     ctx.fillStyle = `rgba(60,40,30,${0.14 * Math.min(1, c.beard.length / 60)})`; ell(0, 64, 72, 40);
