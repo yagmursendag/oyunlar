@@ -1450,7 +1450,7 @@ function drawFace(c, mood) {
   const blink = ((T + c.seed) % 3.6) < 0.12;
   for (const s of [-1, 1]) {
     const ex = s * 34, ey = 6;
-    ctx.save(); ctx.translate(ex, ey + 1); if (REAL) ctx.scale(0.9, 0.95); else ctx.scale(1.17, 1.2); ctx.translate(-ex, -ey);
+    ctx.save(); ctx.translate(ex, ey + 1); ctx.scale(1.17, 1.2); ctx.translate(-ex, -ey);
     if (blink) { ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(ex, ey, 12, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke(); ctx.restore(); continue; }
     const es = c.av ? c.av.eyeStyle : 'normal';
     if (es === 'happy') { ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(ex, ey + 8, 12, 1.15 * Math.PI, 1.85 * Math.PI); ctx.stroke(); ctx.restore(); continue; }
@@ -1789,6 +1789,7 @@ function drawBody(c, walk, mood) {
     ctx.save(); ctx.translate(s * 30, 400); ctx.rotate(a);
     ctx.fillStyle = legCol; ctx.strokeStyle = legCol === c.skin ? skinOl : mix(legCol, '#000000', 0.3); ctx.lineWidth = 4;
     ctx.beginPath(); ctx.moveTo(-19, 0); ctx.lineTo(19, 0); ctx.quadraticCurveTo(18, 110, 14, 192); ctx.lineTo(-14, 192); ctx.quadraticCurveTo(-18, 110, -19, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+    if (REAL) { ctx.save(); ctx.clip(); const lg = ctx.createLinearGradient(-19, 0, 19, 0); lg.addColorStop(0, 'rgba(255,255,255,.22)'); lg.addColorStop(0.5, 'rgba(255,255,255,0)'); lg.addColorStop(1, 'rgba(60,20,20,.26)'); ctx.fillStyle = lg; ctx.fillRect(-22, 0, 44, 195); ctx.fillStyle = 'rgba(255,255,255,.14)'; ell(-6, 130, 5, 32); ctx.strokeStyle = 'rgba(0,0,0,.14)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-13, 100); ctx.quadraticCurveTo(0, 108, 13, 100); ctx.stroke(); ctx.fillStyle = 'rgba(0,0,0,.1)'; ell(0, 186, 14, 6); ctx.restore(); }
     if (outfit === 'tracksuit') { ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.fillRect(s * 12 - 2, 10, 4, 170); }
     if (legCol === c.skin) { ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#e6d5e0'; ctx.lineWidth = 2; rr(-16, 170, 32, 22, 8); ctx.fill(); ctx.stroke(); }
     ctx.fillStyle = 'rgba(0,0,0,.07)'; ell(0, 100, 15, 9); ctx.strokeStyle = 'rgba(0,0,0,.13)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 98, 11, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
@@ -1806,6 +1807,7 @@ function drawBody(c, walk, mood) {
     ctx.save(); ctx.translate(s * 80, 160); ctx.rotate(-s * 0.16 + (s < 0 ? sw : -sw) * 0.5);
     ctx.fillStyle = O.long ? sleeveCol : c.skin; ctx.strokeStyle = O.long ? mix(sleeveCol, '#000000', 0.25) : skinOl; ctx.lineWidth = 4;
     ctx.beginPath(); ctx.moveTo(-17, 10); ctx.lineTo(17, 10); ctx.quadraticCurveTo(16, 110, 12, 206); ctx.lineTo(-12, 206); ctx.quadraticCurveTo(-16, 110, -17, 10); ctx.closePath(); ctx.fill(); ctx.stroke();
+    if (REAL) { ctx.save(); ctx.clip(); const ag = ctx.createLinearGradient(-17, 0, 17, 0); ag.addColorStop(0, 'rgba(255,255,255,.24)'); ag.addColorStop(0.5, 'rgba(255,255,255,0)'); ag.addColorStop(1, 'rgba(40,20,40,.28)'); ctx.fillStyle = ag; ctx.fillRect(-20, 0, 40, 210); ctx.strokeStyle = 'rgba(0,0,0,.16)'; ctx.lineWidth = 2; for (const yy of [64, 118, 164]) { ctx.beginPath(); ctx.moveTo(-14, yy); ctx.quadraticCurveTo(0, yy + 7, 14, yy); ctx.stroke(); } ctx.fillStyle = 'rgba(255,255,255,.18)'; ell(-6, 100, 3.5, 36); ctx.restore(); }
     ctx.fillStyle = c.skin; ctx.strokeStyle = skinOl;
     const fl = [15, 19, 18, 13];
     for (let k = 0; k < 4; k++) { const fx = -10.5 + k * 7; rr(fx - 3.5, 222, 7, fl[k] + 6, 3.5); ctx.fill(); ctx.stroke(); }
@@ -1825,6 +1827,16 @@ function drawBody(c, walk, mood) {
   // torso with rounded shoulders
   const torso = () => { ctx.beginPath(); ctx.moveTo(-36, 140); ctx.quadraticCurveTo(0, 150, 36, 140); ctx.quadraticCurveTo(84, 142, 88, 180); ctx.lineTo(bx, by); ctx.quadraticCurveTo(0, by + 18, -bx, by); ctx.lineTo(-88, 180); ctx.quadraticCurveTo(-84, 142, -36, 140); ctx.closePath(); };
   ctx.fillStyle = c.cloth; ctx.strokeStyle = clothOl; ctx.lineWidth = 4; torso(); ctx.fill(); ctx.stroke();
+  if (REAL) {
+    ctx.save(); torso(); ctx.clip();
+    const tg = ctx.createLinearGradient(-bx, 0, bx, 0); tg.addColorStop(0, 'rgba(255,255,255,.26)'); tg.addColorStop(0.4, 'rgba(255,255,255,0)'); tg.addColorStop(1, 'rgba(30,10,40,.3)'); ctx.fillStyle = tg; ctx.fillRect(-170, 130, 340, by - 110);
+    const bg2 = ctx.createLinearGradient(0, by - 110, 0, by + 20); bg2.addColorStop(0, 'rgba(0,0,0,0)'); bg2.addColorStop(1, 'rgba(0,0,0,.2)'); ctx.fillStyle = bg2; ctx.fillRect(-170, by - 110, 340, 140);
+    ctx.lineWidth = 2.6; for (let k = 0; k < 6; k++) { const x0 = -66 + k * 26, bend = (k - 2.5) * 5; ctx.strokeStyle = 'rgba(0,0,0,.14)'; ctx.beginPath(); ctx.moveTo(x0, 232 + (k % 2) * 14); ctx.quadraticCurveTo(x0 + bend, (232 + by) / 2, x0 * 1.18, by - 6); ctx.stroke(); ctx.strokeStyle = 'rgba(255,255,255,.2)'; ctx.beginPath(); ctx.moveTo(x0 + 5, 238 + (k % 2) * 14); ctx.quadraticCurveTo(x0 + bend + 5, (232 + by) / 2, x0 * 1.18 + 5, by - 6); ctx.stroke(); }
+    ctx.strokeStyle = 'rgba(0,0,0,.2)'; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(-34, 142); ctx.quadraticCurveTo(0, 170, 34, 142); ctx.stroke(); ctx.strokeStyle = 'rgba(255,255,255,.28)'; ctx.beginPath(); ctx.moveTo(-30, 147); ctx.quadraticCurveTo(0, 174, 30, 147); ctx.stroke();
+    ctx.strokeStyle = 'rgba(0,0,0,.16)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-84, 196); ctx.quadraticCurveTo(-60, 230, -66, 280); ctx.moveTo(84, 196); ctx.quadraticCurveTo(60, 230, 66, 280); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.12)'; ell(-46, 220, 16, 62, 0.1);
+    ctx.restore();
+  }
   if (O.rainbow) {
     ctx.save(); torso(); ctx.clip();
     const cols = ['#e8434f', '#ff8a1f', '#ffd23f', '#2fd27a', '#3b82f6', '#8b5cf6'], bh = (by - 140) / cols.length;
@@ -2242,8 +2254,8 @@ function drawHead(c, x, y, s, o = {}) {
   // head + face
   ctx.fillStyle = c.skin; ctx.strokeStyle = mix(c.skin, '#000000', 0.25); ctx.lineWidth = 4;
   ctx.beginPath(); ctx.ellipse(0, 0, 92, 100, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-  if (REAL) { ctx.save(); ctx.beginPath(); ctx.ellipse(0, 0, 92, 100, 0, 0, Math.PI * 2); ctx.clip(); const rg = ctx.createRadialGradient(-22, -34, 8, 0, 10, 124); rg.addColorStop(0, 'rgba(255,255,255,.2)'); rg.addColorStop(0.55, 'rgba(255,255,255,0)'); rg.addColorStop(1, 'rgba(120,60,40,.3)'); ctx.fillStyle = rg; ctx.fillRect(-100, -110, 200, 220); ctx.restore(); }
-  if (REAL) drawRealFace(c, mood); else drawFace(c, mood);
+  if (false) { ctx.save(); ctx.beginPath(); ctx.ellipse(0, 0, 92, 100, 0, 0, Math.PI * 2); ctx.clip(); const rg = ctx.createRadialGradient(-22, -34, 8, 0, 10, 124); rg.addColorStop(0, 'rgba(255,255,255,.2)'); rg.addColorStop(0.55, 'rgba(255,255,255,0)'); rg.addColorStop(1, 'rgba(120,60,40,.3)'); ctx.fillStyle = rg; ctx.fillRect(-100, -110, 200, 220); ctx.restore(); }
+  drawFace(c, mood);
   if (c.beard.length) {
     ctx.save(); ctx.beginPath(); ctx.ellipse(0, 0, 92, 100, 0, 0, Math.PI * 2); ctx.clip();
     ctx.fillStyle = `rgba(60,40,30,${0.14 * Math.min(1, c.beard.length / 60)})`; ell(0, 64, 72, 40);
