@@ -132,3 +132,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v123 | versions/v123-burun.html | Ana menü karakterinin burnu düzeltildi (yumuşak gölge, burun delikleri) |
 | v124 | versions/v124-surat.html | Ana menü karakterinin yüzü sadeleştirildi (gri lekeler kalktı, burun yumuşak) |
 | v125 | versions/v125-gercek-yuz.html | Ana menü karakterine gerçekçi yüz: badem gözler, doğal kaş ve dudak, yumuşak yanak |
+| v126 | versions/v126-binalar.html | Lobi: her bina kendi şeklinde (sera, kuleli büyük okul, düz çatılar), Polis Merkezi ve İtfaiye (iş + görev) eklendi |
