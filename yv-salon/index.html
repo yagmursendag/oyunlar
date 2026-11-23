@@ -499,12 +499,13 @@ function makeCustomer(isFirst) {
     nailLen: isFirst ? 'long' : pick(['long', 'short']),
     nailShape: isFirst ? 'square' : pick(Object.keys(SHAPES)),
     sticker: isFirst ? 'moon' : Math.random() < 0.7 ? (mySt.length && Math.random() < 0.6 ? pick(mySt) : pick(Object.keys(STICKERS))) : null,
-    hairStyle: isFirst ? 'wave' : pick(c.short ? ['wave', 'straight'] : ['wave', 'straight', 'straight', 'short', 'short']),
+    hairStyle: isFirst ? 'wave' : pick(c.short ? ['wave', 'straight', 'short', 'short'] : ['wave', 'straight', 'straight', 'short', 'short']),
   };
   if (!girl && !isFirst) { // boys: short, natural-looking nails in dark or neutral colours, no stickers
     const NEUTRAL = ['#1c1c1c', '#1e2f6b', '#8a8f98', '#6b3e1f', '#ffffff'], mine = NEUTRAL.filter(hasPolish);
     r.nailLen = 'short'; r.nailShape = pick(['square', 'round']); r.sticker = null; r.nailColor = pick(mine.length ? mine : NEUTRAL);
   }
+  if (r.hairStyle === 'short') r.cutModel = girl ? pick(['chin', 'chin', 'mid']) : pick(['classic', 'classic', 'side', 'crop']); // boys ask for a haircut model
   // the hair she walks in with: never already what she asks for
   c.look = isFirst ? 'messy' : r.hairStyle === 'straight' ? pick(['curly', 'wavy', 'frizzy']) : r.hairStyle === 'wave' ? pick(['straight', 'frizzy']) : pick(['straight', 'wavy', 'curly', 'frizzy']);
   c.bangs = isFirst ? 'scallop' : pick(['scallop', 'straight', 'side', 'none']);
@@ -554,7 +555,7 @@ function makeCustomer(isFirst) {
     for (let i = 0; i < 22; i++) { const s = i % 2 ? 1 : -1; c.beard.push({ x: s * rand(6, 28), y: rand(35, 41), a: s * rand(0.3, 0.8), l: rand(5, 9) }); }
   }
   // hair: strands framing the face (interactive) + strands behind (follow the average)
-  const len = c.short ? rand(70, 100) : isFirst ? 250 : r.hairStyle === 'short' ? rand(200, 270) : rand(150, 270);
+  const len = c.short ? (r.hairStyle === 'short' ? rand(150, 190) : rand(70, 100)) : isFirst ? 250 : r.hairStyle === 'short' ? rand(200, 270) : rand(150, 270);
   const LOOKS = { messy: [0.1, 24], straight: [0.04, 24], wavy: [0.75, 24], curly: [1, 11], frizzy: [0.6, 16] }; // [waviness, wave length]
   const [w0, freq] = LOOKS[c.look];
   const front = [], back = [];
@@ -607,7 +608,7 @@ function requestLines(c) {
     else if (s === 'wash') L.push('🚿 Saçımı yıka, tara, kurut');
     else if (s === 'comb' && !c.steps.includes('wash')) L.push('💇 Saçımı tara');
     else if (s === 'style') L.push(r.hairStyle === 'wave' ? '〰️ Saçım dalga dalga olsun' : '📏 Saçım dümdüz olsun');
-    else if (s === 'cut') L.push('✂️ Saçımı kısacık kes');
+    else if (s === 'cut') L.push('✂️ ' + CUT_MODELS[r.cutModel || 'chin'][2]);
     else if (s === 'makeup') L.push('💄 Makyaj: ' + r.makeup.map(k => MAKEUP[k].ask).join(', '));
     else if (s === 'brows') L.push('🤏 Kaşlarımı al, çok dağınık!');
     else if (s === 'mask') L.push('🥒 Salatalıklı yüz maskesi');
@@ -731,7 +732,7 @@ function isDone(s) {
     case 'comb': return F.every(s => s.tangle < 0.05);
     case 'dry': return F.every(s => s.wet <= 0.02);
     case 'style': return F.filter(s => r.hairStyle === 'wave' ? s.wave >= 0.75 : s.wave <= 0.25).length >= F.length * 0.88;
-    case 'cut': return F.every(s => s.sy + s.L <= CUT_Y + 14);
+    case 'cut': return F.every(s => s.sy + s.L <= cutY() + 14);
     case 'makeup': return r.makeup.every(mkDone);
     case 'brows': return c.strays.length === 0;
     case 'mask': return c.maskPh === 'done';
@@ -972,7 +973,7 @@ function work(d) {
     let cut = false;
     for (const st of frontStrands()) {
       if (minDist(st, lx, ly) > (has('tools', 'goldScissors') ? 42 : 26)) continue;
-      const nl = Math.max(CUT_Y - st.sy, ly - st.sy);
+      const nl = Math.max(8, cutY() - st.sy, ly - st.sy);
       if (nl < st.L - 3) {
         const end = strandPts(st).at(-1);
         for (let i = 0; i < 3; i++) part({ x: FX + end[0] * FS + rand(-6, 6), y: FY + (st.sy + nl) * FS + i * 12, vx: rand(-30, 30), vy: rand(0, 40), g: 600, life: 1.1, kind: 'lock', col: mix(cust.hairCol, '#7a6a2a', 0.45 * cust.greasy), rot: rand(-0.5, 0.5) });
@@ -1396,6 +1397,10 @@ function drawStrand(st, hc, tip) {
   }
 }
 const CUT_Y = 40; // a short cut ends at chin height (head-local units)
+// haircut models: [cut line height, short name, what the customer asks for]
+const CUT_MODELS = { chin: [40, 'çene hizası', 'Saçımı çene hizasında kes'], mid: [54, 'orta boy', 'Saçımı orta boy kes (omuza inmesin)'], classic: [22, 'klasik erkek kesimi', 'Klasik erkek kesimi yap'], side: [4, 'kulak üstü', 'Kulaklarımın üstünden kısa kes'], crop: [-20, 'çok kısa', 'Çok kısa kes, sıfıra yakın olsun'] };
+const cutModel = () => CUT_MODELS[cust && cust.req && cust.req.cutModel] || CUT_MODELS.chin;
+const cutY = () => cutModel()[0];
 function capPath(bangs) {
   ctx.beginPath();
   ctx.ellipse(0, -4, 99, 106, 0, Math.PI - 0.12, Math.PI * 2 + 0.12);
@@ -3057,7 +3062,7 @@ function instr(s) {
     case 'dye': return [`🎨 ${dyeName(r.dye)} saç`, 'Boya fırçasını saçların her yerinde gezdir: tepede ve bütün tutamlarda!'];
     case 'jewel': return ['💎 Takılar', 'Sağdan takıyı seç ve doğru yere koy: küpe kulaklara, taç tepeye, kurdele saçın yanına!'];
     case 'makeup': return ['💄 Makyaj', 'Sağdan alet seç. Yüzde yanıp sönen halkalar nereye süreceğini gösterir: 💄 dudak, 👁️🖌️ gözde basılı tut, 🌸💫🖍️ yanak, ✨✒️ göz kapağı, 🧽 yüzün tamamı!'];
-    case 'cut': return ['✂️ Kısa saç', 'Makası kesikli çizginin üstünden saçların üzerinde gezdir, uzun saçları kes!'];
+    case 'cut': return ['✂️ ' + cutModel()[1][0].toUpperCase() + cutModel()[1].slice(1) + ' kesim', 'Makası kesikli çizginin üstünden saçların üzerinde gezdir, uzun saçları kes!'];
     case 'style': return r.hairStyle === 'wave' ? ['〰️ Dalga dalga saç', 'Maşayı basılı tutup her saç tutamının üstünde beklet.'] : ['📏 Dümdüz saç', 'Düzleştiriciyi basılı tutup her kıvırcık tutamın üstünde beklet.'];
   }
   return ['', ''];
@@ -3149,7 +3154,7 @@ function drawTools(s, x0, y, pw) {
     ks.forEach((k, i) => text(`${mkDone(k) ? '✅' : '⬜'} ${MAKEUP[k].name}`, x0 + 20, y + Math.ceil(ks.length / 2) * 58 + 24 + i * 26, 17, '#3a2340', 'left', 700));
   } else if (s === 'cut') {
     tb(0, 1, 0, '✂️', 'Makas', 'scissors');
-    pbar(x0 + 16, y + 90, pw - 32, F.filter(st => st.sy + st.L <= CUT_Y + 14).length / F.length, 'Kısa');
+    pbar(x0 + 16, y + 90, pw - 32, F.filter(st => st.sy + st.L <= cutY() + 14).length / F.length, 'Kesim');
   } else if (s === 'style') {
     const wave = c.req.hairStyle === 'wave';
     tb(0, 1, 0, wave ? '〰️' : '📏', wave ? 'Maşa' : 'Düzleştirici', 'iron');
@@ -3582,7 +3587,7 @@ function drawWork() {
   if (s === 'legwax') { drawTable(); drawLegs(); }
   else if (s === 'footcream') { drawTable(); drawFeet(); }
   else if (HAND_STEPS.has(s)) { drawTable(); drawHand(0); drawHand(1); }
-  else { drawFaceBg(); drawHead(cust, FX, FY - Math.sin(hop * Math.PI) * 18, FS, { cape: true, mood: stepIdx / cust.steps.length + (stepDone ? 0.2 : 0) }); if (s === 'makeup' && !stepDone) mkGuide(); if (s === 'razor') drawBowl(); if (s === 'cut' && !stepDone) { const gy = FY + CUT_Y * FS; ctx.strokeStyle = 'rgba(214,51,127,.8)'; ctx.lineWidth = 3; ctx.setLineDash([12, 8]); line(FX - 250, gy, FX + 250, gy); ctx.setLineDash([]); text('✂️ buradan kes', FX + 170, gy - 10, 18, '#d6337f', 'left', 800); } }
+  else { drawFaceBg(); drawHead(cust, FX, FY - Math.sin(hop * Math.PI) * 18, FS, { cape: true, mood: stepIdx / cust.steps.length + (stepDone ? 0.2 : 0) }); if (s === 'makeup' && !stepDone) mkGuide(); if (s === 'razor') drawBowl(); if (s === 'cut' && !stepDone) { const gy = FY + cutY() * FS; ctx.strokeStyle = 'rgba(214,51,127,.8)'; ctx.lineWidth = 3; ctx.setLineDash([12, 8]); line(FX - 250, gy, FX + 250, gy); ctx.setLineDash([]); text('✂️ ' + cutModel()[1] + ': buradan kes', FX + 40, gy - 10, 18, '#d6337f', 'left', 800); } }
   drawInstr(); drawSatBar();
   if (react) {
     ctx.globalAlpha = clamp(react.t * 2, 0, 1);
