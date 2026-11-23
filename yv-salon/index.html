@@ -7982,9 +7982,79 @@ function drawPianoApp() {
   btn(px + 20, py + 52, 60, 36, '', () => { LB.piano = false; LB.phone = true; }, { hidden: true }); text('‹ Geri', px + 50, py + 78, 15, '#ffffff', 'center', 800);
   btn(px + pw / 2 - 70, py + ph - 48, 140, 36, '', () => { LB.piano = false; }, { hidden: true });
 }
+// ---------- more phone apps: memory game, weather, drawing pad, calculator
+function phoneShell(title, sub, c0, c1) {
+  const px = 900, py = 44, pw = 310, ph = 636;
+  btn(0, 0, W, H, '', () => { LB.app = null; }, { hidden: true });
+  ctx.fillStyle = 'rgba(8,6,22,.5)'; ctx.fillRect(0, 0, W, H);
+  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = 36; ctx.fillStyle = '#12111a'; rr(px, py, pw, ph, 46); ctx.fill(); ctx.restore();
+  ctx.strokeStyle = '#3d3a55'; ctx.lineWidth = 3; rr(px, py, pw, ph, 46); ctx.stroke();
+  const g = ctx.createLinearGradient(px, py, px, py + ph); g.addColorStop(0, c0); g.addColorStop(1, c1); ctx.fillStyle = g; rr(px + 10, py + 10, pw - 20, ph - 20, 38); ctx.fill();
+  ctx.fillStyle = '#12111a'; rr(px + pw / 2 - 42, py + 18, 84, 22, 11); ctx.fill();
+  text(title, px + pw / 2, py + 80, 26, '#ffffff', 'center', 800); if (sub) text(sub, px + pw / 2, py + 106, 14, 'rgba(255,255,255,.75)', 'center', 700);
+  text('‹ Geri', px + 50, py + 74, 14, '#ffffff', 'center', 800); btn(px + 22, py + 50, 60, 36, '', () => { LB.app = null; LB.phone = true; }, { hidden: true });
+  ctx.fillStyle = 'rgba(255,255,255,.8)'; rr(px + pw / 2 - 52, py + ph - 32, 104, 6, 3); ctx.fill(); btn(px + pw / 2 - 70, py + ph - 48, 140, 36, '', () => { LB.app = null; }, { hidden: true });
+  return { x: px, y: py, w: pw, h: ph };
+}
+function memNew() { const em = ['🐶', '🐱', '🦊', '🐼', '🐸', '🦄', '🐙', '🦋'], a = [...em, ...em].sort(() => Math.random() - 0.5); LB.mem = { cards: a.map(e => ({ e, open: false, ok: false })), first: -1, lock: 0, moves: 0, last: performance.now() }; }
+function memTap(i) { const M = LB.mem, c = M.cards[i]; if (M.lock > 0 || c.open || c.ok) return; audio(); tone(520 + i * 20, 640, 0.12, 0.12, 'triangle'); c.open = true; if (M.first < 0) { M.first = i; return; } M.moves++; const f = M.cards[M.first]; if (f.e === c.e) { f.ok = c.ok = true; M.first = -1; tone(660, 990, 0.25, 0.15, 'triangle'); } else M.lock = 0.8; }
+function drawMemoryApp() {
+  const P = phoneShell('🃏 Hafıza', 'Aynı resimleri bul!', '#1b1340', '#3b1f7a'); if (!LB.mem) memNew();
+  const M = LB.mem, now = performance.now(), dt = Math.min(0.1, (now - M.last) / 1000); M.last = now;
+  if (M.lock > 0) { M.lock -= dt; if (M.lock <= 0) { for (const c of M.cards) if (!c.ok) c.open = false; M.first = -1; } }
+  text('Hamle: ' + M.moves, P.x + P.w / 2, P.y + 140, 16, '#ffe9a8', 'center', 800);
+  M.cards.forEach((c, i) => { const col = i % 4, row = Math.floor(i / 4), x = P.x + 31 + col * 64, y = P.y + 160 + row * 76; ctx.fillStyle = c.ok ? '#bff0c8' : c.open ? '#ffffff' : '#8b6cff'; rr(x, y, 56, 66, 12); ctx.fill(); if (!c.open && !c.ok) { ctx.fillStyle = 'rgba(255,255,255,.35)'; star4(x + 28, y + 33, 10); } else emoji(c.e, x + 28, y + 35, 32); btn(x, y, 56, 66, '', () => memTap(i), { hidden: true }); });
+  if (M.cards.every(c => c.ok)) { ctx.fillStyle = 'rgba(20,10,50,.82)'; rr(P.x + 26, P.y + 270, P.w - 52, 120, 20); ctx.fill(); text('🎉 Bravo!', P.x + P.w / 2, P.y + 315, 28, '#ffe9a8', 'center', 800); text(M.moves + ' hamlede buldun', P.x + P.w / 2, P.y + 342, 16, '#ffffff', 'center', 700); ctx.fillStyle = '#27b36a'; rr(P.x + 100, P.y + 352, 110, 34, 17); ctx.fill(); text('Yeniden', P.x + 155, P.y + 376, 16, '#ffffff', 'center', 800); btn(P.x + 100, P.y + 352, 110, 34, '', memNew, { hidden: true }); }
+}
+function drawWeatherApp() {
+  const P = phoneShell('🌤️ Hava', SEASON_NAME, '#12335f', '#3b8fd9'), d = new Date(), sd = d.getDate() + d.getMonth() * 31, night = isNight();
+  const base = [16, 29, 13, -2][SEASON], temp = base + (sd * 7) % 7 - 3, ic = night ? '🌙' : [['🌤️', '🌦️', '☀️'], ['☀️', '🌞', '⛅'], ['🌦️', '☁️', '🌧️'], ['🌨️', '❄️', '☁️']][SEASON][sd % 3];
+  emoji(ic, P.x + P.w / 2, P.y + 190 + Math.sin(T * 2) * 5, 96);
+  text(temp + '°C', P.x + P.w / 2, P.y + 290, 54, '#ffffff', 'center', 800); text(night ? 'Gece' : 'Gündüz', P.x + P.w / 2, P.y + 318, 16, 'rgba(255,255,255,.8)', 'center', 700);
+  ctx.fillStyle = 'rgba(255,255,255,.16)'; rr(P.x + 26, P.y + 340, P.w - 52, 64, 16); ctx.fill();
+  text('💨 ' + (6 + (sd * 3) % 14) + ' km/s', P.x + 90, P.y + 380, 16, '#ffffff', 'center', 800); text('💧 %' + (40 + (sd * 11) % 45), P.x + 220, P.y + 380, 16, '#ffffff', 'center', 800);
+  const ds = ['Yarın', 'Sonra', 'Ertesi', 'Hafta'], seas = [['🌤️', '🌦️', '☀️', '🌸'], ['☀️', '⛅', '🌞', '🌊'], ['🌧️', '🍂', '☁️', '🌦️'], ['❄️', '🌨️', '⛄', '☁️']][SEASON];
+  ds.forEach((n, i) => { const x = P.x + 26 + i * 66; ctx.fillStyle = 'rgba(255,255,255,.14)'; rr(x, P.y + 424, 58, 108, 16); ctx.fill(); text(n, x + 29, P.y + 448, 12, '#ffffff', 'center', 800); emoji(seas[(i + sd) % 4], x + 29, P.y + 484, 30); text((base + ((sd + i * 3) * 5) % 6 - 2) + '°', x + 29, P.y + 520, 15, '#ffe9a8', 'center', 800); });
+}
+const PAINT_COLS = ['#ff4f6b', '#ff9f43', '#ffd23f', '#4cd37b', '#2dc4d6', '#4a8cff', '#8b5cf6', '#ff6fb5', '#ffffff', '#2a1f2e'];
+function drawPaintApp() {
+  const P = phoneShell('🎨 Çizim', 'Parmağınla çiz!', '#3a1d62', '#1b1340'), cx = P.x + 22, cy = P.y + 118, cw = P.w - 44, ch = 330;
+  ctx.fillStyle = '#ffffff'; rr(cx, cy, cw, ch, 14); ctx.fill();
+  ctx.save(); rr(cx, cy, cw, ch, 14); ctx.clip(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (const st of LB.paint || []) { ctx.strokeStyle = st.c; ctx.fillStyle = st.c; ctx.lineWidth = st.w; if (st.pts.length < 2) { circle(st.pts[0][0], st.pts[0][1], st.w / 2); continue; } ctx.beginPath(); ctx.moveTo(st.pts[0][0], st.pts[0][1]); for (const p of st.pts) ctx.lineTo(p[0], p[1]); ctx.stroke(); }
+  ctx.restore();
+  btn(cx, cy, cw, ch, '', () => { }, { hidden: true });
+  const inside = ptr.down && ptr.x > cx && ptr.x < cx + cw && ptr.y > cy && ptr.y < cy + ch;
+  if (inside) { if (!LB.pCur) { LB.pCur = { c: LB.pCol || PAINT_COLS[0], w: LB.pW || 8, pts: [] }; (LB.paint = LB.paint || []).push(LB.pCur); } LB.pCur.pts.push([ptr.x, ptr.y]); } else LB.pCur = null;
+  PAINT_COLS.forEach((c, i) => { const x = cx + 14 + i * 26.5, y = cy + ch + 28, on = (LB.pCol || PAINT_COLS[0]) === c; ctx.fillStyle = c; circle(x, y, on ? 13 : 10); if (on) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, 15, 0, Math.PI * 2); ctx.stroke(); } btn(x - 13, y - 16, 26, 32, '', () => { LB.pCol = c; }, { hidden: true }); });
+  [[4, 'ince'], [8, 'orta'], [16, 'kalın']].forEach(([w, n], i) => { const x = cx + i * 74, y = cy + ch + 62, on = (LB.pW || 8) === w; ctx.fillStyle = on ? '#ffffff' : 'rgba(255,255,255,.18)'; rr(x, y, 66, 32, 16); ctx.fill(); text(n, x + 33, y + 22, 14, on ? '#3a1d62' : '#ffffff', 'center', 800); btn(x, y, 66, 32, '', () => { LB.pW = w; }, { hidden: true }); });
+  ctx.fillStyle = '#ff6b6b'; rr(cx + 228, cy + ch + 62, 36, 32, 16); ctx.fill(); emoji('🗑️', cx + 246, cy + ch + 79, 18); btn(cx + 228, cy + ch + 62, 36, 32, '', () => { LB.paint = []; LB.pCur = null; sfx('pop'); }, { hidden: true });
+}
+function calcDo(a, op, b) { let r = op === '+' ? a + b : op === '−' ? a - b : op === '×' ? a * b : b === 0 ? NaN : a / b; if (!isFinite(r)) return 'Hata'; r = Math.round(r * 1e6) / 1e6; return String(r).slice(0, 10); }
+function calcPress(k) {
+  let C = LB.calc = LB.calc || { s: '0', a: null, op: null, fresh: true }; audio(); tone(500, 520, 0.05, 0.08, 'triangle');
+  if (C.s === 'Hata' && k !== 'C') C = LB.calc = { s: '0', a: null, op: null, fresh: true };
+  if ('0123456789'.includes(k)) { C.s = C.fresh || C.s === '0' ? k : (C.s.length < 9 ? C.s + k : C.s); C.fresh = false; }
+  else if (k === 'C') LB.calc = { s: '0', a: null, op: null, fresh: true };
+  else if (k === '=') { if (C.op !== null) { C.s = calcDo(C.a, C.op, +C.s); C.a = null; C.op = null; C.fresh = true; } }
+  else { if (C.op !== null && !C.fresh) C.s = calcDo(C.a, C.op, +C.s); C.a = +C.s; C.op = k; C.fresh = true; }
+}
+function drawCalcApp() {
+  const P = phoneShell('🧮 Hesap', 'Toplama, çıkarma, çarpma, bölme', '#2a2a3a', '#14141f'), C = LB.calc = LB.calc || { s: '0', a: null, op: null, fresh: true };
+  ctx.fillStyle = '#0d0d14'; rr(P.x + 24, P.y + 124, P.w - 48, 84, 16); ctx.fill();
+  if (C.op) text(fmt(C.a) + ' ' + C.op, P.x + P.w - 40, P.y + 150, 14, 'rgba(255,255,255,.55)', 'right', 700);
+  text(C.s, P.x + P.w - 40, P.y + 194, C.s.length > 7 ? 34 : 44, '#ffffff', 'right', 800);
+  [['7', '8', '9', '÷'], ['4', '5', '6', '×'], ['1', '2', '3', '−'], ['C', '0', '=', '+']].forEach((row, r) => row.forEach((k, c) => {
+    const x = P.x + 27 + c * 64, y = P.y + 232 + r * 66, op = '÷×−+'.includes(k);
+    ctx.fillStyle = k === 'C' ? '#ff6b6b' : k === '=' ? '#27b36a' : op ? '#ff9f43' : '#3b3b52'; rr(x, y, 58, 56, 16); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.12)'; rr(x + 4, y + 3, 50, 14, 8); ctx.fill();
+    text(k, x + 29, y + 38, 28, '#ffffff', 'center', 800); btn(x, y, 58, 56, '', () => calcPress(k), { hidden: true });
+  }));
+}
+function drawPhoneApp() { const a = LB.app; if (a === 'memory') drawMemoryApp(); else if (a === 'weather') drawWeatherApp(); else if (a === 'paint') drawPaintApp(); else if (a === 'calc') drawCalcApp(); else LB.app = null; }
 function drawPhone() {
-  if (scene !== 'lobby' || !LB.me || LB.ride || LB.edit || CK || FG || SCH || LB.sleepT > 0) { LB.phone = false; LB.piano = false; return; }
+  if (scene !== 'lobby' || !LB.me || LB.ride || LB.edit || CK || FG || SCH || LB.sleepT > 0) { LB.phone = false; LB.piano = false; LB.app = null; return; }
   if (LB.piano) { drawPianoApp(); return; }
+  if (LB.app) { drawPhoneApp(); return; }
   if (!LB.phone) {
     // small phone icon button under the map
     ctx.save(); ctx.fillStyle = 'rgba(20,19,28,.92)'; phoneRoundRect(1112, 288, 150, 54, 16); ctx.fill(); ctx.strokeStyle = '#4a4766'; ctx.lineWidth = 2.5; ctx.stroke(); ctx.restore();
@@ -8011,25 +8081,29 @@ function drawPhone() {
   const nbq = String(questBadge() || '').trim();
   const apps = [
     ['🏠', 'Eve ışınla', lbTeleHome, '#ffb347', '#ff7a45', !inHome],
-    ['🥚', 'Evcil & Binek', openPets, '#ffd166', '#f4a259', true],
+    ['🥚', 'Evcil', openPets, '#ffd166', '#f4a259', true],
     ['🔄', ti >= 0 ? TOON_CH[ti].n : 'Dönüş', toonCycle, '#b388ff', '#7c4dff', armor],
     ['📋', 'Görevler', () => { questsOpen = true; }, '#5ec8a0', '#2f9e7a', true, nbq],
     ['🎹', 'Piyano', () => { audio(); LB.piano = true; LB.pFx = []; }, '#ff7eb6', '#7c4dff', true],
+    ['🃏', 'Hafıza', () => { memNew(); LB.app = 'memory'; }, '#7c4dff', '#4527a0', true],
+    ['🌤️', 'Hava', () => { LB.app = 'weather'; }, '#5ac8ff', '#2d7ff9', true],
+    ['🎨', 'Çizim', () => { LB.app = 'paint'; }, '#ff8fb8', '#e0558a', true],
+    ['🧮', 'Hesap', () => { LB.app = 'calc'; }, '#ffb347', '#e0662f', true],
     ['🎒', 'Çanta', () => { LB.bag = !LB.bag; }, '#7ab8ff', '#4a7fe0', true],
-    ['👭', 'Arkadaşlar', showFriends, '#ff8fb8', '#e0558a', true],
+    ['👭', 'Arkadaş', showFriends, '#ff8fb8', '#e0558a', true],
     ['⚙️', 'Ayarlar', showSettings, '#b8c0d0', '#7d8aa6', true],
-    ['👑', 'Son girenler', showVisits, '#ffe27a', '#e0b030', rich()],
+    ['👑', 'Girenler', showVisits, '#ffe27a', '#e0b030', rich()],
     ['🚪', 'Ana menü', () => { save(); go('title'); }, '#ff6b6b', '#d63a4a', true]
   ].filter(a => a[5]);
   apps.forEach((a, i) => {
-    const col = i % 3, row = Math.floor(i / 3), x = px + 26 + col * 90, y = py + 212 + row * 108;
-    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.3)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 4;
-    const tg = ctx.createLinearGradient(x, y, x, y + 72); tg.addColorStop(0, a[3]); tg.addColorStop(1, a[4]); ctx.fillStyle = tg; phoneRoundRect(x, y, 72, 72, 20); ctx.fill(); ctx.restore();
-    ctx.fillStyle = 'rgba(255,255,255,.22)'; ctx.beginPath(); ctx.ellipse(x + 36, y + 14, 28, 9, 0, 0, Math.PI * 2); ctx.fill();
-    emoji(a[0], x + 36, y + 38, 36);
-    text(a[1], x + 36, y + 92, 13, '#ffffff', 'center', 800);
-    if (a[6]) { ctx.fillStyle = '#ff4f6b'; phoneRoundRect(x + 44, y - 6, 34, 20, 10); ctx.fill(); text(String(a[6]), x + 61, y + 9, 12, '#ffffff', 'center', 800); }
-    btn(x, y, 72, 92, '', () => { LB.phone = false; sfx('pop'); a[2](); }, { hidden: true });
+    const col = i % 4, row = Math.floor(i / 4), x = px + 24 + col * 66, y = py + 204 + row * 92;
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.3)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
+    const tg = ctx.createLinearGradient(x, y, x, y + 58); tg.addColorStop(0, a[3]); tg.addColorStop(1, a[4]); ctx.fillStyle = tg; phoneRoundRect(x, y, 58, 58, 16); ctx.fill(); ctx.restore();
+    ctx.fillStyle = 'rgba(255,255,255,.22)'; ctx.beginPath(); ctx.ellipse(x + 29, y + 11, 22, 7, 0, 0, Math.PI * 2); ctx.fill();
+    emoji(a[0], x + 29, y + 31, 30);
+    text(a[1], x + 29, y + 74, 11, '#ffffff', 'center', 800);
+    if (a[6]) { ctx.fillStyle = '#ff4f6b'; phoneRoundRect(x + 32, y - 6, 32, 18, 9); ctx.fill(); text(String(a[6]), x + 48, y + 7, 11, '#ffffff', 'center', 800); }
+    btn(x, y, 58, 78, '', () => { LB.phone = false; sfx('pop'); a[2](); }, { hidden: true });
   });
   ctx.fillStyle = 'rgba(255,255,255,.8)'; phoneRoundRect(px + pw / 2 - 52, py + ph - 32, 104, 6, 3); ctx.fill();
   btn(px + pw / 2 - 70, py + ph - 48, 140, 36, '', () => { LB.phone = false; }, { hidden: true });
