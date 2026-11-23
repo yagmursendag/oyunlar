@@ -726,7 +726,7 @@ function isDone(s) {
     case 'wash': return c.specks.length === 0 && c.foam.length === 0;
     case 'comb': return F.every(s => s.tangle < 0.05);
     case 'dry': return F.every(s => s.wet <= 0.02);
-    case 'style': return F.every(s => r.hairStyle === 'wave' ? s.wave >= 0.9 : s.wave <= 0.1);
+    case 'style': return F.filter(s => r.hairStyle === 'wave' ? s.wave >= 0.75 : s.wave <= 0.25).length >= F.length * 0.88;
     case 'cut': return F.every(s => s.sy + s.L <= CUT_Y + 14);
     case 'makeup': return r.makeup.every(mkDone);
     case 'brows': return c.strays.length === 0;
@@ -1079,10 +1079,9 @@ function workUpdate(dt) {
   }
   if (hold && s === 'style') {
     const [lx, ly] = lp(), straight = c.req.hairStyle === 'straight';
-    let best = null, bd = 30;
-    for (const st of F) { const d = minDist(st, lx, ly); if (d < bd) { bd = d; best = st; } }
+    let best = null;
+    for (const st of F) { if (minDist(st, lx, ly) < 75) { best = st; st.wave = clamp(st.wave + (straight ? -1 : 1) * dt * 2.2, 0, 1); } } // the iron heats a wide area at once and works fast
     if (best) {
-      best.wave = clamp(best.wave + (straight ? -1 : 1) * dt * 0.8, 0, 1);
       if (Math.random() < 0.5) part({ x: ptr.x + rand(-10, 10), y: ptr.y - 20, vx: rand(-20, 20), vy: -rand(40, 90), life: 0.8, kind: 'steam', r: rand(5, 9) });
       sfx('steam', 260);
     }
