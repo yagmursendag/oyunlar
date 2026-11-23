@@ -127,6 +127,26 @@
         ".validate": "newData.isString() && newData.val().matches(/^[0-9a-f]{256}$/)"
       }
     },
+    "drawings": {
+      ".read": "auth != null",
+      ".indexOn": ["t"],
+      "$uid": {
+        ".write": "auth != null && (auth.uid === $uid || root.child('adminuid').val() === auth.uid)",
+        ".validate": "newData.hasChildren(['n', 'd', 't'])",
+        "n": {
+          ".validate": "newData.isString() && newData.val().length <= 20"
+        },
+        "d": {
+          ".validate": "newData.isString() && newData.val().length <= 3600"
+        },
+        "t": {
+          ".validate": "newData.val() === now"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
     "online": {
       ".read": "auth != null && root.child('adminuid').val() === auth.uid",
       "$uid": {
