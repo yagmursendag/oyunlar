@@ -501,6 +501,10 @@ function makeCustomer(isFirst) {
     sticker: isFirst ? 'moon' : Math.random() < 0.7 ? (mySt.length && Math.random() < 0.6 ? pick(mySt) : pick(Object.keys(STICKERS))) : null,
     hairStyle: isFirst ? 'wave' : pick(c.short ? ['wave', 'straight'] : ['wave', 'straight', 'straight', 'short', 'short']),
   };
+  if (!girl && !isFirst) { // boys: short, natural-looking nails in dark or neutral colours, no stickers
+    const NEUTRAL = ['#1c1c1c', '#1e2f6b', '#8a8f98', '#6b3e1f', '#ffffff'], mine = NEUTRAL.filter(hasPolish);
+    r.nailLen = 'short'; r.nailShape = pick(['square', 'round']); r.sticker = null; r.nailColor = pick(mine.length ? mine : NEUTRAL);
+  }
   // the hair she walks in with: never already what she asks for
   c.look = isFirst ? 'messy' : r.hairStyle === 'straight' ? pick(['curly', 'wavy', 'frizzy']) : r.hairStyle === 'wave' ? pick(['straight', 'frizzy']) : pick(['straight', 'wavy', 'curly', 'frizzy']);
   c.bangs = isFirst ? 'scallop' : pick(['scallop', 'straight', 'side', 'none']);
@@ -2401,6 +2405,28 @@ function drawHairdo(c, col) {
     }
     return;
   }
+  if (h === 'ponytail') {
+    const pts = []; for (let k = 0; k <= 12; k++) { const t = k / 12; pts.push([88 + t * 24 + Math.sin(T * 2.2 + t * 5) * 6 * t, -90 + t * 240]); }
+    ctx.lineWidth = 36; ctx.strokeStyle = ol; strokePts(pts); ctx.lineWidth = 29; ctx.strokeStyle = col; strokePts(pts);
+    ctx.strokeStyle = 'rgba(255,255,255,.22)'; ctx.lineWidth = 3; strokePts(pts.map(p => [p[0] - 6, p[1]]));
+    ctx.fillStyle = tie; ctx.strokeStyle = ol; ctx.lineWidth = 3; ell(88, -90, 18, 12); ctx.stroke();
+    return;
+  }
+  if (h === 'braid') {
+    for (let k = 0; k < 10; k++) { const yy = -10 + k * 24, xx = 94 + (k % 2 ? 7 : -7) + Math.sin(T * 1.5 + k * 0.5) * 2; ctx.fillStyle = col; ctx.strokeStyle = ol; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(xx, yy, 17, 15, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+    ctx.fillStyle = tie; ell(98, 226, 14, 8);
+    return;
+  }
+  if (h === 'bob') {
+    ctx.fillStyle = col; ctx.strokeStyle = ol; ctx.lineWidth = 4;
+    for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(sd * 76, -40); ctx.quadraticCurveTo(sd * 112, -10, sd * 108, 40); ctx.quadraticCurveTo(sd * 106, 88, sd * 80, 82); ctx.quadraticCurveTo(sd * 96, 46, sd * 90, -4); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.strokeStyle = 'rgba(255,255,255,.3)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(sd * 98, 10); ctx.quadraticCurveTo(sd * 102, 44, sd * 92, 70); ctx.stroke(); ctx.strokeStyle = ol; ctx.lineWidth = 4; }
+    return;
+  }
+  if (h === 'loops') {
+    for (const sd of [-1, 1]) { ctx.save(); ctx.translate(sd * 44, -112); ctx.rotate(sd * 0.28); ctx.strokeStyle = ol; ctx.lineWidth = 24; ctx.beginPath(); ctx.ellipse(0, -44, 22, 46, 0, 0, Math.PI * 2); ctx.stroke(); ctx.strokeStyle = col; ctx.lineWidth = 17; ctx.beginPath(); ctx.ellipse(0, -44, 22, 46, 0, 0, Math.PI * 2); ctx.stroke(); ctx.strokeStyle = 'rgba(255,255,255,.28)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(-4, -44, 18, 40, 0, 1.2 * Math.PI, 1.7 * Math.PI); ctx.stroke(); ctx.restore(); }
+    ctx.fillStyle = tie; for (const sd of [-1, 1]) ell(sd * 36, -110, 16, 9, sd * 0.3);
+    return;
+  }
   if (h === 'buns') for (const sd of [-1, 1]) {
     ctx.fillStyle = col; ctx.strokeStyle = ol; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(sd * 66, -94, 32, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     ctx.strokeStyle = tie; ctx.lineWidth = 7; ctx.beginPath(); ctx.arc(sd * 66, -94, 32, (sd < 0 ? 0.1 : 0.5) * Math.PI, (sd < 0 ? 0.5 : 0.9) * Math.PI); ctx.stroke();
@@ -3609,7 +3635,7 @@ const AV = {
   bangs: ['scallop', 'straight', 'side', 'none'], eyes: ['#5b3a1e', '#2d7ff9', '#2fa35a', '#1c1c1c', '#8b5cf6'],
   cloth: ['#ff5fa2', '#8b5cf6', '#2fd27a', '#ff8a1f', '#3b82f6', '#e8434f', '#1fc7c7', '#2a1f2e'],
   eyeStyle: ['normal', 'heart', 'star', 'happy', 'cat'], tip: ['none', '#ff6fb5', '#8b5cf6', '#3b82f6', '#1fc7c7', '#ffd23f', '#ffffff', '#e8434f', '#2fd27a'],
-  hairdo: ['none', 'buns', 'topknot', 'pigtails', 'spiky', 'mohawk', 'sidepart', 'quiff', 'bowl', 'afro', 'bald', 'undercut', 'buzz', 'crop'], outfit: ['dress', 'tshirt', 'overalls', 'apron', 'gown', 'tutu', 'tracksuit', 'pajamas', 'raincoat', 'hero', 'jacket', 'sweater', 'galaxy', 'rainbow', 'mermaid', 'fairy', 'winter', 'swim', 'chef', 'cowgirl', 'astronaut', 'football', 'suit', 'police', 'firefighter', 'pirate', 'ninja', 'royal', 'knight', 'wizard', 'vampire', 'samurai', 'angel', 'diamond', 'cosmic', 'dragonarmor', 'whitedeer', 'cloud', 'farmer', 'doctor', 'bunny', 'tiger', 'witch', 'ball', 'sunking', 'icequeen', 'elf', 'robotsuit', 'pharaoh', 'unicornsuit', 'snowman', 'pumpkin', 'candy', 'crystal', 'lava', 'poseidon', 'fox', 'panda', 'frog', 'bluedog', 'toonarmor', 'tandog', 'navydog', 'orangedog', 'bee', 'ladybug', 'rocker', 'ballet', 'scientist', 'racer', 'dino', 'kimono', 'sailor', 'atl_kot', 'atl_sort', 'atl_tayt', 'atl_spor', 'atl_bermuda', 'atl_beyaz', 'atl_kamuf', 'atl_sari'], pattern: ['plain', 'stripes', 'dots', 'hearts', 'stars'],
+  hairdo: ['none', 'buns', 'topknot', 'pigtails', 'spiky', 'mohawk', 'sidepart', 'quiff', 'bowl', 'afro', 'bald', 'undercut', 'buzz', 'crop', 'ponytail', 'braid', 'bob', 'loops'], outfit: ['dress', 'tshirt', 'overalls', 'apron', 'gown', 'tutu', 'tracksuit', 'pajamas', 'raincoat', 'hero', 'jacket', 'sweater', 'galaxy', 'rainbow', 'mermaid', 'fairy', 'winter', 'swim', 'chef', 'cowgirl', 'astronaut', 'football', 'suit', 'police', 'firefighter', 'pirate', 'ninja', 'royal', 'knight', 'wizard', 'vampire', 'samurai', 'angel', 'diamond', 'cosmic', 'dragonarmor', 'whitedeer', 'cloud', 'farmer', 'doctor', 'bunny', 'tiger', 'witch', 'ball', 'sunking', 'icequeen', 'elf', 'robotsuit', 'pharaoh', 'unicornsuit', 'snowman', 'pumpkin', 'candy', 'crystal', 'lava', 'poseidon', 'fox', 'panda', 'frog', 'bluedog', 'toonarmor', 'tandog', 'navydog', 'orangedog', 'bee', 'ladybug', 'rocker', 'ballet', 'scientist', 'racer', 'dino', 'kimono', 'sailor', 'atl_kot', 'atl_sort', 'atl_tayt', 'atl_spor', 'atl_bermuda', 'atl_beyaz', 'atl_kamuf', 'atl_sari'], pattern: ['plain', 'stripes', 'dots', 'hearts', 'stars'],
   shoe: ['#ff5fa2', '#1c1c1c', '#ffffff', '#e8434f', '#3b82f6', '#ffd23f'], hat: ['none', 'cap', 'beanie', 'sunhat', 'party', 'backcap', 'headphones'], glasses: ['none', 'round', 'sun', 'star'],
   pet: ['none', 'cat', 'dog', 'bunny', 'snake', 'duck', 'dragon', 'penguin', 'unicorn', 'turtle', 'owl', 'fox', 'panda', 'axolotl', 'wolf', 'lion', 'robot', 'dino', 'phoenix', 'whitedeer', 'hedgehog', 'giraffe', 'elephant', 'monkey', 'koala', 'zebra', 'parrot', 'butterfly', 'pig', 'hamster', 'mouse', 'sheep', 'cow', 'horse', 'bear', 'deer', 'squirrel', 'raccoon', 'tiger', 'hippo', 'camel', 'sloth'], nail: ['none', ...NAIL_COLS.map(e => e[0])],
   lipc: ['#e0245e', '#ff6fa5', '#9b1b4b', '#d98a7a', '#ff6a2a', '#7a1fa2', '#ff2a2a', '#ffb6c8', '#5a1230', '#c43a8f'], shadc: ['#9b6bff', '#3b82f6', '#ff7ac6', '#ffc83d', '#2fd27a', '#1fc7c7', '#e8434f', '#8a5a34', '#c9cfd8', '#1e2f6b'], blushc: ['#ff7fa8', '#ff9a6b', '#e85a8a', '#c97bff', '#ffb3c8', '#ff6a5a', '#ffd0a0', '#9ad0ff'],
@@ -4050,8 +4076,8 @@ function drawDesigner() {
     row('Saç şekli', chips([['straight', 'Düz'], ['wavy', 'Dalgalı'], ['curly', 'Kıvırcık']], 'style'));
     row('Kakül', chips([['scallop', 'Tırtıklı'], ['straight', 'Düz'], ['side', 'Yana'], ['none', 'Yok']], 'bangs'));
     fitText('Saç modeli', 560, y + 28, 18, 124, '#6b5a70', 800);
-    [['none', 'Serbest'], ['buns', 'İki topuz'], ['topknot', 'Tepe topuz'], ['pigtails', 'İki örgü'], ['spiky', '⚡ Dikenli'], ['mohawk', '🦔 Mohikan'], ['sidepart', '💇‍♂️ Yana tarama'], ['quiff', '🌊 Kabarık'], ['bowl', '🥣 Kâse kesim'], ['afro', '☁️ Afro'], ['bald', '👨‍🦲 Kel'], ['undercut', '✂️ Yanlar kazıtık'], ['buzz', '🪒 Sıfır numara'], ['crop', '💈 Çok kısa']].forEach(([v, t], i) => btn(690 + (i % 4) * 138, y + 4 + Math.floor(i / 4) * 48, 130, 42, t, () => setLook('hairdo', v), { active: designLook.hairdo === v, size: 15 }));
-    y += 58 + 2 * 48;
+    [['none', 'Serbest'], ['buns', 'İki topuz'], ['topknot', 'Tepe topuz'], ['pigtails', 'İki örgü'], ['spiky', '⚡ Dikenli'], ['mohawk', '🦔 Mohikan'], ['sidepart', '💇‍♂️ Yana tarama'], ['quiff', '🌊 Kabarık'], ['bowl', '🥣 Kâse kesim'], ['afro', '☁️ Afro'], ['bald', '👨‍🦲 Kel'], ['undercut', '✂️ Yanlar kazıtık'], ['buzz', '🪒 Sıfır numara'], ['crop', '💈 Çok kısa'], ['ponytail', '🎀 At kuyruğu'], ['braid', '🪢 Uzun örgü'], ['bob', '💁‍♀️ Küt saç'], ['loops', '🐰 Tavşan kulağı']].forEach(([v, t], i) => btn(690 + (i % 4) * 138, y + 4 + Math.floor(i / 4) * 48, 130, 42, t, () => setLook('hairdo', v), { active: designLook.hairdo === v, size: 15 }));
+    y += 58 + 3 * 48;
   } else if (designTab === 'clothes') {
     row('Çizim', (x, yy) => { btn(x, yy + 4, 220, 42, '🖌️ Kıyafetine çiz', openDraw, { col: '#ffe36e', size: 17 }); if (designLook.art) btn(x + 230, yy + 4, 150, 42, '🗑️ Çizimi sil', () => setLook('art', ''), { size: 15 }); });
     { const mine = Object.entries(inv.custom || {}); if (mine.length) { fitText('Yeni kıyafetlerim', 560, y + 28, 18, 124, '#6b5a70', 800); mine.slice(0, 8).forEach(([id, v], i) => { const o = sxParse(sxPack({ ...DEFAULT_LOOK, ...v.o })); if (o) btn(690 + (i % 4) * 138, y + Math.floor(i / 4) * 40, 132, 36, '🆕 ' + v.n, () => { designLook = { ...designLook, ...o }; designChar = buildChar(designLook, profile.name); sfx('pop'); }, { size: 14, col: '#d6f5e3' }); }); y += 28 + Math.ceil(Math.min(8, mine.length) / 4) * 40; } }
@@ -4588,6 +4614,10 @@ function lbAvatar(look, name, tagCol) {
   else if (L.hairdo === 'quiff') { const q = lbM(new THREE.SphereGeometry(0.22, 16, 12), hairM, 0.03, 0.5, 0.26); q.scale.set(1.4, 0.8, 0.95); q.rotation.x = -0.4; head.add(q); }
   else if (L.hairdo === 'sidepart') { const sp4 = lbM(new THREE.SphereGeometry(0.32, 16, 12), hairM, -0.12, 0.42, 0.14); sp4.scale.set(1.15, 0.38, 0.85); sp4.rotation.z = 0.28; head.add(sp4); }
   else if (L.hairdo === 'mohawk') for (let i = 0; i < 6; i++) { const z = 0.34 - i * 0.14, sk = lbM(new THREE.ConeGeometry(0.1, 0.46, 8), i % 2 ? toon(mix(L.hair, L.cloth, 0.5)) : hairM, 0, 0.62 - Math.abs(z) * 0.35, z); sk.rotation.x = z * 1.1; head.add(sk); }
+  else if (L.hairdo === 'ponytail') { const tl = lbM(new THREE.CylinderGeometry(0.1, 0.035, 0.95, 10), hairM, 0.3, 0.05, -0.34); tl.rotation.z = -0.18; tl.rotation.x = -0.15; head.add(tl); head.add(lbM(new THREE.SphereGeometry(0.1, 10, 8), hairM, 0.3, 0.52, -0.3)); head.add(lbM(new THREE.TorusGeometry(0.09, 0.02, 6, 12), toon(L.cloth), 0.3, 0.46, -0.3)); }
+  else if (L.hairdo === 'braid') { for (let i = 0; i < 7; i++) { const bs = lbM(new THREE.SphereGeometry(0.075, 10, 8), hairM, 0.42 + (i % 2 ? 0.02 : -0.02), -0.05 - i * 0.14, 0.12); bs.scale.set(1, 0.8, 0.9); head.add(bs); } head.add(lbM(new THREE.SphereGeometry(0.05, 8, 6), toon(L.cloth), 0.42, -1.05, 0.12)); }
+  else if (L.hairdo === 'bob') { for (const s of [-1, 1]) { const bb = lbM(new THREE.SphereGeometry(0.2, 12, 10), hairM, s * 0.42, -0.2, 0.0); bb.scale.set(0.8, 1.6, 1.1); head.add(bb); } }
+  else if (L.hairdo === 'loops') for (const s of [-1, 1]) { const lp2 = lbM(new THREE.TorusGeometry(0.15, 0.05, 8, 18), hairM, s * 0.2, 0.7, -0.02); lp2.scale.set(0.8, 1.4, 1); lp2.rotation.z = -s * 0.25; head.add(lp2); head.add(lbM(new THREE.SphereGeometry(0.055, 8, 6), toon(L.cloth), s * 0.17, 0.5, 0.0)); }
   else if (L.hairdo === 'pigtails') for (const s of [-1, 1]) { const pt = lbM(new THREE.CylinderGeometry(0.1, 0.07, 0.75, 10), hairM, s * 0.5, -0.4, -0.05); pt.rotation.z = s * 0.15; head.add(pt); head.add(lbM(new THREE.SphereGeometry(0.07, 8, 6), toon(L.cloth), s * 0.46, -0.02, -0.05)); }
   // hats and glasses
   if (L.hat === 'cap') { head.add(lbM(new THREE.SphereGeometry(0.5, 24, 12, 0, Math.PI * 2, 0, Math.PI * 0.5), cloth, 0, 0.08, 0)); const br = lbM(new THREE.CylinderGeometry(0.34, 0.34, 0.04, 20, 1, false, -Math.PI / 2, Math.PI), cloth, 0, 0.1, 0.36); head.add(br); }
