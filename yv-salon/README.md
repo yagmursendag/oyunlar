@@ -144,3 +144,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v135 | versions/v135-telefon-uygulamalari.html | Telefona yeni uygulamalar: Hafıza oyunu, Hava durumu, Çizim, Hesap makinesi (simgeler 4 sütun) |
 | v136 | versions/v136-cizim-duzelt.html | Telefondaki Çizim uygulaması düzeltildi (görünmez düğme çizimi engelliyordu); çizerken kamera dönmez |
 | v137 | versions/v137-cizim-yumusak.html | Çizim: çizgi dokunur dokunmaz başlar, tüm dokunma noktaları kaydedilir, yumuşak eğrilerle çizilir (dokunmatikte denendi) |
+| v138 | versions/v138-cizim-paylas.html | Çizimleri paylaşma: Çizim uygulamasında Paylaş, telefonda Galeri (herkesin son çizimi); yeni Firebase kuralı gerekir (drawings) |
