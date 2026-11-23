@@ -1395,7 +1395,7 @@ function capPath(bangs) {
   ctx.closePath();
 }
 const hexA = (h, a) => { const r = toRGB(h); return 'rgba(' + r[0] + ',' + r[1] + ',' + r[2] + ',' + a + ')'; };
-let REAL = false; // 'realistic' look: used on the title screen only
+let REAL = true; // detailed body shading on every 2D character
 // realistic face for the title-screen owner: almond eyes, natural brows and lips
 function drawRealFace(c, mood) {
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
@@ -3486,7 +3486,7 @@ function drawTitle() {
   if (profile) btn(520, 164, 240, 44, `🔥 Seri: ${profile.streak ? profile.streak.s : 0} gün${streakDue() ? ' 🎁' : ''}`, showStreak, { col: '#ffe0b3', size: 16 });
   if (profile && streakAutoDay !== todayKey()) { streakAutoDay = todayKey(); if (streakDue()) setTimeout(showStreak, 600); }
   if (profile) { if (gemsReady()) btn(770, 164, 200, 44, `🎁 ${GEMS_PER_WEEK} 💎 elmasını al!`, claimGems, { col: '#5aa9ff', fg: '#ffffff', size: 16 }); else text(`💎 Yeni elmaslar: ${7 - (Math.floor(Date.now() / 86400000 + 3) % 7)} gün sonra`, 960, 192, 14, '#2d6fd6', 'right', 800); }
-  if (profile) { const o = owner(); drawPet(o.av.pet, 250, 654, 0.5); ctx.fillStyle = 'rgba(0,0,0,.2)'; ell(150, 655, 78, 13); REAL = true; try { drawHead(o, 150, 650 - 620 * 0.5 + Math.sin(T * 2) * 3, 0.5, { body: () => drawBody(o, 0, 1), mood: 1 }); } finally { REAL = false; } }
+  if (profile) { const o = owner(); drawPet(o.av.pet, 250, 654, 0.5); ctx.fillStyle = 'rgba(0,0,0,.2)'; ell(150, 655, 78, 13); REAL = true; try { drawHead(o, 150, 650 - 620 * 0.5 + Math.sin(T * 2) * 3, 0.5, { body: () => drawBody(o, 0, 1), mood: 1 }); } finally { REAL = true; } }
   btn(302, 410, 160, 80, '▶ Başla', () => newCustomer(served === 0), { col: '#ff5fa2', fg: '#ffffff', size: 28 });
   btn(472, 410, 160, 80, '🌳 Lobi', enterLobby, { col: '#2fbf71', fg: '#ffffff', size: 28 });
   btn(642, 410, 160, 80, '🛍️ Mağaza', () => openShop(), { col: '#ffe36e', size: 24 });
@@ -5293,9 +5293,56 @@ function drawLobby() {
   } else if (scene === 'place') drawPlace();
   else if (scene === 'job') drawJob();
 }
+// ---------- 🏪 shop interiors for the cafe, the ice cream shop and the florist (drawn behind the menu card)
+function shopInterior(id) {
+  const t = T, th = { cafe: ['#fdecd2', '#f3c995', '#9a5f33'], icecream: ['#dff5ff', '#ffe0f0', '#ff6fb5'], flowers: ['#e4f7e8', '#bfe8cc', '#7a5a3a'] }[id];
+  const wg = ctx.createLinearGradient(0, 0, 0, 540); wg.addColorStop(0, th[0]); wg.addColorStop(1, th[1]); ctx.fillStyle = wg; ctx.fillRect(0, 0, W, 540);
+  // wall pattern
+  if (id === 'cafe') { ctx.fillStyle = 'rgba(160,100,60,.07)'; for (let x = 0; x < W; x += 64) ctx.fillRect(x, 0, 32, 540); }
+  if (id === 'icecream') { ctx.fillStyle = 'rgba(255,111,181,.10)'; for (let x = -200; x < W + 200; x += 90) { ctx.save(); ctx.translate(x, 0); ctx.transform(1, 0, -0.5, 1, 0, 0); ctx.fillRect(0, 0, 44, 540); ctx.restore(); } ctx.fillStyle = 'rgba(255,255,255,.55)'; for (let i = 0; i < 28; i++) circle(40 + (i * 97) % 1200, 60 + (i * 53) % 400, 5); }
+  if (id === 'flowers') { ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 4; for (let x = 0; x <= W; x += 128) line(x, 0, x, 540); for (let y = 90; y < 540; y += 150) line(0, y, W, y); ctx.fillStyle = 'rgba(255,255,220,.16)'; for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.moveTo(200 + k * 280, 0); ctx.lineTo(300 + k * 280, 0); ctx.lineTo(80 + k * 280, 540); ctx.lineTo(-60 + k * 280, 540); ctx.closePath(); ctx.fill(); } }
+  // wainscot + baseboard
+  ctx.fillStyle = th[2]; ctx.fillRect(0, 470, W, 70); ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fillRect(0, 470, W, 8); ctx.fillStyle = 'rgba(0,0,0,.14)'; ctx.fillRect(0, 534, W, 6);
+  if (id === 'cafe') { ctx.strokeStyle = 'rgba(0,0,0,.12)'; ctx.lineWidth = 2; for (let x = 0; x < W; x += 80) line(x, 478, x, 534); }
+  // floor
+  let y = 540, r = 0; while (y < H) { const rh = 18 + r * 9, tw = 60 + r * 24; for (let x = -((r * 37) % tw); x < W; x += tw) { const k = (Math.floor((x + 600) / tw) + r) % 2; ctx.fillStyle = id === 'cafe' ? (k ? '#c98b5a' : '#bd7c4b') : id === 'icecream' ? (k ? '#ffd6ea' : '#ffffff') : (k ? '#d9cdb8' : '#cdbfa6'); ctx.fillRect(x, y, tw - 1, rh - 1); } y += rh; r++; }
+  const fg = ctx.createLinearGradient(0, 540, 0, H); fg.addColorStop(0, 'rgba(0,0,0,.16)'); fg.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = fg; ctx.fillRect(0, 540, W, 40);
+  // pendant lamps (cafe + ice cream) with a soft glow
+  if (id !== 'flowers') for (const lx of [330, 640, 950]) { const sw = Math.sin(t * 1.2 + lx) * 3, ly = 96 + (lx === 640 ? 14 : 0); ctx.strokeStyle = '#4a3a3a'; ctx.lineWidth = 2; line(lx, 0, lx + sw, ly); const gl = ctx.createRadialGradient(lx + sw, ly + 10, 4, lx + sw, ly + 10, 120); gl.addColorStop(0, 'rgba(255,230,150,.55)'); gl.addColorStop(1, 'rgba(255,230,150,0)'); ctx.fillStyle = gl; circle(lx + sw, ly + 10, 120); ctx.fillStyle = id === 'cafe' ? '#ffcf6b' : '#ff8fc8'; ctx.beginPath(); ctx.arc(lx + sw, ly, 32, Math.PI, 0); ctx.fill(); ctx.fillStyle = '#fff6c8'; ell(lx + sw, ly + 2, 24, 7); }
+  if (id === 'cafe') {
+    // window with curtains
+    ctx.fillStyle = '#ffffff'; rr(60, 120, 112, 250, 10); ctx.fill(); const sk = ctx.createLinearGradient(0, 130, 0, 360); sk.addColorStop(0, SEA.sky[0]); sk.addColorStop(1, SEA.sky[2]); ctx.fillStyle = sk; rr(70, 130, 92, 230, 6); ctx.fill(); ctx.fillStyle = '#ffffff'; ctx.fillRect(114, 130, 5, 230); ctx.fillRect(70, 240, 92, 5);
+    ctx.fillStyle = '#ff9ec7'; ctx.beginPath(); ctx.moveTo(50, 110); ctx.quadraticCurveTo(80, 230, 56, 380); ctx.lineTo(50, 380); ctx.fill(); ctx.beginPath(); ctx.moveTo(182, 110); ctx.quadraticCurveTo(152, 230, 176, 380); ctx.lineTo(182, 380); ctx.fill();
+    emoji('🪴', 116, 392, 46);
+    // bunting
+    ctx.strokeStyle = '#8a6a4a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, 30); ctx.quadraticCurveTo(W / 2, 90, W, 30); ctx.stroke(); for (let i = 0; i < 18; i++) { const x = 40 + i * 68, yy = 30 + Math.sin(i / 17 * Math.PI) * 30 * 1.0 + 6; ctx.fillStyle = ['#ff6fb5', '#ffd23f', '#5ac8ff', '#8be07e', '#b18cff', '#ff8a3d'][i % 6]; ctx.beginPath(); ctx.moveTo(x - 14, yy); ctx.lineTo(x + 14, yy); ctx.lineTo(x, yy + 28); ctx.closePath(); ctx.fill(); }
+    // shelf with jars + cups
+    ctx.fillStyle = '#8a5a30'; rr(1000, 250, 250, 12, 4); ctx.fill(); rr(1000, 360, 250, 12, 4); ctx.fill(); for (const [e, x, yy] of [['☕', 1030, 246], ['🫖', 1090, 244], ['🍯', 1150, 246], ['🥛', 1210, 246], ['🍪', 1040, 356], ['🍩', 1110, 356], ['🧁', 1180, 356]]) emoji(e, x, yy - 14, 40);
+    // display case + tables
+    ctx.fillStyle = 'rgba(255,255,255,.4)'; ctx.strokeStyle = '#9a5f33'; ctx.lineWidth = 5; rr(1000, 560, 270, 130, 14); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#c98b5a'; ctx.fillRect(1000, 640, 270, 50); for (const [e, x] of [['🍰', 1040], ['🧁', 1100], ['🍩', 1160], ['🥐', 1220]]) emoji(e, x, 604, 44);
+    for (const [tx, ty] of [[95, 640]]) { ctx.fillStyle = 'rgba(0,0,0,.18)'; ell(tx, ty + 56, 78, 14); ctx.fillStyle = '#7a4a28'; ctx.fillRect(tx - 8, ty, 16, 56); ctx.fillStyle = '#fff6f0'; ell(tx, ty, 74, 20); ctx.strokeStyle = '#ff6f8f'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(tx, ty, 74, 20, 0, 0, Math.PI * 2); ctx.stroke(); emoji('☕', tx - 20, ty - 18, 36); emoji('🍰', tx + 26, ty - 16, 34); for (let i = 0; i < 4; i++) { ctx.globalAlpha = 0.35 - i * 0.07; ctx.fillStyle = '#ffffff'; circle(tx - 20 + Math.sin(t * 2 + i) * 4, ty - 44 - i * 14 - (t * 12 % 8), 7 + i); } ctx.globalAlpha = 1; }
+  } else if (id === 'icecream') {
+    // neon sign
+    ctx.save(); ctx.shadowColor = '#ff2d95'; ctx.shadowBlur = 24 + Math.sin(t * 5) * 6; ctx.strokeStyle = '#ff5fb0'; ctx.lineWidth = 5; rr(56, 56, 250, 76, 30); ctx.stroke(); ctx.restore(); text('🍦 Dondurma', 181, 108, 36, '#ff5fb0', 'center', 800);
+    emoji('🍦', 1180, 210 + Math.sin(t * 2) * 8, 150); emoji('🍨', 100, 260 + Math.sin(t * 2 + 1) * 6, 90); emoji('🍧', 1120, 370 + Math.sin(t * 2 + 2) * 6, 70);
+    // freezer counter with tubs
+    ctx.fillStyle = '#ffffff'; rr(-10, 566, W + 20, 170, 20); ctx.fill(); ctx.fillStyle = '#ff8fc8'; ctx.fillRect(0, 566, W, 14); ctx.fillStyle = 'rgba(150,220,255,.5)'; ctx.fillRect(0, 580, W, 70);
+    const tubs = ['#ff7eb6', '#ffe08a', '#7ee0c3', '#c9a7ff', '#ffb36b', '#7fc8ff', '#ff6b6b', '#fff1d0']; for (let i = 0; i < 14; i++) { const x = 40 + i * 92, c = tubs[i % 8]; ctx.fillStyle = '#ffffff'; ell(x, 628, 40, 18); ctx.fillStyle = c; ell(x, 618, 36, 24); ctx.fillStyle = 'rgba(255,255,255,.4)'; ell(x - 10, 610, 10, 5); }
+    // falling sprinkles
+    for (let i = 0; i < 26; i++) { const x = (i * 131) % W, yy = ((t * 40 + i * 71) % 540); ctx.save(); ctx.translate(x, yy); ctx.rotate(i + t); ctx.fillStyle = ['#ff6fb5', '#ffd23f', '#5ac8ff', '#8be07e'][i % 4]; ctx.fillRect(-5, -2, 10, 4); ctx.restore(); }
+    // string lights
+    ctx.strokeStyle = '#6b4a5a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, 20); ctx.quadraticCurveTo(W / 2, 70, W, 20); ctx.stroke(); for (let i = 0; i < 20; i++) { const x = 30 + i * 64, yy = 20 + Math.sin(i / 19 * Math.PI) * 26 + 4; ctx.fillStyle = ['#ff6fb5', '#ffd23f', '#5ac8ff', '#8be07e'][i % 4]; ctx.globalAlpha = 0.6 + 0.4 * Math.sin(t * 4 + i); circle(x, yy, 7); ctx.globalAlpha = 1; }
+  } else {
+    // florist: shelves with pots, hanging plants, butterflies
+    for (const [sx, sw2] of [[0, 190], [1090, 190]]) for (const yy of [210, 330, 450]) { ctx.fillStyle = '#7a5a3a'; rr(sx, yy, sw2, 12, 4); ctx.fill(); ctx.fillStyle = 'rgba(0,0,0,.12)'; ctx.fillRect(sx, yy + 12, sw2, 5); const es = ['🌷', '🌹', '🌻', '🌸', '🪻', '💐']; for (let k = 0; k < 3; k++) emoji(es[(Math.floor(sx / 90) + yy / 40 + k) % 6 | 0], sx + 36 + k * 58, yy - 22, 46); }
+    for (const hx of [330, 640, 950]) { const sw = Math.sin(t * 1.1 + hx) * 6; ctx.strokeStyle = '#6b5a3a'; ctx.lineWidth = 2; line(hx, 0, hx + sw, 120); emoji('🪴', hx + sw, 140, 52); for (let k = 0; k < 3; k++) emoji('🌿', hx + sw - 22 + k * 22, 178 + (k % 2) * 14, 28); }
+    for (let i = 0; i < 3; i++) emoji('🦋', 300 + ((t * 40 + i * 400) % 700) + Math.sin(t * 3 + i) * 20, 300 + Math.sin(t * 1.5 + i * 2) * 60 + i * 30, 34);
+    emoji('🧺', 160, 650, 70); emoji('🪣', 1130, 650, 64); emoji('🌻', 1200, 620, 56);
+  }
+}
 function drawPlace() {
   const p = LB.place, n = needs();
-  ctx.fillStyle = LB.sleepT > 0 ? `rgba(20,20,60,${Math.min(0.85, 0.3 + (4 - LB.sleepT) * 0.2)})` : 'rgba(40,20,50,.45)'; ctx.fillRect(0, 0, W, H);
+  if (['cafe', 'icecream', 'flowers'].includes(p.id) && !(LB.sleepT > 0)) shopInterior(p.id); else { ctx.fillStyle = LB.sleepT > 0 ? `rgba(20,20,60,${Math.min(0.85, 0.3 + (4 - LB.sleepT) * 0.2)})` : 'rgba(40,20,50,.45)'; ctx.fillRect(0, 0, W, H); }
   if (LB.sleepT > 0) { for (let i = 0; i < 3; i++) text('Z', 640 + i * 40 + Math.sin(T * 2 + i) * 10, 360 - i * 40 - ((T * 30) % 40), 40 + i * 12, '#ffffff', 'center', 800); text('😴 Uyuyorsun...', 640, 470, 30, '#ffffff', 'center', 800); return; }
   ctx.fillStyle = '#ffffff'; ctx.shadowColor = 'rgba(0,0,0,.3)'; ctx.shadowBlur = 24; rr(190, 110, 900, 520, 30); ctx.fill(); ctx.shadowBlur = 0;
   text(`${p.icon} ${p.name}`, 640, 168, 40, '#d6337f', 'center', 800);
