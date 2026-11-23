@@ -4571,6 +4571,7 @@ function lbAvatar(look, name, tagCol) {
   if (under3) { const st3 = lbM(new THREE.SphereGeometry(0.462, 28, 12, 0, Math.PI * 2, Math.PI * 0.3, Math.PI * 0.22), new THREE.MeshToonMaterial({ color: L.hair, gradientMap: lbGrad, transparent: true, opacity: 0.38 }), 0, 0.02, 0); st3.rotation.x = -0.35; head.add(st3); }
   if (bald3) head.add(lbM(new THREE.SphereGeometry(0.03, 6, 4), skin, 0, 0, 0));
   const cap = lbM(new THREE.SphereGeometry(clip3 ? 0.466 : 0.48, 32, 16, 0, Math.PI * 2, 0, bald3 ? 0.001 : Math.PI * (under3 ? 0.3 : buzz3 ? 0.42 : crop3 ? 0.4 : 0.52)), buzz3 ? new THREE.MeshToonMaterial({ color: L.hair, gradientMap: lbGrad, transparent: true, opacity: 0.55, side: THREE.DoubleSide }) : hairM, 0, 0.02, 0); cap.rotation.x = -0.35; head.add(cap);
+  if (!bald3 && !buzz3 && !crop3 && !under3) { const rc = lbM(new THREE.SphereGeometry(0.484, 24, 10, 0, Math.PI * 2, 0, Math.PI * 0.2), toon(mix(L.hair, '#000000', 0.22)), 0, 0.02, 0); rc.rotation.x = -0.35; head.add(rc); } // darker roots on the crown
   if (L.bangs !== 'none' && !bald3 && !under3 && !clip3) { const bg = lbM(new THREE.SphereGeometry(0.4, 20, 12), hairM, L.bangs === 'side' ? -0.08 : 0, 0.24, 0.24); bg.scale.set(1.08, 0.36, 0.6); head.add(bg); }
   const len = bald3 || under3 || clip3 ? 0 : { short: 0, mid: 0.55, long: 1.05 }[L.len];
   if (len) {
@@ -7419,20 +7420,21 @@ function drawFootballHud() {
 
 // ================= 💇 more detailed hair (3D): hundreds of fine strands in one draw call =================
 function lbHairStrands(head, L, hairColor, onlyTop) {
-  const n = LITE ? 22 : 48, g = new THREE.Group(); g.position.set(0, 0.02, 0); g.rotation.x = -0.35; head.add(g);
-  const im = new THREE.InstancedMesh(new THREE.ConeGeometry(0.022, 0.1, 4), new THREE.MeshToonMaterial({ gradientMap: lbGrad }), n), M = new THREE.Matrix4(), q = new THREE.Quaternion(), UP = new THREE.Vector3(0, 1, 0), base = new THREE.Color(hairColor), col = new THREE.Color();
+  const n = LITE ? 50 : 120, g = new THREE.Group(); g.position.set(0, 0.02, 0); g.rotation.x = -0.35; head.add(g);
+  const im = new THREE.InstancedMesh(new THREE.ConeGeometry(0.014, 0.15, 4), new THREE.MeshToonMaterial({ gradientMap: lbGrad }), n), M = new THREE.Matrix4(), q = new THREE.Quaternion(), UP = new THREE.Vector3(0, 1, 0), base = new THREE.Color(hairColor), col = new THREE.Color();
   for (let i = 0; i < n; i++) {
     const th = (i * 2.399963) % (Math.PI * 2), ph = Math.sqrt((i + 0.5) / n) * (onlyTop ? 0.3 : 0.46) * Math.PI; // golden-angle spread over the cap
     const P = new THREE.Vector3(Math.sin(ph) * Math.cos(th), Math.cos(ph), Math.sin(ph) * Math.sin(th)), T2 = new THREE.Vector3(Math.cos(ph) * Math.cos(th), -Math.sin(ph), Math.cos(ph) * Math.sin(th));
-    q.setFromUnitVectors(UP, T2); M.compose(P.clone().multiplyScalar(0.474).add(T2.clone().multiplyScalar(0.05)), q, new THREE.Vector3(1, 0.8 + (i % 4) * 0.2, 1)); im.setMatrixAt(i, M);
-    col.copy(base).lerp(new THREE.Color(i % 3 === 0 ? '#ffffff' : '#000000'), i % 3 === 0 ? 0.08 : 0.12 + (i % 5) * 0.03); im.setColorAt(i, col);
+    q.setFromUnitVectors(UP, T2); M.compose(P.clone().multiplyScalar(0.474).add(T2.clone().multiplyScalar(0.05)), q, new THREE.Vector3(1, 0.7 + (i % 5) * 0.22, 1)); im.setMatrixAt(i, M);
+    col.copy(base).lerp(new THREE.Color(i % 3 === 0 ? '#ffffff' : '#000000'), i % 3 === 0 ? 0.14 : 0.14 + (i % 5) * 0.035); im.setColorAt(i, col);
   }
   g.add(im);
   const sheen = lbM(new THREE.TorusGeometry(0.4, 0.014, 6, 28), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.22 }), 0, 0.2, 0.0); sheen.rotation.x = Math.PI / 2; g.add(sheen); // soft shine
+  const sheen2 = lbM(new THREE.TorusGeometry(0.32, 0.01, 6, 24), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.16 }), 0, 0.3, 0.0); sheen2.rotation.x = Math.PI / 2; g.add(sheen2);
   // long hair: tapering locks hanging down the back
   const len = { mid: 0.55, long: 1.05 }[L.len];
   if (len && !onlyTop) {
-    const m = LITE ? 11 : 20, lk = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.08, 0.02, 1, 6), new THREE.MeshToonMaterial({ gradientMap: lbGrad }), m);
+    const m = LITE ? 20 : 38, lk = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.058, 0.012, 1, 6), new THREE.MeshToonMaterial({ gradientMap: lbGrad }), m);
     for (let i = 0; i < m; i++) {
       const a = Math.PI * (0.58 + 0.84 * (i / (m - 1))), l = len * (0.78 + (i % 3) * 0.1), s = new THREE.Vector3(1, l, 1);
       M.compose(new THREE.Vector3(Math.sin(a) * 0.5, 0.0 - l / 2, Math.cos(a) * 0.5), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -0.04), s); lk.setMatrixAt(i, M);
