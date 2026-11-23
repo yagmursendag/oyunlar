@@ -122,16 +122,16 @@ function emoji(e, x, y, s) { ctx.font = `${s}px ${FONT}`; ctx.textAlign = 'cente
 
 // ---------- sound (all synthesized, no files) ----------
 let ac = null;
-function audio() { try { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); } catch (e) { } }
+function audio() { try { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended' && !(OPTS && OPTS.snd === 0)) ac.resume(); } catch (e) { } }
 function tone(f0, f1, dur, vol = 0.1, type = 'sine', delay = 0) {
-  if (!ac) return;
+  if (!ac || (OPTS && OPTS.snd === 0)) return; // sound is switched off in the settings
   const t = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
   o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
   g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
   o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur + 0.02);
 }
 function noise(dur, vol = 0.1, freq = 2000) {
-  if (!ac) return;
+  if (!ac || (OPTS && OPTS.snd === 0)) return;
   const n = Math.floor(ac.sampleRate * dur), b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
   for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
   const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
@@ -8427,7 +8427,7 @@ const saveOpts = () => { try { localStorage.setItem('yv-salon-opts', JSON.string
 function showSettings() {
   const gl = { auto: '🤖 Otomatik', low: '🐢 Hızlı (düşük)', high: '✨ Güzel (yüksek)' }, nxt = { auto: 'low', low: 'high', high: 'auto' };
   openModal('<h2>⚙️ Ayarlar</h2><p>Ses: <b>' + (OPTS.snd ? '🔊 Açık' : '🔇 Kapalı') + '</b></p><button class="mb y" id="osnd">' + (OPTS.snd ? '🔇 Sesi kapat' : '🔊 Sesi aç') + '</button><p>Grafik: <b>' + gl[OPTS.gfx] + '</b></p><button class="mb y" id="ogfx">Değiştir</button><p><small>Telefon kasıyorsa "Hızlı" seç. "Güzel" karakterlere çizgi film konturu ekler (lobiye yeniden girince).</small></p><button class="mb s" id="oclose">Kapat</button>');
-  $('osnd').onclick = () => { OPTS.snd = OPTS.snd ? 0 : 1; saveOpts(); showSettings(); };
+  $('osnd').onclick = () => { OPTS.snd = OPTS.snd ? 0 : 1; saveOpts(); try { if (ac) { if (OPTS.snd) ac.resume(); else ac.suspend(); } } catch (e) { } showSettings(); };
   $('ogfx').onclick = () => { OPTS.gfx = nxt[OPTS.gfx]; saveOpts(); if (LB && LB.renderer) { lbResize(); LB.popKey = null; } showSettings(); };
   $('oclose').onclick = closeModal;
 }
