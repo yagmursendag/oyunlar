@@ -5221,7 +5221,7 @@ function lbUpdate(dt) {
   const pa = LB.jet.geometry.attributes.position;
   LB.drops.forEach((q, i) => { q.t = (q.t + dt * q.sp) % 1; const r = q.t * 1.3, y = 3.1 + Math.sin(q.t * Math.PI) * 1.4 - q.t * 1.2; pa.setXYZ(i, Math.cos(q.a) * r, y, Math.sin(q.a) * r); });
   pa.needsUpdate = true;
-  for (const c of LB.clouds) { c.position.x += dt * 1.2; if (c.position.x > 110) c.position.x = -110; } lbSeasonFx(dt);
+  for (const c of LB.clouds) { c.position.x += dt * 1.2; if (c.position.x > 110) c.position.x = -110; } lbSeasonFx(dt); lbCullUpdate(dt);
   for (const b of LB.flies) { const u = b.userData; u.a += dt * u.sp; b.position.set(Math.sin(u.a) * u.r, u.h + Math.sin(T * 2 + u.a * 3) * 0.4, -Math.cos(u.a) * u.r); b.rotation.y = -u.a; const fl = Math.sin(T * 18 + u.r) * 0.9; b.children[0].rotation.y = fl; b.children[1].rotation.y = -fl; }
   LB.tapMark.material.opacity = Math.max(0, LB.tapMark.material.opacity - dt * 1.2);
   if (LB.tipT > 0) LB.tipT -= dt;
@@ -6311,6 +6311,77 @@ function clockText() {
 }
 function lbGlowTex() { return LB.glowTex || (LB.glowTex = lbTex(64, 64, (c, w, h) => { const g = c.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(255,240,180,1)'); g.addColorStop(1, 'rgba(255,240,180,0)'); c.fillStyle = g; c.fillRect(0, 0, w, h); })); }
 // ---- 🏖️ the beach south of the square ----
+// ---- 🏖️ extra beach details: wet sand, ripples, pier + boats, lounge chairs, snack kiosk, lifeguard tower, rocks, shells, starfish, dune grass, seagulls
+function lbBeachExtras(sc) {
+  let sd = 5; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  const trees = () => (LB.trees = LB.trees || []);
+  // wet sand band + shallow turquoise water
+  const wet = new THREE.Mesh(new THREE.PlaneGeometry(76, 3.6), new THREE.MeshBasicMaterial({ color: '#d4b06a', transparent: true, opacity: 0.8 })); wet.rotation.x = -Math.PI / 2; wet.position.set(0, 0.035, 53.2); sc.add(wet);
+  const shallow = new THREE.Mesh(new THREE.PlaneGeometry(96, 9), new THREE.MeshBasicMaterial({ color: '#8fe8e0', transparent: true, opacity: 0.5 })); shallow.rotation.x = -Math.PI / 2; shallow.position.set(0, 0.46, 59.5); sc.add(shallow);
+  const rt = lbTex(256, 256, (g, w, h) => { g.strokeStyle = 'rgba(190,150,80,.35)'; g.lineWidth = 2; for (let i = 0; i < 14; i++) { g.beginPath(); for (let x = 0; x <= w; x += 8) g.lineTo(x, i * 18 + 6 + Math.sin(x / 14 + i * 1.7) * 4); g.stroke(); } g.fillStyle = 'rgba(160,120,60,.35)'; for (let i = 0; i < 90; i++) g.fillRect((i * 53) % w, (i * 97) % h, 2, 2); });
+  rt.wrapS = rt.wrapT = THREE.RepeatWrapping; rt.repeat.set(7, 3);
+  const rip = new THREE.Mesh(new THREE.PlaneGeometry(76, 26), new THREE.MeshBasicMaterial({ map: rt, transparent: true, depthWrite: false })); rip.rotation.x = -Math.PI / 2; rip.position.set(0, 0.04, 45); sc.add(rip);
+  // second and third foam lines that roll in and out
+  LB.foams = [1, 2].map(k => { const f = new THREE.Mesh(new THREE.PlaneGeometry(96, 0.9), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.4 })); f.rotation.x = -Math.PI / 2; f.position.set(0, 0.67, 54.4 + k * 2.2); f.userData.base = 54.4 + k * 2.2; f.userData.ph = k * 1.7; sc.add(f); return f; });
+  // pier with posts, rails and lamps
+  { const px = 14, pz0 = 54.5, pl = 26, pg = new THREE.Group();
+    for (let i = 0; i < pl; i++) pg.add(lbM(new THREE.BoxGeometry(3.6, 0.14, 0.86), toon(i % 2 ? '#b98a5e' : '#a87444'), 0, 0.9, i * 0.92));
+    for (let i = 0; i <= 6; i++) for (const sx of [-1.7, 1.7]) pg.add(lbM(new THREE.CylinderGeometry(0.16, 0.18, 1.6, 8), toon('#6b4a2a'), sx, 0.2, i * 4));
+    for (const sx of [-1.75, 1.75]) { pg.add(lbM(new THREE.BoxGeometry(0.1, 0.1, pl * 0.92), toon('#ffffff'), sx, 1.9, pl * 0.46)); for (let i = 0; i <= 6; i++) pg.add(lbM(new THREE.BoxGeometry(0.1, 0.9, 0.1), toon('#ffffff'), sx, 1.45, i * 3.9)); }
+    for (const zz of [8, 24]) { pg.add(lbM(new THREE.CylinderGeometry(0.07, 0.07, 2.6, 6), toon('#4a3a5a'), 1.7, 2.2, zz)); pg.add(lbM(new THREE.SphereGeometry(0.26, 10, 8), new THREE.MeshBasicMaterial({ color: '#fff2b0' }), 1.7, 3.6, zz)); }
+    pg.position.set(px, 0, pz0); sc.add(pg); }
+  // boats: a rowboat at the pier and two sailboats far out
+  LB.boats = [];
+  const boat = (x, z, ry, sail, col) => { const b = new THREE.Group(); b.add(lbM(new THREE.BoxGeometry(3.4, 0.7, 1.3), toon(col || '#ffffff'), 0, 0.2, 0)); const bow = lbM(new THREE.ConeGeometry(0.65, 1.1, 4), toon(col || '#ffffff'), 2.2, 0.2, 0); bow.rotation.z = -Math.PI / 2; bow.rotation.y = Math.PI / 4; b.add(bow); b.add(lbM(new THREE.BoxGeometry(3.45, 0.14, 1.35), toon('#e8434f'), 0, 0.5, 0));
+    if (sail) { b.add(lbM(new THREE.CylinderGeometry(0.06, 0.06, 4.6, 6), toon('#8a6a4a'), 0, 2.7, 0)); const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(2.2, 0); sh.lineTo(0, 4); sh.closePath(); const sl = new THREE.Mesh(new THREE.ShapeGeometry(sh), new THREE.MeshToonMaterial({ color: sail, side: THREE.DoubleSide, gradientMap: lbGrad })); sl.position.set(0.05, 0.9, 0); b.add(sl); }
+    b.position.set(x, 0.45, z); b.rotation.y = ry; b.userData.y0 = 0.45; b.userData.ph = x; sc.add(b); LB.boats.push(b); };
+  boat(18.5, 66, 0.15, null, '#ffd23f'); boat(-32, 96, 0.3, '#ffffff'); boat(42, 101, -0.2, '#ff8fb8');
+  // lounge chairs and towels next to the umbrellas
+  [[-21, 51, '#ff6fb5'], [-9, 48, '#5aa9ff'], [-31, 41, '#ffd23f'], [-33, 53, '#2fd27a']].forEach(([x, z, col]) => { for (const d of [-1.8, 3.6]) { const l = new THREE.Group(); l.add(lbM(new THREE.BoxGeometry(0.85, 0.1, 2.1), toon('#ffffff'), 0, 0.42, 0)); l.add(lbM(new THREE.BoxGeometry(0.85, 0.06, 1.0), toon(col), 0, 0.5, 0.4)); const back = lbM(new THREE.BoxGeometry(0.85, 0.1, 0.9), toon('#ffffff'), 0, 0.85, -0.95); back.rotation.x = 0.7; l.add(back); for (const [lx, lz] of [[-0.35, -0.9], [0.35, -0.9], [-0.35, 0.9], [0.35, 0.9]]) l.add(lbM(new THREE.CylinderGeometry(0.04, 0.04, 0.4, 5), toon('#c9c9d6'), lx, 0.2, lz)); l.position.set(x + d * 0.6 - 0.3, 0, z - 1.4 + d * 0.4); l.rotation.y = d * 0.15; sc.add(l); } });
+  // snack kiosk with a thatched roof
+  { const k = new THREE.Group(); k.add(lbM(new THREE.BoxGeometry(4.2, 2.6, 3), toon('#ffe0b8'), 0, 1.3, 0)); k.add(lbM(new THREE.BoxGeometry(4.4, 0.18, 3.2), toon('#a87444'), 0, 2.65, 0)); const th = lbM(new THREE.ConeGeometry(3.6, 1.6, 8), toon('#d9b86a'), 0, 3.6, 0); th.scale.set(1.15, 1, 0.95); k.add(th);
+    k.add(lbM(new THREE.BoxGeometry(3.4, 0.2, 1.1), toon('#c98b5a'), 0, 1.1, 2.05)); for (const sx of [-1.5, 1.5]) k.add(lbM(new THREE.CylinderGeometry(0.08, 0.08, 1.1, 6), toon('#8a5a30'), sx, 0.55, 2.55));
+    for (let i = 0; i < 6; i++) { const st = lbM(new THREE.BoxGeometry(0.7, 0.05, 1.4), toon(i % 2 ? '#ffffff' : '#ff6f8f'), -1.75 + i * 0.7, 2.35, 1.9); st.rotation.x = -0.35; k.add(st); }
+    k.add(lbM(new THREE.SphereGeometry(0.2, 8, 6), toon('#ffd23f'), -1, 1.35, 2.05)); k.add(lbM(new THREE.CylinderGeometry(0.16, 0.12, 0.4, 8), toon('#ff6f8f'), 0.2, 1.4, 2.05)); k.add(lbM(new THREE.CylinderGeometry(0.16, 0.12, 0.4, 8), toon('#5ac8ff'), 0.7, 1.4, 2.05));
+    const ks = lbSignPlane('🍹 Plaj Büfe', '#ff8a3d', 3.2, 0.8); ks.position.set(0, 3.1, 1.6); k.add(ks);
+    k.position.set(14, 0, 40); k.rotation.y = Math.PI; sc.add(k); trees().push([14, 40, 2.6]);
+    for (const [sx, sc2] of [[19.3, '#ff5fa2'], [20.3, '#2dc4d6'], [21.2, '#ffd23f']]) { const sb = lbM(new THREE.SphereGeometry(0.4, 10, 8), toon(sc2), sx, 1.6, 40.6); sb.scale.set(0.6, 2.6, 0.18); sb.rotation.z = -0.12; sc.add(sb); } }
+  // lifeguard tower
+  { const t = new THREE.Group(); for (const [dx, dz] of [[-0.9, -0.9], [0.9, -0.9], [-0.9, 0.9], [0.9, 0.9]]) t.add(lbM(new THREE.CylinderGeometry(0.1, 0.12, 2.6, 6), toon('#ffffff'), dx, 1.3, dz)); t.add(lbM(new THREE.BoxGeometry(2.4, 0.16, 2.4), toon('#a87444'), 0, 2.6, 0)); t.add(lbM(new THREE.BoxGeometry(1.8, 1.4, 1.8), toon('#ffffff'), 0, 3.4, 0)); t.add(lbM(new THREE.BoxGeometry(1.84, 0.4, 1.84), toon('#e8434f'), 0, 3.1, 0)); const rf = lbM(new THREE.ConeGeometry(1.7, 0.9, 4), toon('#e8434f'), 0, 4.55, 0); rf.rotation.y = Math.PI / 4; t.add(rf);
+    for (let k = 0; k < 5; k++) { const st = lbM(new THREE.BoxGeometry(0.8, 0.07, 0.28), toon('#ffffff'), 0, 0.3 + k * 0.5, 1.9 - k * 0.32); st.rotation.x = 0.2; t.add(st); }
+    t.add(lbM(new THREE.CylinderGeometry(0.03, 0.03, 1.4, 5), toon('#ffffff'), 1.1, 5.0, 1.0)); const fl = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.45), new THREE.MeshBasicMaterial({ color: '#e8434f', side: THREE.DoubleSide })); fl.position.set(1.45, 5.4, 1.0); t.add(fl);
+    const ts = lbSignPlane('🛟 Cankurtaran', '#e8434f', 2.8, 0.6); ts.position.set(0, 3.5, 0.95); t.add(ts); t.position.set(27, 0, 46); sc.add(t); trees().push([27, 46, 1.6]); }
+  // rocks, shells, starfish and dune grass
+  for (const [rx, rz, rs] of [[-36, 56, 1.4], [-34.4, 57.5, 0.9], [-37, 58, 0.7], [33, 57, 1.1], [34.5, 55.8, 0.7]]) { const r = lbM(new THREE.SphereGeometry(rs, 8, 6), toon('#9aa3b0'), rx, rs * 0.55, rz); r.scale.set(1.2, 0.8, 1); r.rotation.y = rnd() * 3; sc.add(r); trees().push([rx, rz, rs * 0.9]); }
+  const star = new THREE.Shape(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr2 = i % 2 ? 0.1 : 0.3; i ? star.lineTo(Math.cos(a) * rr2, Math.sin(a) * rr2) : star.moveTo(Math.cos(a) * rr2, Math.sin(a) * rr2); } star.closePath();
+  for (let i = 0; i < 16; i++) { const x = -34 + rnd() * 68, z = 36 + rnd() * 17; if (Math.abs(x) < 3 && z < 36) continue; const sf = new THREE.Mesh(new THREE.ShapeGeometry(star), new THREE.MeshToonMaterial({ color: ['#ff8a3d', '#ff6fb5', '#ffb36b'][i % 3], gradientMap: lbGrad, side: THREE.DoubleSide })); sf.rotation.x = -Math.PI / 2; sf.rotation.z = rnd() * 6; sf.position.set(x, 0.06, z); sc.add(sf); }
+  for (let i = 0; i < 26; i++) { const x = -35 + rnd() * 70, z = 36 + rnd() * 17; const sh = lbM(new THREE.ConeGeometry(0.12, 0.2, 6), toon(['#ffd6e0', '#fff1d0', '#e8c7ff'][i % 3]), x, 0.1, z); sh.rotation.z = Math.PI / 2; sh.rotation.y = rnd() * 6; sc.add(sh); }
+  for (let i = 0; i < 20; i++) { const x = (i % 2 ? 1 : -1) * (6 + rnd() * 30), z = 32.4 + rnd() * 1.6, g = new THREE.Group(); for (let k = 0; k < 5; k++) { const bl = lbM(new THREE.ConeGeometry(0.08, 0.9 + rnd() * 0.5, 4), toon(['#7fae4f', '#9bc25a', '#6a9a45'][k % 3]), (k - 2) * 0.1, 0.5, 0); bl.rotation.z = (k - 2) * 0.22; g.add(bl); } g.position.set(x, 0, z); sc.add(g); }
+  // seagulls
+  LB.gulls = []; for (let i = 0; i < 4; i++) { const g = new THREE.Group(), w = toon('#ffffff'); const bd = lbM(new THREE.SphereGeometry(0.35, 10, 8), w, 0, 0, 0); bd.scale.set(0.8, 0.6, 1.8); g.add(bd); g.add(lbM(new THREE.SphereGeometry(0.2, 8, 6), w, 0, 0.1, 0.6)); const bk = lbM(new THREE.ConeGeometry(0.06, 0.22, 5), toon('#ff9f1c'), 0, 0.08, 0.85); bk.rotation.x = Math.PI / 2; g.add(bk); g.userData.wings = [-1, 1].map(sd2 => { const wg = lbM(new THREE.SphereGeometry(0.5, 8, 6), toon(i % 2 ? '#f0f4f8' : '#ffffff'), sd2 * 0.55, 0.05, 0); wg.scale.set(1.5, 0.08, 0.5); g.add(wg); return wg; }); g.userData.r = 18 + i * 7; g.userData.sp = 0.22 + i * 0.03; g.userData.ph = i * 1.7; g.userData.h = 13 + i * 2; sc.add(g); LB.gulls.push(g); }
+}
+function lbBeachAnim() {
+  for (const f of LB.foams || []) { f.position.z = f.userData.base + Math.sin(T * 1.2 + f.userData.ph) * 0.45; f.material.opacity = 0.25 + Math.sin(T * 2 + f.userData.ph) * 0.2; }
+  for (const b of LB.boats || []) { b.position.y = b.userData.y0 + Math.sin(T * 1.3 + b.userData.ph) * 0.1; b.rotation.z = Math.sin(T * 1.1 + b.userData.ph) * 0.04; }
+  for (const g of LB.gulls || []) { const a = T * g.userData.sp + g.userData.ph; g.position.set(Math.cos(a) * g.userData.r, g.userData.h + Math.sin(T * 0.8 + g.userData.ph) * 0.8, 78 + Math.sin(a) * g.userData.r * 0.7); g.rotation.y = -a + Math.PI; g.userData.wings.forEach((w, i2) => { w.rotation.z = (i2 ? -1 : 1) * Math.sin(T * 8 + g.userData.ph) * 0.5; }); }
+}
+// distance culling: each far zone is only shown when the player is near it
+function lbCullSetup() {
+  const sc = LB.scene;
+  const zs = [...ZONES.map(q => ({ x: q[0], z: q[1], r: q[2] + 4, vis: q[2] + 26, objs: [] })), ...LB.places.filter(p => p.R).map(p => ({ x: p.pos.x, z: p.pos.z, r: 11, vis: 42, objs: [] }))];
+  for (const o of sc.children) {
+    if (o.isInstancedMesh || o.isLight || o === LB.sky || o === LB.stars || o === LB.moon || o === LB.fall || (o.position.x === 0 && o.position.z === 0)) continue;
+    for (const zn of zs) { const dx = o.position.x - zn.x, dz = o.position.z - zn.z; if (dx * dx + dz * dz < zn.r * zn.r) { zn.objs.push(o); break; } }
+  }
+  LB.cull = zs;
+}
+function lbCullUpdate(dt) {
+  if (!LB.me || !LB.scene || !LB.places) return;
+  if (!LB.cull) { lbCullSetup(); LB.cullT = 0; }
+  LB.cullT -= dt; if (LB.cullT > 0) return; LB.cullT = 0.3;
+  const m = LB.me.position, town = LB.where === 'town';
+  for (const zn of LB.cull) { const vis = !town ? true : Math.hypot(m.x - zn.x, m.z - zn.z) < zn.vis; if (zn.on !== vis) { zn.on = vis; for (const o of zn.objs) o.visible = vis; } }
+}
 function lbBuildBeach() {
   const sc = LB.scene;
   const path = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 18), toon('#f3c6da')); path.rotation.x = -Math.PI / 2; path.position.set(0, 0.025, 26); path.receiveShadow = true; sc.add(path);
@@ -6350,6 +6421,7 @@ function lbBuildBeach() {
   sc.add(lbM(new THREE.CylinderGeometry(0.1, 0.1, 3, 8), toon('#c98b5a'), -4.6, 1.5, 30));
   const sign = lbSignPlane('🏖️ YV Plajı', '#1fc7c7', 4, 0.8); sign.position.set(-4.6, 3.1, 29.9); sign.rotation.y = Math.PI; sc.add(sign);
   const sign2 = lbSignPlane('🏖️ YV Plajı', '#1fc7c7', 4, 0.8); sign2.position.set(-4.6, 3.1, 30.1); sc.add(sign2);
+  lbBeachExtras(sc);
   LB.ripple = new THREE.Mesh(new THREE.RingGeometry(0.6, 0.85, 24), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0 })); LB.ripple.rotation.x = -Math.PI / 2; sc.add(LB.ripple);
 }
 // ---- 🌙 stars and moon ----
@@ -6383,7 +6455,7 @@ function lbDayNight(dt, inside) {
     const pa = LB.water.geometry.attributes.position;
     for (let i = 0; i < pa.count; i++) { const x = pa.getX(i), y = pa.getY(i); pa.setZ(i, Math.sin(x * 0.25 + T * 1.5) * 0.16 + Math.cos(y * 0.3 + T * 1.1) * 0.1); }
     pa.needsUpdate = true;
-    LB.foam.material.opacity = 0.45 + Math.sin(T * 2) * 0.25; LB.foam.position.z = 54.4 + Math.sin(T * 1.2) * 0.4;
+    LB.foam.material.opacity = 0.45 + Math.sin(T * 2) * 0.25; LB.foam.position.z = 54.4 + Math.sin(T * 1.2) * 0.4; lbBeachAnim();
     LB.ball.position.y = 0.45 + Math.abs(Math.sin(T * 2)) * 0.3; LB.ball.rotation.y += dt;
   }
 }
