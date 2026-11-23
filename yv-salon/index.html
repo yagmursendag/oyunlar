@@ -852,7 +852,7 @@ const inBowl = () => ((ptr.x - BOWL.x) / BOWL.rx) ** 2 + ((ptr.y - BOWL.y) / BOW
 function onDown() {
   if (scene === 'drawart') return daDown();
   if (scene === 'mynails') return mnDown();
-  if (scene === 'lobby') return lbDown();
+  if (scene === 'lobby') return LB.app === 'paint' ? 0 : lbDown();
   if (scene !== 'work' || ptr.x >= PANEL) return;
   const s = curStep();
   if (s === 'nails') { const n = nailAt(ptr.x, ptr.y); if (n) nailTool(n); }
@@ -863,9 +863,9 @@ function onDown() {
 cv.addEventListener('wheel', e => { if (scene === 'designer' && dMax > 0) { dScroll = clamp(dScroll + e.deltaY * 0.7, 0, dMax); e.preventDefault(); } }, { passive: false });
 function onMove() {
   if (scene === 'drawart') return daMove();
-  if (scene === 'lobby') return lbMove(); if (scene === 'work' && ptr.down && ptr.x < PANEL) work(Math.hypot(ptr.x - ptr.px, ptr.y - ptr.py)); }
+  if (scene === 'lobby') return LB.app === 'paint' ? 0 : lbMove(); if (scene === 'work' && ptr.down && ptr.x < PANEL) work(Math.hypot(ptr.x - ptr.px, ptr.y - ptr.py)); }
 function onUp() {
-  if (scene === 'lobby') return lbUp(); if (scene === 'work' && curStep() === 'stickers' && held && ptr.x < PANEL) placeSticker(true); }
+  if (scene === 'lobby') return LB.app === 'paint' ? 0 : lbUp(); if (scene === 'work' && curStep() === 'stickers' && held && ptr.x < PANEL) placeSticker(true); }
 
 function nailTool(n) {
   const t = tool;
@@ -7983,9 +7983,9 @@ function drawPianoApp() {
   btn(px + pw / 2 - 70, py + ph - 48, 140, 36, '', () => { LB.piano = false; }, { hidden: true });
 }
 // ---------- more phone apps: memory game, weather, drawing pad, calculator
-function phoneShell(title, sub, c0, c1) {
+function phoneShell(title, sub, c0, c1, noClose) {
   const px = 900, py = 44, pw = 310, ph = 636;
-  btn(0, 0, W, H, '', () => { LB.app = null; }, { hidden: true });
+  if (!noClose) btn(0, 0, W, H, '', () => { LB.app = null; }, { hidden: true });
   ctx.fillStyle = 'rgba(8,6,22,.5)'; ctx.fillRect(0, 0, W, H);
   ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = 36; ctx.fillStyle = '#12111a'; rr(px, py, pw, ph, 46); ctx.fill(); ctx.restore();
   ctx.strokeStyle = '#3d3a55'; ctx.lineWidth = 3; rr(px, py, pw, ph, 46); ctx.stroke();
@@ -8018,12 +8018,11 @@ function drawWeatherApp() {
 }
 const PAINT_COLS = ['#ff4f6b', '#ff9f43', '#ffd23f', '#4cd37b', '#2dc4d6', '#4a8cff', '#8b5cf6', '#ff6fb5', '#ffffff', '#2a1f2e'];
 function drawPaintApp() {
-  const P = phoneShell('🎨 Çizim', 'Parmağınla çiz!', '#3a1d62', '#1b1340'), cx = P.x + 22, cy = P.y + 118, cw = P.w - 44, ch = 330;
+  const P = phoneShell('🎨 Çizim', 'Parmağınla çiz!', '#3a1d62', '#1b1340', true), cx = P.x + 22, cy = P.y + 118, cw = P.w - 44, ch = 330;
   ctx.fillStyle = '#ffffff'; rr(cx, cy, cw, ch, 14); ctx.fill();
   ctx.save(); rr(cx, cy, cw, ch, 14); ctx.clip(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   for (const st of LB.paint || []) { ctx.strokeStyle = st.c; ctx.fillStyle = st.c; ctx.lineWidth = st.w; if (st.pts.length < 2) { circle(st.pts[0][0], st.pts[0][1], st.w / 2); continue; } ctx.beginPath(); ctx.moveTo(st.pts[0][0], st.pts[0][1]); for (const p of st.pts) ctx.lineTo(p[0], p[1]); ctx.stroke(); }
   ctx.restore();
-  btn(cx, cy, cw, ch, '', () => { }, { hidden: true });
   const inside = ptr.down && ptr.x > cx && ptr.x < cx + cw && ptr.y > cy && ptr.y < cy + ch;
   if (inside) { if (!LB.pCur) { LB.pCur = { c: LB.pCol || PAINT_COLS[0], w: LB.pW || 8, pts: [] }; (LB.paint = LB.paint || []).push(LB.pCur); } LB.pCur.pts.push([ptr.x, ptr.y]); } else LB.pCur = null;
   PAINT_COLS.forEach((c, i) => { const x = cx + 14 + i * 26.5, y = cy + ch + 28, on = (LB.pCol || PAINT_COLS[0]) === c; ctx.fillStyle = c; circle(x, y, on ? 13 : 10); if (on) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, 15, 0, Math.PI * 2); ctx.stroke(); } btn(x - 13, y - 16, 26, 32, '', () => { LB.pCol = c; }, { hidden: true }); });
