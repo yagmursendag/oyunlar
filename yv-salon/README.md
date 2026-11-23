@@ -147,3 +147,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v138 | versions/v138-cizim-paylas.html | Çizimleri paylaşma: Çizim uygulamasında Paylaş, telefonda Galeri (herkesin son çizimi); yeni Firebase kuralı gerekir (drawings) |
 | v139 | versions/v139-yorumlar.html | Serbest çizimli dövme, müşteri memnuniyet barı (yıldızlı yorum + 5 yıldızda 3 TL bahşiş), telefonda Yorumlar uygulaması, kız karakterlerde daha çok detay (toka, kolye, fırfır, kuşak, dantel) |
 | v140 | versions/v140-sac-kolay.html | Saç şekillendirme çok kolaylaştı: maşa/düzleştirici geniş alanı aynı anda etkiler, daha hızlı, tutamların %88'i yeter |
+| v141 | versions/v141-sac-gercekci.html | Saçlar daha gerçekçi: ince tel tel saç çizgileri, tutam başına renk farkı, yumuşak parlama, kalın kontur kalktı (2B karakterler) |
