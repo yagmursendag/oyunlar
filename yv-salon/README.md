@@ -149,3 +149,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v140 | versions/v140-sac-kolay.html | Saç şekillendirme çok kolaylaştı: maşa/düzleştirici geniş alanı aynı anda etkiler, daha hızlı, tutamların %88'i yeter |
 | v141 | versions/v141-sac-gercekci.html | Saçlar daha gerçekçi: ince tel tel saç çizgileri, tutam başına renk farkı, yumuşak parlama, kalın kontur kalktı (2B karakterler) |
 | v142 | versions/v142-sac-3b.html | Lobideki 3B karakterlerin saçı: daha çok ve daha ince tel, uzun saçta daha çok lüle, köklerde koyu ton, ikinci parlama |
+| v143 | versions/v143-sekilli-sac.html | Yeni şekilli saç modelleri (at kuyruğu, uzun örgü, küt saç, tavşan kulağı); erkek müşterilerde tırnak kısa, küt/yuvarlak, koyu renk, stickersiz |
