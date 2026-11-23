@@ -818,9 +818,10 @@ cv.addEventListener('pointerdown', e => {
   [ptr.x, ptr.y] = evPos(e); ptr.px = ptr.x; ptr.py = ptr.y; ptr.inside = true;
   const tb = tapBtn(); if (tb) { sfx('pop'); tb.onClick(); return; }
   ptr.down = true; onDown();
+  if (LB.app === 'paint' && ptr.x > 922 && ptr.x < 1188 && ptr.y > 162 && ptr.y < 492) { LB.pCur = { c: LB.pCol || PAINT_COLS[0], w: LB.pW || 8, pts: [[ptr.x, ptr.y]] }; (LB.paint = LB.paint || []).push(LB.pCur); }
 });
-cv.addEventListener('pointermove', e => { if (joy && e.pointerId === joy.id) { const [x, y] = evPos(e); joyMove(x, y); return; } [ptr.x, ptr.y] = evPos(e); ptr.inside = true; onMove(); ptr.px = ptr.x; ptr.py = ptr.y; });
-cv.addEventListener('pointerup', e => { if (joy && e.pointerId === joy.id) { joy = null; return; } if (ptr.down) onUp(); ptr.down = false; });
+cv.addEventListener('pointermove', e => { if (joy && e.pointerId === joy.id) { const [x, y] = evPos(e); joyMove(x, y); return; } if (LB.app === 'paint' && ptr.down && LB.pCur) { const cs = e.getCoalescedEvents ? e.getCoalescedEvents() : []; for (const ce of (cs.length ? cs : [e])) { const [qx, qy] = evPos(ce); LB.pCur.pts.push([qx, qy]); } } [ptr.x, ptr.y] = evPos(e); ptr.inside = true; onMove(); ptr.px = ptr.x; ptr.py = ptr.y; });
+cv.addEventListener('pointerup', e => { if (joy && e.pointerId === joy.id) { joy = null; return; } if (ptr.down) onUp(); ptr.down = false; LB.pCur = null; });
 cv.addEventListener('pointercancel', e => { if (joy && e.pointerId === joy.id) { joy = null; return; } ptr.down = false; });
 cv.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') ptr.inside = false; });
 cv.addEventListener('contextmenu', e => e.preventDefault());
@@ -8021,10 +8022,10 @@ function drawPaintApp() {
   const P = phoneShell('🎨 Çizim', 'Parmağınla çiz!', '#3a1d62', '#1b1340', true), cx = P.x + 22, cy = P.y + 118, cw = P.w - 44, ch = 330;
   ctx.fillStyle = '#ffffff'; rr(cx, cy, cw, ch, 14); ctx.fill();
   ctx.save(); rr(cx, cy, cw, ch, 14); ctx.clip(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  for (const st of LB.paint || []) { ctx.strokeStyle = st.c; ctx.fillStyle = st.c; ctx.lineWidth = st.w; if (st.pts.length < 2) { circle(st.pts[0][0], st.pts[0][1], st.w / 2); continue; } ctx.beginPath(); ctx.moveTo(st.pts[0][0], st.pts[0][1]); for (const p of st.pts) ctx.lineTo(p[0], p[1]); ctx.stroke(); }
+  for (const st of LB.paint || []) { ctx.strokeStyle = st.c; ctx.fillStyle = st.c; ctx.lineWidth = st.w; if (st.pts.length < 2) { circle(st.pts[0][0], st.pts[0][1], st.w / 2); continue; } const q = st.pts; ctx.beginPath(); ctx.moveTo(q[0][0], q[0][1]); for (let i = 1; i < q.length - 1; i++) ctx.quadraticCurveTo(q[i][0], q[i][1], (q[i][0] + q[i + 1][0]) / 2, (q[i][1] + q[i + 1][1]) / 2); ctx.lineTo(q[q.length - 1][0], q[q.length - 1][1]); ctx.stroke(); }
   ctx.restore();
   const inside = ptr.down && ptr.x > cx && ptr.x < cx + cw && ptr.y > cy && ptr.y < cy + ch;
-  if (inside) { if (!LB.pCur) { LB.pCur = { c: LB.pCol || PAINT_COLS[0], w: LB.pW || 8, pts: [] }; (LB.paint = LB.paint || []).push(LB.pCur); } LB.pCur.pts.push([ptr.x, ptr.y]); } else LB.pCur = null;
+  if (inside) { if (!LB.pCur) { LB.pCur = { c: LB.pCol || PAINT_COLS[0], w: LB.pW || 8, pts: [] }; (LB.paint = LB.paint || []).push(LB.pCur); } const lp0 = LB.pCur.pts[LB.pCur.pts.length - 1]; if (!lp0 || lp0[0] !== ptr.x || lp0[1] !== ptr.y) LB.pCur.pts.push([ptr.x, ptr.y]); } else LB.pCur = null;
   PAINT_COLS.forEach((c, i) => { const x = cx + 14 + i * 26.5, y = cy + ch + 28, on = (LB.pCol || PAINT_COLS[0]) === c; ctx.fillStyle = c; circle(x, y, on ? 13 : 10); if (on) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, 15, 0, Math.PI * 2); ctx.stroke(); } btn(x - 13, y - 16, 26, 32, '', () => { LB.pCol = c; }, { hidden: true }); });
   [[4, 'ince'], [8, 'orta'], [16, 'kalın']].forEach(([w, n], i) => { const x = cx + i * 74, y = cy + ch + 62, on = (LB.pW || 8) === w; ctx.fillStyle = on ? '#ffffff' : 'rgba(255,255,255,.18)'; rr(x, y, 66, 32, 16); ctx.fill(); text(n, x + 33, y + 22, 14, on ? '#3a1d62' : '#ffffff', 'center', 800); btn(x, y, 66, 32, '', () => { LB.pW = w; }, { hidden: true }); });
   ctx.fillStyle = '#ff6b6b'; rr(cx + 228, cy + ch + 62, 36, 32, 16); ctx.fill(); emoji('🗑️', cx + 246, cy + ch + 79, 18); btn(cx + 228, cy + ch + 62, 36, 32, '', () => { LB.paint = []; LB.pCur = null; sfx('pop'); }, { hidden: true });
