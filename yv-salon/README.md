@@ -142,3 +142,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v133 | versions/v133-beden-3b.html | Lobideki 3B karakterlerin bedeni detaylandı: kalça, uyluk, baldır, çorap, dirsek, bilek, yaka, düğme, cep, kemer tokası, dantelli etek, kuşak ve fiyonk |
 | v134 | versions/v134-sahil.html | Detaylı sahil: iskele, tekneler, plaj büfesi, cankurtaran kulesi, şezlonglar, kayalar, deniz yıldızları, martılar, köpüklü dalgalar; uzak yapılar yakına gidince görünür |
 | v135 | versions/v135-telefon-uygulamalari.html | Telefona yeni uygulamalar: Hafıza oyunu, Hava durumu, Çizim, Hesap makinesi (simgeler 4 sütun) |
+| v136 | versions/v136-cizim-duzelt.html | Telefondaki Çizim uygulaması düzeltildi (görünmez düğme çizimi engelliyordu); çizerken kamera dönmez |
