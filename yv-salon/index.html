@@ -8028,6 +8028,8 @@ function drawPaintApp() {
   if (inside) { if (!LB.pCur) { LB.pCur = { c: LB.pCol || PAINT_COLS[0], w: LB.pW || 8, pts: [] }; (LB.paint = LB.paint || []).push(LB.pCur); } const lp0 = LB.pCur.pts[LB.pCur.pts.length - 1]; if (!lp0 || lp0[0] !== ptr.x || lp0[1] !== ptr.y) LB.pCur.pts.push([ptr.x, ptr.y]); } else LB.pCur = null;
   PAINT_COLS.forEach((c, i) => { const x = cx + 14 + i * 26.5, y = cy + ch + 28, on = (LB.pCol || PAINT_COLS[0]) === c; ctx.fillStyle = c; circle(x, y, on ? 13 : 10); if (on) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, 15, 0, Math.PI * 2); ctx.stroke(); } btn(x - 13, y - 16, 26, 32, '', () => { LB.pCol = c; }, { hidden: true }); });
   [[4, 'ince'], [8, 'orta'], [16, 'kalın']].forEach(([w, n], i) => { const x = cx + i * 74, y = cy + ch + 62, on = (LB.pW || 8) === w; ctx.fillStyle = on ? '#ffffff' : 'rgba(255,255,255,.18)'; rr(x, y, 66, 32, 16); ctx.fill(); text(n, x + 33, y + 22, 14, on ? '#3a1d62' : '#ffffff', 'center', 800); btn(x, y, 66, 32, '', () => { LB.pW = w; }, { hidden: true }); });
+  ctx.fillStyle = '#27b36a'; rr(cx, cy + ch + 100, 128, 32, 16); ctx.fill(); text('📤 Paylaş', cx + 64, cy + ch + 122, 15, '#ffffff', 'center', 800); btn(cx, cy + ch + 100, 128, 32, '', paintShare, { hidden: true });
+  ctx.fillStyle = '#8b6cff'; rr(cx + 138, cy + ch + 100, 128, 32, 16); ctx.fill(); text('🖼️ Galeri', cx + 202, cy + ch + 122, 15, '#ffffff', 'center', 800); btn(cx + 138, cy + ch + 100, 128, 32, '', () => { LB.app = 'gallery'; galLoad(); }, { hidden: true });
   ctx.fillStyle = '#ff6b6b'; rr(cx + 228, cy + ch + 62, 36, 32, 16); ctx.fill(); emoji('🗑️', cx + 246, cy + ch + 79, 18); btn(cx + 228, cy + ch + 62, 36, 32, '', () => { LB.paint = []; LB.pCur = null; sfx('pop'); }, { hidden: true });
 }
 function calcDo(a, op, b) { let r = op === '+' ? a + b : op === '−' ? a - b : op === '×' ? a * b : b === 0 ? NaN : a / b; if (!isFinite(r)) return 'Hata'; r = Math.round(r * 1e6) / 1e6; return String(r).slice(0, 10); }
@@ -8050,7 +8052,58 @@ function drawCalcApp() {
     text(k, x + 29, y + 38, 28, '#ffffff', 'center', 800); btn(x, y, 58, 56, '', () => calcPress(k), { hidden: true });
   }));
 }
-function drawPhoneApp() { const a = LB.app; if (a === 'memory') drawMemoryApp(); else if (a === 'weather') drawWeatherApp(); else if (a === 'paint') drawPaintApp(); else if (a === 'calc') drawCalcApp(); else LB.app = null; }
+// ---------- 🖼️ shared drawings: everybody can see the last drawing of every player (one per player, stored in drawings/<uid>)
+function paintPack() {
+  const cx = 922, cy = 162, sts = (LB.paint || []).filter(st => st.pts.length); if (!sts.length) return '';
+  const total = sts.reduce((a, st) => a + st.pts.length, 0); let k = Math.max(1, Math.ceil(total / 330)), str = '';
+  for (let guard = 0; guard < 60; guard++, k++) {
+    str = sts.map(st => { const ci = Math.max(0, PAINT_COLS.indexOf(st.c)), wi = st.w <= 4 ? 0 : st.w <= 8 ? 1 : 2; return ci + '' + wi + ':' + st.pts.filter((_, i) => i % k === 0 || i === st.pts.length - 1).map(q => Math.max(0, Math.min(133, Math.round((q[0] - cx) / 2))) + ',' + Math.max(0, Math.min(165, Math.round((q[1] - cy) / 2)))).join(';'); }).join('|');
+    if (str.length <= 3400) break;
+  }
+  return str.slice(0, 3500);
+}
+function paintUnpack(str) {
+  return String(str).split('|').slice(0, 200).map(seg => { const i = seg.indexOf(':'); if (i !== 2) return null; const h = seg.slice(0, 2), c = PAINT_COLS[+h[0]] || '#2a1f2e', w = [4, 8, 16][+h[1]] || 8; const pts = seg.slice(3).split(';').slice(0, 800).map(p => { const a = p.split(','); return [(+a[0]) * 2, (+a[1]) * 2]; }).filter(p => isFinite(p[0]) && isFinite(p[1])); return pts.length ? { c, w, pts } : null; }).filter(Boolean);
+}
+function paintDrawStrokes(strokes, x, y, w, h) {
+  const sc = w / 266; ctx.save(); ctx.fillStyle = '#ffffff'; rr(x, y, w, h, 12); ctx.fill(); rr(x, y, w, h, 12); ctx.clip(); ctx.translate(x, y); ctx.scale(sc, sc); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (const st of strokes) { ctx.strokeStyle = st.c; ctx.fillStyle = st.c; ctx.lineWidth = st.w; const q = st.pts; if (q.length < 2) { circle(q[0][0], q[0][1], st.w / 2); continue; } ctx.beginPath(); ctx.moveTo(q[0][0], q[0][1]); for (let i = 1; i < q.length - 1; i++) ctx.quadraticCurveTo(q[i][0], q[i][1], (q[i][0] + q[i + 1][0]) / 2, (q[i][1] + q[i + 1][1]) / 2); ctx.lineTo(q[q.length - 1][0], q[q.length - 1][1]); ctx.stroke(); }
+  ctx.restore();
+}
+function paintShare() {
+  const str = paintPack(); if (!str) { sfx('no'); return say('Önce bir şey çiz! 🎨'); }
+  try {
+    if (!mpCfg() || !MP.db || !MP.uid) { sfx('no'); return say('Paylaşmak için çevrimiçi olmalısın 🌐'); }
+    Promise.resolve(MP.db.ref('drawings/' + MP.uid).set({ n: String(profile.name || 'Oyuncu').slice(0, 20), d: str, t: MP.fb.database.ServerValue.TIMESTAMP })).then(() => { sfx('done'); sparkle(640, 360, 24); say('🎨 Çizimin galeriye eklendi! Herkes görebilir'); LB.gal = null; }).catch(() => { sfx('no'); say('Paylaşılamadı 😕 Sunucu izni henüz açılmamış'); });
+  } catch (e) { say('Paylaşılamadı 😕'); }
+}
+function galLoad() {
+  const G = LB.gal = { list: null, loading: true, err: '', page: 0, sel: -1 };
+  try {
+    if (!mpCfg() || !MP.db) { G.err = 'Galeriyi görmek için çevrimiçi olmalısın 🌐'; G.loading = false; return; }
+    Promise.resolve(MP.db.ref('drawings').orderByChild('t').limitToLast(24).once('value')).then(sn => {
+      const arr = []; sn.forEach(c => { const v = c.val(); if (v && typeof v.d === 'string' && v.d.length < 4000) arr.push({ uid: c.key, n: String(v.n || 'Oyuncu').slice(0, 20), t: +v.t || 0, s: paintUnpack(v.d) }); });
+      arr.sort((a, b) => b.t - a.t); G.list = arr; G.loading = false;
+    }).catch(() => { G.err = 'Galeri açılamadı 😕 (sunucu izni henüz açılmamış olabilir)'; G.loading = false; });
+  } catch (e) { G.err = 'Galeri açılamadı 😕'; G.loading = false; }
+}
+function drawGalleryApp() {
+  const P = phoneShell('🖼️ Galeri', 'Herkesin son çizimi', '#1b2a5a', '#2d1f5e'); if (!LB.gal) galLoad(); const G = LB.gal;
+  if (G.loading) { text('Yükleniyor… ⏳', P.x + P.w / 2, P.y + 300, 20, '#ffffff', 'center', 800); return; }
+  if (G.err) { fitCenter(G.err, P.x + P.w / 2, P.y + 290, 15, 250, '#ffd6d6', 700); ctx.fillStyle = '#27b36a'; rr(P.x + 90, P.y + 340, 130, 40, 20); ctx.fill(); text('Tekrar dene', P.x + 155, P.y + 366, 15, '#ffffff', 'center', 800); btn(P.x + 90, P.y + 340, 130, 40, '', galLoad, { hidden: true }); return; }
+  const L = G.list || [];
+  if (!L.length) { fitCenter('Henüz çizim yok. İlk paylaşan sen ol! 🎨', P.x + P.w / 2, P.y + 300, 16, 250, '#ffffff', 700); return; }
+  if (G.sel >= 0 && L[G.sel]) {
+    const d = L[G.sel]; paintDrawStrokes(d.s, P.x + 22, P.y + 128, 266, 330); text(d.n, P.x + P.w / 2, P.y + 488, 18, '#ffe9a8', 'center', 800);
+    ctx.fillStyle = 'rgba(255,255,255,.2)'; rr(P.x + 40, P.y + 520, 100, 36, 18); ctx.fill(); text('‹ Liste', P.x + 90, P.y + 544, 15, '#ffffff', 'center', 800); btn(P.x + 40, P.y + 520, 100, 36, '', () => { G.sel = -1; }, { hidden: true });
+    if (rich()) { ctx.fillStyle = '#ff6b6b'; rr(P.x + 170, P.y + 520, 100, 36, 18); ctx.fill(); text('🗑️ Sil', P.x + 220, P.y + 544, 15, '#ffffff', 'center', 800); btn(P.x + 170, P.y + 520, 100, 36, '', () => { try { Promise.resolve(MP.db.ref('drawings/' + d.uid).remove()).then(() => { say('Çizim silindi'); galLoad(); }).catch(() => say('Silinemedi')); } catch (e) { } }, { hidden: true }); }
+    return;
+  }
+  const per = 4, pages = Math.ceil(L.length / per); G.page = Math.min(G.page, pages - 1);
+  L.slice(G.page * per, G.page * per + per).forEach((d, i) => { const col = i % 2, row = Math.floor(i / 2), x = P.x + 22 + col * 138, y = P.y + 126 + row * 204; paintDrawStrokes(d.s, x, y, 124, 155); fitCenter(d.n, x + 62, y + 176, 13, 120, '#ffffff', 800); btn(x, y, 124, 160, '', () => { G.sel = G.page * per + i; sfx('pop'); }, { hidden: true }); });
+  if (pages > 1) { text((G.page + 1) + ' / ' + pages, P.x + P.w / 2, P.y + 560, 15, '#ffffff', 'center', 800); ctx.fillStyle = 'rgba(255,255,255,.2)'; rr(P.x + 40, P.y + 540, 50, 28, 14); ctx.fill(); rr(P.x + 220, P.y + 540, 50, 28, 14); ctx.fill(); text('◀', P.x + 65, P.y + 560, 14, '#ffffff', 'center', 800); text('▶', P.x + 245, P.y + 560, 14, '#ffffff', 'center', 800); btn(P.x + 40, P.y + 540, 50, 28, '', () => { G.page = (G.page + pages - 1) % pages; }, { hidden: true }); btn(P.x + 220, P.y + 540, 50, 28, '', () => { G.page = (G.page + 1) % pages; }, { hidden: true }); }
+}
+function drawPhoneApp() { const a = LB.app; if (a === 'memory') drawMemoryApp(); else if (a === 'weather') drawWeatherApp(); else if (a === 'paint') drawPaintApp(); else if (a === 'calc') drawCalcApp(); else if (a === 'gallery') drawGalleryApp(); else LB.app = null; }
 function drawPhone() {
   if (scene !== 'lobby' || !LB.me || LB.ride || LB.edit || CK || FG || SCH || LB.sleepT > 0) { LB.phone = false; LB.piano = false; LB.app = null; return; }
   if (LB.piano) { drawPianoApp(); return; }
@@ -8089,6 +8142,7 @@ function drawPhone() {
     ['🌤️', 'Hava', () => { LB.app = 'weather'; }, '#5ac8ff', '#2d7ff9', true],
     ['🎨', 'Çizim', () => { LB.app = 'paint'; }, '#ff8fb8', '#e0558a', true],
     ['🧮', 'Hesap', () => { LB.app = 'calc'; }, '#ffb347', '#e0662f', true],
+    ['🖼️', 'Galeri', () => { LB.app = 'gallery'; galLoad(); }, '#8fd3fe', '#4a8cff', true],
     ['🎒', 'Çanta', () => { LB.bag = !LB.bag; }, '#7ab8ff', '#4a7fe0', true],
     ['👭', 'Arkadaş', showFriends, '#ff8fb8', '#e0558a', true],
     ['⚙️', 'Ayarlar', showSettings, '#b8c0d0', '#7d8aa6', true],
