@@ -639,7 +639,7 @@ function missing(c) {
 function startWork() {
   const m = missing(cust);
   if (m.length) { sfx('no'); return say(`Önce mağazadan al: ${m.join(', ')} 🛍️`); }
-  go('work'); stepIdx = 0; startStep();
+  go('work'); stepIdx = 0; startStep(); cust.sat = 100;
 }
 function reject() { cust.rejected = true; go('leave'); sfx('no'); }
 function startStep() { stepDone = false; held = null; tool = curStep() === 'makeup' ? cust.req.makeup[0] : curStep() === 'jewel' ? cust.req.jewels[0] : DEFAULT_TOOL[curStep()]; }
@@ -1046,7 +1046,7 @@ function update(dt) {
     if (bill && (bill.t += dt * 1.2) >= 1 && !bill.done) {
       const tip = has('decor', 'tipjar') ? 2 + Math.floor(Math.random() * 4) : 0;
       if (tip) part({ x: 1040, y: 190, vy: -40, life: 1.8, kind: 'txt', t: `💝 Bahşiş +${tip} TL`, col: '#d6337f' });
-      bill.done = true; money += cust.price + tip; served++; questEvent('serve'); questEvent('serve5'); usePolish(); save(); sfx('coin'); sparkle(1158, 36, 16); leaveT = 1;
+      bill.done = true; const stars = satStars(cust), sb = stars >= 5 ? 3 : 0; money += cust.price + tip + sb; served++; addReview(cust, stars); part({ x: 1040, y: 150, vy: -40, life: 2.4, kind: 'txt', t: '⭐'.repeat(stars) + ' yorum yazdı', col: '#b8860b' }); questEvent('serve'); questEvent('serve5'); usePolish(); save(); sfx('coin'); sparkle(1158, 36, 16); leaveT = 1;
       part({ x: 1158, y: 110, vy: -40, life: 1.4, kind: 'txt', t: '+' + cust.price + ' TL', col: '#23884f' });
     }
     if (leaveT > 0 && (leaveT -= dt) <= 0) scene = 'leave';
@@ -1054,6 +1054,7 @@ function update(dt) {
 }
 function workUpdate(dt) {
   const s = curStep(), c = cust, F = frontStrands(), hold = ptr.down && ptr.x < PANEL;
+  c.sat = Math.max(8, (c.sat == null ? 100 : c.sat) - dt * 0.55); // patience runs out slowly
   if (!HAND_STEPS.has(s)) for (const st of F) if (st.wet > 0.3 && Math.random() < dt * 0.8 * st.wet) {
     const p = strandPts(st).at(-1);
     part({ x: FX + p[0] * FS, y: FY + p[1] * FS + 8, vy: 40, g: 900, life: 0.7, kind: 'drop', r: 5 });
@@ -1086,7 +1087,7 @@ function workUpdate(dt) {
       sfx('steam', 260);
     }
   }
-  if (!stepDone && isDone(s)) { stepDone = true; finishStep(s); sfx('done'); confetti(); hop = 1; react = { text: pick(REACTS), t: 3.5 }; }
+  if (!stepDone && isDone(s)) { stepDone = true; finishStep(s); cust.sat = Math.min(100, (cust.sat == null ? 100 : cust.sat) + 10); sfx('done'); confetti(); hop = 1; react = { text: pick(REACTS), t: 3.5 }; }
 }
 
 // ---------- stickers ----------
@@ -1491,7 +1492,7 @@ function drawFace(c, mood) {
   if (mk && mk.colorliner) [-1, 1].forEach((s, i) => { const a = mk.colorliner[i]; if (a > 0) { const ex = s * 34, ey = 6; ctx.save(); ctx.globalAlpha = Math.min(1, 0.4 + a); ctx.strokeStyle = '#2f9bff'; ctx.lineCap = 'round'; ctx.lineWidth = 4.2; ctx.beginPath(); ctx.ellipse(ex, ey, 16.5, 19.5, 0, Math.PI * 1.06, Math.PI * 1.94); ctx.stroke(); ctx.fillStyle = '#2f9bff'; ctx.beginPath(); ctx.moveTo(ex + s * 14, ey - 11); ctx.quadraticCurveTo(ex + s * 24, ey - 15, ex + s * 31, ey - 24 * (0.5 + 0.5 * a)); ctx.quadraticCurveTo(ex + s * 22, ey - 12, ex + s * 12, ey - 8); ctx.closePath(); ctx.fill(); ctx.strokeStyle = '#1fc7c7'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.ellipse(ex, ey - 1, 18.5, 21.5, 0, Math.PI * 1.2, Math.PI * 1.8); ctx.stroke(); ctx.restore(); } });
   if (mk && mk.eyeglow) [-1, 1].forEach((s, i) => { const a = mk.eyeglow[i]; if (a > 0) { const ex = s * 34, ey = 6; ctx.save(); for (let k = 0; k < 10; k++) { const an = Math.PI * (1.08 + k * 0.09), rr0 = 21 + (k % 3) * 2.5; ctx.globalAlpha = a * (0.55 + 0.45 * Math.sin(T * 5 + k * 1.3 + i)); ctx.fillStyle = k % 2 ? '#ffd23f' : '#ff9ccf'; circle(ex + Math.cos(an) * rr0, ey + Math.sin(an) * rr0 * 1.05, 1.5 + (k % 3) * 0.6); } ctx.fillStyle = '#ffffff'; for (let k = 0; k < 3; k++) { ctx.globalAlpha = a * (0.5 + 0.5 * Math.sin(T * 6 + k * 2 + i)); star4(ex + s * (k * 9 - 6), ey - 24 - (k % 2) * 4, 3.2); } ctx.restore(); } });
   if (mk && mk.cheekstar) [-1, 1].forEach((s, i) => { const a = mk.cheekstar[i]; if (a > 0) { ctx.save(); ctx.translate(s * 54, 33); ctx.scale(0.4 + 0.6 * a, 0.4 + 0.6 * a); ctx.rotate(s * 0.2); ctx.fillStyle = '#ffd23f'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.beginPath(); for (let k = 0; k < 10; k++) { const aa = -Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? 5.5 : 12.5; ctx.lineTo(Math.cos(aa) * r, Math.sin(aa) * r); } ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.fillStyle = 'rgba(255,255,255,.75)'; circle(-3, -3, 1.8); ctx.restore(); ctx.fillStyle = '#ff9ccf'; ctx.globalAlpha = a; star4(s * 70, 20, 3.5); ctx.globalAlpha = 1; } });
-  if (mk && mk.tattoo) [-1, 1].forEach((s, i) => { const a = mk.tattoo[i]; if (a > 0 && c.fromLook && tatG()) drawTat2D(s, a); else if (a > 0) { ctx.save(); ctx.translate(s * 58, 30); ctx.scale(0.4 + 0.6 * a, 0.4 + 0.6 * a); ctx.rotate(s * 0.25); ctx.globalAlpha = Math.min(1, 0.45 + a); ctx.strokeStyle = '#3a2a6a'; ctx.lineWidth = 1.4; ctx.fillStyle = '#8b5cf6'; ell(-7, -5, 7, 9, -0.5); ctx.stroke(); ell(7, -5, 7, 9, 0.5); ctx.stroke(); ctx.fillStyle = '#5ac8ff'; ell(-5, 6, 5, 6.5, 0.5); ctx.stroke(); ell(5, 6, 5, 6.5, -0.5); ctx.stroke(); ctx.fillStyle = '#2a1f2e'; rr(-1.2, -9, 2.4, 20, 1.2); ctx.fill(); ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 1; line(-1, -9, -5, -15); line(1, -9, 5, -15); ctx.restore(); } });
+  if (mk && mk.tattoo) [-1, 1].forEach((s, i) => { const a = mk.tattoo[i]; if (a > 0 && c.fromLook && tatOn()) drawTat2D(s, a); else if (a > 0) { ctx.save(); ctx.translate(s * 58, 30); ctx.scale(0.4 + 0.6 * a, 0.4 + 0.6 * a); ctx.rotate(s * 0.25); ctx.globalAlpha = Math.min(1, 0.45 + a); ctx.strokeStyle = '#3a2a6a'; ctx.lineWidth = 1.4; ctx.fillStyle = '#8b5cf6'; ell(-7, -5, 7, 9, -0.5); ctx.stroke(); ell(7, -5, 7, 9, 0.5); ctx.stroke(); ctx.fillStyle = '#5ac8ff'; ell(-5, 6, 5, 6.5, 0.5); ctx.stroke(); ell(5, 6, 5, 6.5, -0.5); ctx.stroke(); ctx.fillStyle = '#2a1f2e'; rr(-1.2, -9, 2.4, 20, 1.2); ctx.fill(); ctx.strokeStyle = '#2a1f2e'; ctx.lineWidth = 1; line(-1, -9, -5, -15); line(1, -9, 5, -15); ctx.restore(); } });
   // makeup batch 3: lip liner, forehead gem, whiskers, glitter drop, clown nose, temple stars
   if (mk && mk.lipliner) [-1, 1].forEach((s, i) => { const a = mk.lipliner[i]; if (a > 0) { ctx.save(); ctx.globalAlpha = Math.min(1, 0.4 + a); ctx.strokeStyle = '#a01040'; ctx.lineWidth = 2.4; ctx.lineCap = 'round'; ctx.beginPath(); ctx.ellipse(0, 48, 20, 9, 0, s > 0 ? -Math.PI / 2 : Math.PI / 2, s > 0 ? Math.PI / 2 : Math.PI * 1.5); ctx.stroke(); ctx.restore(); } });
   if (mk && mk.foreheadgem) { const a = Math.min(mk.foreheadgem[0], mk.foreheadgem[1]); if (a > 0) { ctx.save(); ctx.translate(0, -40); ctx.scale(0.4 + 0.6 * a, 0.4 + 0.6 * a); ctx.fillStyle = '#5ac8ff'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, -9); ctx.lineTo(7, 0); ctx.lineTo(0, 11); ctx.lineTo(-7, 0); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.beginPath(); ctx.moveTo(0, -7); ctx.lineTo(-4, 0); ctx.lineTo(0, 0); ctx.closePath(); ctx.fill(); ctx.restore(); } }
@@ -1636,37 +1637,48 @@ const ATL_LABELS = [['atl_kot', '🎽 Atlet+Kot'], ['atl_sort', '🎽 Atlet+Şor
 // your own temporary tattoo: a 10x10 pixel picture (digits 0-8 = colours), shown on the cheeks instead of the butterfly
 const TAT_COLS = ['', '#ff4f8b', '#8b5cf6', '#5ac8ff', '#ffd23f', '#2fd27a', '#ff8a3d', '#2a1f2e', '#ffffff'];
 const tatG = () => (profile && typeof profile.tat === 'string' && /^[0-8]{100}$/.test(profile.tat) && /[1-8]/.test(profile.tat)) ? profile.tat : null;
-let TAT_TEX = null;
+let TAT_TEX = null, TAT_IMG = null, TAT_IMG_SRC = null, TAT_VER = 0;
+function tatImg() {
+  const d = profile && profile.tatImg; if (typeof d !== 'string' || !d.startsWith('data:image/png;base64,') || d.length > 40000) return null;
+  if (TAT_IMG_SRC !== d) { TAT_IMG_SRC = d; TAT_IMG = null; const im = new Image(); im.onload = () => { const c = document.createElement('canvas'); c.width = c.height = 64; c.getContext('2d').drawImage(im, 0, 0, 64, 64); TAT_IMG = c; TAT_TEX = null; TAT_VER++; }; im.src = d; }
+  return TAT_IMG;
+}
+const tatOn = () => !!tatImg() || !!tatG();
 function drawTat2D(s, a) {
+  const im = tatImg(); if (im) { ctx.save(); ctx.translate(s * 58, 30); ctx.scale(0.4 + 0.6 * a, 0.4 + 0.6 * a); ctx.rotate(s * 0.2); ctx.globalAlpha = Math.min(1, 0.5 + a); ctx.drawImage(im, -14, -14, 28, 28); ctx.restore(); return; }
   const g = tatG(); ctx.save(); ctx.translate(s * 58, 30); ctx.scale(0.4 + 0.6 * a, 0.4 + 0.6 * a); ctx.rotate(s * 0.2); ctx.globalAlpha = Math.min(1, 0.5 + a);
   for (let i = 0; i < 100; i++) { const k = +g[i]; if (!k) continue; ctx.fillStyle = TAT_COLS[k]; ctx.fillRect(-13 + (i % 10) * 2.6, -13 + Math.floor(i / 10) * 2.6, 2.8, 2.8); }
   ctx.restore();
 }
 function tatTex() {
-  if (TAT_TEX) return TAT_TEX; const g = tatG();
+  if (TAT_TEX) return TAT_TEX; const im = tatImg(); if (im) { TAT_TEX = new THREE.CanvasTexture(im); return TAT_TEX; } const g = tatG();
   const c = document.createElement('canvas'); c.width = c.height = 80; const x = c.getContext('2d');
   for (let i = 0; i < 100; i++) { const k = +g[i]; if (!k) continue; x.fillStyle = TAT_COLS[k]; x.fillRect((i % 10) * 8, Math.floor(i / 10) * 8, 8, 8); }
   TAT_TEX = new THREE.CanvasTexture(c); TAT_TEX.magFilter = THREE.NearestFilter; return TAT_TEX;
 }
 function openTatEditor() {
-  let cur = 1, grid = tatG() || '0'.repeat(100); grid = grid.split('');
-  const cell = i => grid[i] === '0' ? '#ffffff' : TAT_COLS[+grid[i]];
-  openModal(`<h2>🎨 Dövmeni tasarla</h2><p>Bir renk seç, kutulara dokun ya da sürükle</p><div id="tpal" style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:6px 0"></div><div id="tgrid" style="display:grid;grid-template-columns:repeat(10,1fr);gap:2px;width:290px;margin:8px auto;touch-action:none;user-select:none"></div><button class="mb g" id="tsave">💾 Kaydet</button><button class="mb y" id="tclear">🧽 Temizle</button><button class="mb y" id="tbf">🦋 Kelebeğe dön</button><button class="mb s" id="tclose">Kapat</button>`);
-  const gr = $('tgrid'), pal = $('tpal');
-  const paint = i => { grid[i] = cur === 0 ? '0' : String(cur); gr.children[i].style.background = cell(i); };
-  for (let i = 0; i < 100; i++) { const d = document.createElement('div'); d.style.cssText = 'aspect-ratio:1;border:1px solid #ecc6dc;border-radius:3px;background:' + cell(i); d.dataset.i = i; gr.appendChild(d); }
-  let down = false; const at = e => { const t = document.elementFromPoint(e.clientX, e.clientY); if (t && t.parentNode === gr) paint(+t.dataset.i); };
-  gr.addEventListener('pointerdown', e => { down = true; at(e); e.preventDefault(); }); gr.addEventListener('pointermove', e => { if (down) at(e); }); window.addEventListener('pointerup', () => { down = false; });
-  const drawPal = () => { pal.innerHTML = ''; TAT_COLS.forEach((col, k) => { const b = document.createElement('div'); b.style.cssText = 'width:34px;height:34px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;border:' + (cur === k ? '4px solid #ff5fa2' : '2px solid #d8c6d2') + ';background:' + (col || '#ffffff'); if (!k) b.textContent = '🧽'; b.onclick = () => { cur = k; drawPal(); }; pal.appendChild(b); }); };
-  drawPal();
+  let col = PAINT_COLS[0], bw = 7, drawing = false, lx = 0, ly = 0;
+  openModal('<h2>🎨 Dövmeni çiz</h2><p>Parmağınla ya da fareyle serbest çiz</p><canvas id="tcv" width="290" height="290" style="display:block;margin:6px auto;border:3px solid #ecc6dc;border-radius:16px;touch-action:none;cursor:crosshair;background:repeating-conic-gradient(#ffffff 0% 25%, #f6eaf2 0% 50%) 50% / 24px 24px"></canvas><div id="tpal" style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:6px 0"></div><div id="tsz" style="margin:2px 0"></div><button class="mb g" id="tsave">💾 Kaydet</button><button class="mb y" id="tclear">🧽 Temizle</button><button class="mb y" id="tbf">🦋 Kelebeğe dön</button><button class="mb s" id="tclose">Kapat</button>');
+  const cvs = $('tcv'), g2 = cvs.getContext('2d'); g2.lineCap = 'round'; g2.lineJoin = 'round';
+  const im0 = tatImg(); if (im0) g2.drawImage(im0, 0, 0, 290, 290);
+  const pos = e => { const r = cvs.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * 290, (e.clientY - r.top) / r.height * 290]; };
+  const setPen = () => { g2.globalCompositeOperation = col === 'erase' ? 'destination-out' : 'source-over'; g2.strokeStyle = g2.fillStyle = col === 'erase' ? '#000000' : col; g2.lineWidth = bw; };
+  cvs.addEventListener('pointerdown', e => { drawing = true; try { cvs.setPointerCapture(e.pointerId); } catch (x) { } [lx, ly] = pos(e); setPen(); g2.beginPath(); g2.arc(lx, ly, bw / 2, 0, 7); g2.fill(); e.preventDefault(); });
+  cvs.addEventListener('pointermove', e => { if (!drawing) return; const cs = e.getCoalescedEvents ? e.getCoalescedEvents() : []; setPen(); for (const ce of (cs.length ? cs : [e])) { const [x, y] = pos(ce); g2.beginPath(); g2.moveTo(lx, ly); g2.lineTo(x, y); g2.stroke(); lx = x; ly = y; } });
+  window.addEventListener('pointerup', () => { drawing = false; });
+  const pal = $('tpal'), drawPal = () => { pal.innerHTML = ''; [...PAINT_COLS, 'erase'].forEach(c => { const b = document.createElement('div'); b.style.cssText = 'width:30px;height:30px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;border:' + (col === c ? '4px solid #ff5fa2' : '2px solid #d8c6d2') + ';background:' + (c === 'erase' ? '#ffffff' : c); if (c === 'erase') b.textContent = '🧽'; b.onclick = () => { col = c; drawPal(); }; pal.appendChild(b); }); }; drawPal();
+  const szb = $('tsz'), drawSz = () => { szb.innerHTML = ''; [[3, 'ince'], [7, 'orta'], [14, 'kalın']].forEach(([w, n]) => { const b = document.createElement('button'); b.className = 'mb ' + (bw === w ? 'g' : 's'); b.style.cssText = 'width:auto;display:inline-block;margin:2px;padding:6px 14px;font-size:15px'; b.textContent = n; b.onclick = () => { bw = w; drawSz(); }; szb.appendChild(b); }); }; drawSz();
   $('tsave').onclick = () => {
-    const str = grid.join(''); if (!/[1-8]/.test(str)) return say('Önce bir şeyler çiz! ✏️');
-    profile.tat = str; TAT_TEX = null; save(); sfx('done');
+    let o = document.createElement('canvas'), n = 64; o.width = o.height = n; o.getContext('2d').drawImage(cvs, 0, 0, n, n);
+    const d = o.getContext('2d').getImageData(0, 0, n, n).data; let any = false; for (let i = 3; i < d.length; i += 4) if (d[i] > 40) { any = true; break; }
+    if (!any) return say('Önce bir şeyler çiz! ✏️');
+    let url = o.toDataURL('image/png'); if (url.length > 38000) { n = 40; o = document.createElement('canvas'); o.width = o.height = n; o.getContext('2d').drawImage(cvs, 0, 0, n, n); url = o.toDataURL('image/png'); }
+    profile.tatImg = url; TAT_IMG = o; TAT_IMG_SRC = url; TAT_TEX = null; TAT_VER++; save(); sfx('done');
     if (designLook && !designLook.makeup.includes('tattoo')) setLook('makeup', [...designLook.makeup, 'tattoo']); else if (designLook) designChar = buildChar(designLook, profile.name);
     closeModal(); say('🎨 Dövmen hazır! Yanaklarında görünür');
   };
-  $('tclear').onclick = () => { grid = '0'.repeat(100).split(''); for (let i = 0; i < 100; i++) gr.children[i].style.background = '#ffffff'; };
-  $('tbf').onclick = () => { delete profile.tat; TAT_TEX = null; save(); if (designLook) designChar = buildChar(designLook, profile.name); closeModal(); say('🦋 Kelebek dövmeye döndün'); };
+  $('tclear').onclick = () => { g2.globalCompositeOperation = 'source-over'; g2.clearRect(0, 0, 290, 290); };
+  $('tbf').onclick = () => { delete profile.tat; delete profile.tatImg; TAT_IMG = null; TAT_IMG_SRC = null; TAT_TEX = null; TAT_VER++; save(); if (designLook) designChar = buildChar(designLook, profile.name); closeModal(); say('🦋 Kelebek dövmeye döndün'); };
   $('tclose').onclick = closeModal;
 }
 const NFD = {
@@ -1836,6 +1848,12 @@ function drawBody(c, walk, mood) {
     ctx.strokeStyle = 'rgba(0,0,0,.2)'; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(-34, 142); ctx.quadraticCurveTo(0, 170, 34, 142); ctx.stroke(); ctx.strokeStyle = 'rgba(255,255,255,.28)'; ctx.beginPath(); ctx.moveTo(-30, 147); ctx.quadraticCurveTo(0, 174, 30, 147); ctx.stroke();
     ctx.strokeStyle = 'rgba(0,0,0,.16)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-84, 196); ctx.quadraticCurveTo(-60, 230, -66, 280); ctx.moveTo(84, 196); ctx.quadraticCurveTo(60, 230, 66, 280); ctx.stroke();
     ctx.fillStyle = 'rgba(255,255,255,.12)'; ell(-46, 220, 16, 62, 0.1);
+    if (c.girl && (O.shape === 'dress' || O.shape === 'gown' || O.shape === 'shirt')) {
+      ctx.fillStyle = 'rgba(255,255,255,.85)'; for (let k = -4; k <= 4; k++) circle(k * 8, 156 + Math.abs(k) * 1.5, 5);
+      ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(-bx * 0.7, by * 0.62); ctx.quadraticCurveTo(0, by * 0.62 + 10, bx * 0.7, by * 0.62); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.beginPath(); ctx.ellipse(-16, by * 0.62 + 6, 14, 8, -0.4, 0, 7); ctx.ellipse(16, by * 0.62 + 6, 14, 8, 0.4, 0, 7); ctx.fill(); circle(0, by * 0.62 + 6, 6);
+      ctx.fillStyle = 'rgba(255,255,255,.8)'; for (let k = -6; k <= 6; k++) circle(k * 19, by + 4 - Math.abs(k) * 0.8, 7);
+    }
     ctx.restore();
   }
   if (O.rainbow) {
@@ -3502,6 +3520,27 @@ function mkGuide() {
   const arr = tool === 'curler' ? m.lash : m[tool]; if (!arr || !MK_REG[tool] && tool !== 'curler' && tool !== 'mascara' && tool !== 'falselash') return;
   [-1, 1].forEach((sd, i) => { if (arr[i] >= 1) return; if (tool === 'curler' || tool === 'mascara' || tool === 'falselash') ring(sd * 34, 0, 26, 24); else { const [cx, cy, r] = MK_REG[tool](sd); ring(cx, cy, r, tool === 'foundation' || tool === 'spray' || tool === 'sunkiss' ? r * 1.7 : r * 0.8); } });
 }
+// customer satisfaction: starts full, slowly drops while you work, each finished step cheers them up; the stars become a review for the salon
+const REV = {
+  5: ['Harika bir salon! Çok memnun kaldım 😍', 'Çok hızlı ve çok güzel, teşekkürler!', 'Burası en iyi güzellik salonu ✨', 'Tırnaklarım ve saçım mükemmel oldu 💅', 'Herkese tavsiye ederim, bayıldım!'],
+  4: ['Güzel oldu, teşekkürler 😊', 'Biraz bekledim ama sonuç süper!', 'Tekrar gelmek isterim 🌸', 'Memnun kaldım, eline sağlık.'],
+  3: ['İdare eder, biraz yavaştı 😐', 'Fena değil ama daha hızlı olabilir.', 'Güzel ama çok bekledim.'],
+  2: ['Çok bekledim, pek memnun değilim 😕', 'Daha dikkatli olabilirlerdi.'],
+  1: ['Çok yavaştı, üzgünüm 😢', 'Bir daha gelmem galiba...']
+};
+const satStars = c => { const v = c.sat == null ? 80 : c.sat; return v >= 85 ? 5 : v >= 65 ? 4 : v >= 45 ? 3 : v >= 25 ? 2 : 1; };
+function addReview(c, stars) {
+  if (!profile) return; profile.reviews = profile.reviews || [];
+  profile.reviews.unshift({ n: String(c.name || 'Müşteri').slice(0, 16), s: stars, t: pick(REV[stars]), d: todayKey() }); profile.reviews.length = Math.min(profile.reviews.length, 40);
+}
+function drawSatBar() {
+  if (!cust) return; const v = cust.sat == null ? 100 : cust.sat, x = 16, y = H - 58, w = 230;
+  ctx.fillStyle = 'rgba(255,255,255,.92)'; rr(x, y, w + 76, 44, 22); ctx.fill();
+  emoji(v > 80 ? '😍' : v > 55 ? '🙂' : v > 30 ? '😐' : '😠', x + 26, y + 24, 28);
+  ctx.fillStyle = 'rgba(0,0,0,.12)'; rr(x + 54, y + 12, w, 20, 10); ctx.fill();
+  ctx.fillStyle = v > 66 ? '#2fd27a' : v > 33 ? '#ffd23f' : '#ff5a5a'; rr(x + 54, y + 12, Math.max(12, w * v / 100), 20, 10); ctx.fill();
+  fitCenter('Memnuniyet', x + 54 + w / 2, y + 23, 13, w - 20, '#3a2340', 800);
+}
 function drawWork() {
   const s = curStep();
   ctx.save(); ctx.beginPath(); ctx.rect(0, 0, PANEL, H); ctx.clip();
@@ -3509,7 +3548,7 @@ function drawWork() {
   else if (s === 'footcream') { drawTable(); drawFeet(); }
   else if (HAND_STEPS.has(s)) { drawTable(); drawHand(0); drawHand(1); }
   else { drawFaceBg(); drawHead(cust, FX, FY - Math.sin(hop * Math.PI) * 18, FS, { cape: true, mood: stepIdx / cust.steps.length + (stepDone ? 0.2 : 0) }); if (s === 'makeup' && !stepDone) mkGuide(); if (s === 'razor') drawBowl(); if (s === 'cut' && !stepDone) { const gy = FY + CUT_Y * FS; ctx.strokeStyle = 'rgba(214,51,127,.8)'; ctx.lineWidth = 3; ctx.setLineDash([12, 8]); line(FX - 250, gy, FX + 250, gy); ctx.setLineDash([]); text('✂️ buradan kes', FX + 170, gy - 10, 18, '#d6337f', 'left', 800); } }
-  drawInstr();
+  drawInstr(); drawSatBar();
   if (react) {
     ctx.globalAlpha = clamp(react.t * 2, 0, 1);
     ctx.font = `800 22px ${FONT}`; const t = `${cust.name}: ${react.text}`, w = ctx.measureText(t).width + 40;
@@ -4457,6 +4496,14 @@ function lbAvatar(look, name, tagCol) {
   if (o === 'jacket' || o === 'sweater') for (let k = 0; k < 3; k++) body.add(lbM(new THREE.SphereGeometry(0.02, 8, 6), toon('#ffffff'), 0, 1.3 - k * 0.15, 0.285));
   if (!dressy && o !== 'gown' && o !== 'raincoat') { const bk = lbM(new THREE.BoxGeometry(0.09, 0.07, 0.02), toon('#e0b030'), 0, 0.9, 0.315); body.add(bk); }
   { const cw = lbM(new THREE.TorusGeometry(0.19, 0.028, 6, 24), toon('#ffffff'), 0, 1.45, 0); cw.rotation.x = Math.PI / 2; body.add(cw); }
+  if (L.girl) {
+    { const nk = lbM(new THREE.TorusGeometry(0.135, 0.01, 6, 24), toon('#ffd23f'), 0, 1.4, 0.02); nk.rotation.x = Math.PI / 2 - 0.35; body.add(nk); body.add(lbM(new THREE.SphereGeometry(0.03, 8, 6), toon('#ff4f8b'), 0, 1.31, 0.14)); }
+    for (const s3 of [-1, 1]) {
+      const ag3 = A.arms[s3 < 0 ? 0 : 1], lg3 = A.legs[s3 < 0 ? 0 : 1];
+      if (ag3 && (dressy || o === 'gown')) { const rf = lbM(new THREE.TorusGeometry(0.1, 0.03, 6, 14), toon(mix(L.cloth, '#ffffff', 0.5)), 0, -0.1, 0); rf.rotation.x = Math.PI / 2; ag3.add(rf); }
+      if (lg3) { lg3.add(lbM(new THREE.BoxGeometry(0.2, 0.025, 0.035), toon(mix(L.shoe, '#000000', 0.25)), 0, -0.66, 0.08)); lg3.add(lbM(new THREE.SphereGeometry(0.022, 6, 5), toon('#ffd23f'), s3 * 0.08, -0.66, 0.095)); }
+    }
+  }
   if (dressy || o === 'gown') {
     const gw = o === 'gown', hr = gw ? 0.62 : 0.5, hy = gw ? 0.11 : 0.65, wy = 1.2;
     const hem = lbM(new THREE.TorusGeometry(hr, 0.028, 6, 36), toon('#ffffff'), 0, hy, 0); hem.rotation.x = Math.PI / 2; body.add(hem);
@@ -4467,6 +4514,7 @@ function lbAvatar(look, name, tagCol) {
   }  // head
   const head = new THREE.Group(); head.position.y = 1.95; body.add(head); A.head = head;
   const hd = lbM(new THREE.SphereGeometry(0.45, 32, 24), skin); hd.scale.set(1, 0.95, 0.95); head.add(hd);
+  if (L.girl && (!L.hat || L.hat === 'none')) for (const s3 of [-1, 1]) { const bwm = toon('#ff6fb5'); for (const q of [-1, 1]) { const bl = lbM(new THREE.SphereGeometry(0.07, 8, 6), bwm, s3 * 0.38 + q * 0.07, 0.34, 0.06); bl.scale.set(1.3, 1, 0.55); head.add(bl); } head.add(lbM(new THREE.SphereGeometry(0.035, 6, 5), toon('#ffd23f'), s3 * 0.38, 0.34, 0.09)); }
   const es = L.eyeStyle;
   for (const s of [-1, 1]) {
     if (es === 'happy') { const e = lbM(new THREE.TorusGeometry(0.07, 0.018, 6, 14, Math.PI), toon('#2a1f2e'), s * 0.16, 0.02, 0.41); head.add(e); continue; }
@@ -4495,7 +4543,7 @@ function lbAvatar(look, name, tagCol) {
   if (L.makeup.includes('cheekstar')) for (const s of [-1, 1]) { const cs = lbM(new THREE.OctahedronGeometry(0.04), new THREE.MeshBasicMaterial({ color: '#ffd23f' }), s * 0.3, -0.1, 0.36); cs.scale.set(1, 1, 0.35); head.add(cs); }
   if (L.makeup.includes('sunkiss')) for (const s of [-1, 1]) { const sk = lbM(new THREE.SphereGeometry(0.1, 10, 8), new THREE.MeshBasicMaterial({ color: '#ff9a3f', transparent: true, opacity: 0.28 }), s * 0.2, -0.06, 0.37); sk.scale.set(1.8, 1.1, 0.3); sk.userData.noOutline = true; head.add(sk); }
   if (L.makeup.includes('colorbrow')) for (const s of [-1, 1]) { const cb = lbM(new THREE.CylinderGeometry(0.026, 0.026, 0.17, 6), new THREE.MeshBasicMaterial({ color: s < 0 ? '#ff6fb5' : '#8b5cf6' }), s * 0.17, 0.165, 0.415); cb.rotation.z = Math.PI / 2 + s * 0.12; cb.rotation.x = 0.2; head.add(cb); }
-  if (L.makeup.includes('tattoo') && tatG()) for (const s of [-1, 1]) { const pl = new THREE.Mesh(new THREE.PlaneGeometry(0.15, 0.15), new THREE.MeshBasicMaterial({ map: tatTex(), transparent: true, depthWrite: false })); pl.position.set(s * 0.33, -0.06, 0.34); pl.rotation.set(0, s * 0.8, s * 0.2); head.add(pl); }
+  if (L.makeup.includes('tattoo') && tatOn()) for (const s of [-1, 1]) { const pl = new THREE.Mesh(new THREE.PlaneGeometry(0.15, 0.15), new THREE.MeshBasicMaterial({ map: tatTex(), transparent: true, depthWrite: false })); pl.position.set(s * 0.33, -0.06, 0.34); pl.rotation.set(0, s * 0.8, s * 0.2); head.add(pl); }
   else if (L.makeup.includes('tattoo')) for (const s of [-1, 1]) { const wm = new THREE.MeshBasicMaterial({ color: '#8b5cf6' }); for (const w of [-1, 1]) { const wl = lbM(new THREE.SphereGeometry(0.032, 8, 6), wm, s * 0.34 + w * 0.03, -0.06, 0.33); wl.scale.set(1, 1.2, 0.3); head.add(wl); } head.add(lbM(new THREE.SphereGeometry(0.012, 6, 5), new THREE.MeshBasicMaterial({ color: '#2a1f2e' }), s * 0.34, -0.06, 0.34)); }
   if (L.makeup.includes('eyebrow')) for (const s of [-1, 1]) { const eb = lbM(new THREE.CylinderGeometry(0.03, 0.03, 0.17, 6), toon(mix(L.hair, '#000000', 0.55)), s * 0.17, 0.165, 0.41); eb.rotation.z = Math.PI / 2 + s * 0.12; eb.rotation.x = 0.2; head.add(eb); }
   if (L.makeup.includes('contour')) for (const s of [-1, 1]) { const ct = lbM(new THREE.SphereGeometry(0.07, 10, 8), new THREE.MeshBasicMaterial({ color: '#8c502d', transparent: true, opacity: 0.4 }), s * 0.37, -0.08, 0.26); ct.scale.set(0.5, 1.5, 0.4); head.add(ct); }
@@ -5144,7 +5192,7 @@ function lbRebuildMe() {
 }
 function lbUpdate(dt) {
   if (!LB.ok) return;
-  { const lk = JSON.stringify([profile.look, myTitle(), myToonIdx()]); if (LB.lookKey && LB.lookKey !== lk && LB.me) lbRebuildMe(); LB.lookKey = lk; }
+  { const lk = JSON.stringify([profile.look, myTitle(), myToonIdx(), TAT_VER, (profile.tatImg || '').length]); if (LB.lookKey && LB.lookKey !== lk && LB.me) lbRebuildMe(); LB.lookKey = lk; }
   const n = needs(), tired = n.hunger <= 0 || n.sleep <= 0;
   // needs go down while you are out in the town
   if (scene === 'lobby' || scene === 'job' || (scene === 'place' && LB.sleepT <= 0)) { n.hunger = Math.max(0, n.hunger - dt * 0.2); { const dt0 = profile.dayT != null ? profile.dayT : 0.4; if (dt0 > 0.55 && dt0 < 0.78 && n.sleep > 50) n.sleep = Math.max(50, n.sleep - dt * 0.6); } }
@@ -8103,7 +8151,19 @@ function drawGalleryApp() {
   L.slice(G.page * per, G.page * per + per).forEach((d, i) => { const col = i % 2, row = Math.floor(i / 2), x = P.x + 22 + col * 138, y = P.y + 126 + row * 204; paintDrawStrokes(d.s, x, y, 124, 155); fitCenter(d.n, x + 62, y + 176, 13, 120, '#ffffff', 800); btn(x, y, 124, 160, '', () => { G.sel = G.page * per + i; sfx('pop'); }, { hidden: true }); });
   if (pages > 1) { text((G.page + 1) + ' / ' + pages, P.x + P.w / 2, P.y + 560, 15, '#ffffff', 'center', 800); ctx.fillStyle = 'rgba(255,255,255,.2)'; rr(P.x + 40, P.y + 540, 50, 28, 14); ctx.fill(); rr(P.x + 220, P.y + 540, 50, 28, 14); ctx.fill(); text('◀', P.x + 65, P.y + 560, 14, '#ffffff', 'center', 800); text('▶', P.x + 245, P.y + 560, 14, '#ffffff', 'center', 800); btn(P.x + 40, P.y + 540, 50, 28, '', () => { G.page = (G.page + pages - 1) % pages; }, { hidden: true }); btn(P.x + 220, P.y + 540, 50, 28, '', () => { G.page = (G.page + 1) % pages; }, { hidden: true }); }
 }
-function drawPhoneApp() { const a = LB.app; if (a === 'memory') drawMemoryApp(); else if (a === 'weather') drawWeatherApp(); else if (a === 'paint') drawPaintApp(); else if (a === 'calc') drawCalcApp(); else if (a === 'gallery') drawGalleryApp(); else LB.app = null; }
+function wrapLines(str, maxW, size) { ctx.font = '700 ' + tsz(size) + 'px ' + FONT; const out = []; let cur = ''; for (const w of String(str).split(' ')) { const t = cur ? cur + ' ' + w : w; if (ctx.measureText(t).width > maxW && cur) { out.push(cur); cur = w; } else cur = t; } if (cur) out.push(cur); return out; }
+function drawReviewsApp() {
+  const P = phoneShell('⭐ Yorumlar', 'Salonun hakkında', '#4a2a00', '#7a4a10'), R = (profile && profile.reviews) || [];
+  const avg = R.length ? R.reduce((a, r) => a + r.s, 0) / R.length : 0, rn = Math.round(avg);
+  ctx.fillStyle = 'rgba(255,255,255,.14)'; rr(P.x + 24, P.y + 118, P.w - 48, 82, 18); ctx.fill();
+  text(R.length ? avg.toFixed(1) : '—', P.x + 80, P.y + 172, 44, '#ffe9a8', 'center', 800);
+  text('★'.repeat(rn) + '☆'.repeat(5 - rn), P.x + 205, P.y + 154, 22, '#ffd23f', 'center', 800); text(R.length + ' yorum', P.x + 205, P.y + 182, 14, '#ffffff', 'center', 700);
+  if (!R.length) { fitCenter('Henüz yorum yok. Müşterilere hizmet et! 💅', P.x + P.w / 2, P.y + 320, 16, 250, '#ffffff', 700); return; }
+  const per = 3, pages = Math.ceil(R.length / per); LB.rv = Math.min(LB.rv || 0, pages - 1);
+  R.slice(LB.rv * per, LB.rv * per + per).forEach((r, i) => { const y = P.y + 214 + i * 104; ctx.fillStyle = 'rgba(255,255,255,.93)'; rr(P.x + 24, y, P.w - 48, 96, 16); ctx.fill(); text(r.n, P.x + 38, y + 24, 14, '#3a2340', 'left', 800); text('★'.repeat(r.s) + '☆'.repeat(5 - r.s), P.x + P.w - 38, y + 24, 14, '#e0a000', 'right', 800); wrapLines(r.t, P.w - 84, 13).slice(0, 3).forEach((ln, j) => text(ln, P.x + 38, y + 48 + j * 18, 13, '#4a3a5a', 'left', 700)); });
+  if (pages > 1) { text((LB.rv + 1) + ' / ' + pages, P.x + P.w / 2, P.y + 546, 14, '#ffffff', 'center', 800); ctx.fillStyle = 'rgba(255,255,255,.2)'; rr(P.x + 40, P.y + 526, 50, 28, 14); ctx.fill(); rr(P.x + 220, P.y + 526, 50, 28, 14); ctx.fill(); text('◀', P.x + 65, P.y + 546, 14, '#ffffff', 'center', 800); text('▶', P.x + 245, P.y + 546, 14, '#ffffff', 'center', 800); btn(P.x + 40, P.y + 526, 50, 28, '', () => { LB.rv = (LB.rv + pages - 1) % pages; }, { hidden: true }); btn(P.x + 220, P.y + 526, 50, 28, '', () => { LB.rv = (LB.rv + 1) % pages; }, { hidden: true }); }
+}
+function drawPhoneApp() { const a = LB.app; if (a === 'memory') drawMemoryApp(); else if (a === 'weather') drawWeatherApp(); else if (a === 'paint') drawPaintApp(); else if (a === 'calc') drawCalcApp(); else if (a === 'gallery') drawGalleryApp(); else if (a === 'reviews') drawReviewsApp(); else LB.app = null; }
 function drawPhone() {
   if (scene !== 'lobby' || !LB.me || LB.ride || LB.edit || CK || FG || SCH || LB.sleepT > 0) { LB.phone = false; LB.piano = false; LB.app = null; return; }
   if (LB.piano) { drawPianoApp(); return; }
@@ -8143,6 +8203,7 @@ function drawPhone() {
     ['🎨', 'Çizim', () => { LB.app = 'paint'; }, '#ff8fb8', '#e0558a', true],
     ['🧮', 'Hesap', () => { LB.app = 'calc'; }, '#ffb347', '#e0662f', true],
     ['🖼️', 'Galeri', () => { LB.app = 'gallery'; galLoad(); }, '#8fd3fe', '#4a8cff', true],
+    ['⭐', 'Yorumlar', () => { LB.app = 'reviews'; LB.rv = 0; }, '#ffd23f', '#ff9f1c', true],
     ['🎒', 'Çanta', () => { LB.bag = !LB.bag; }, '#7ab8ff', '#4a7fe0', true],
     ['👭', 'Arkadaş', showFriends, '#ff8fb8', '#e0558a', true],
     ['⚙️', 'Ayarlar', showSettings, '#b8c0d0', '#7d8aa6', true],
