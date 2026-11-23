@@ -151,3 +151,4 @@ Eski sÃ¼rÃ¼mler `versions/` klasÃ¶rÃ¼nde durur; hiÃ§biri silinmez. Her
 | v142 | versions/v142-sac-3b.html | Lobideki 3B karakterlerin saçı: daha çok ve daha ince tel, uzun saçta daha çok lüle, köklerde koyu ton, ikinci parlama |
 | v143 | versions/v143-sekilli-sac.html | Yeni şekilli saç modelleri (at kuyruğu, uzun örgü, küt saç, tavşan kulağı); erkek müşterilerde tırnak kısa, küt/yuvarlak, koyu renk, stickersiz |
 | v144 | versions/v144-kesim-modelleri.html | Saç kesme modelleri: erkekler klasik, kulak üstü, çok kısa; kızlar çene hizası ya da orta boy ister; kesim çizgisi modele göre değişir |
+| v145 | versions/v145-ses-kapat.html | Sesi kapat artık tüm sesleri kapatır (piyano, hafıza, hesap makinesi, radyo müziği dahil) |
