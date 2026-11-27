@@ -4388,6 +4388,7 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => keys3.delete(e.code));
 addEventListener('blur', () => keys3.clear());
 
+const AVM_ANG = 0.0917, AVM_SPOT = [Math.sin(AVM_ANG * Math.PI * 2) * 78, -Math.cos(AVM_ANG * Math.PI * 2) * 78]; // the mall's spot in the town
 const PLACES = [
   { id: 'salon', name: 'Güzellik Salonu', icon: '💅', col: '#ffb3d6', roof: '#e0609f', w: 9.5, d: 7, h: 6.5 },
   { id: 'cafe', name: 'Kafe & Pastane', icon: '🍰', col: '#ffe0b8', roof: '#c9784a', w: 10, d: 8, h: 5, rad: 6.2 },
@@ -4399,6 +4400,7 @@ const PLACES = [
   { id: 'school', name: 'Okul', icon: '🏫', col: '#fff0b8', roof: '#2d7ff9', w: 17, d: 10, h: 8, ang: 6.5 / 7, R: 45, rad: 8.2 },
   { id: 'police', name: 'Polis Merkezi', icon: '🚓', col: '#cfd8ea', roof: '#2b4f9a', w: 11, d: 8, h: 6.5, ang: 0.9 / 7, R: 55, rad: 6.8 },
   { id: 'fire', name: 'İtfaiye', icon: '🚒', col: '#ffd9d3', roof: '#d93a2f', w: 13, d: 9, h: 6.5, ang: 5.4 / 7, R: 58, rad: 7.6 },
+  { id: 'avm', name: 'YV AVM', icon: '🏬', col: '#ffd9ec', roof: '#8b5cf6', w: 28, d: 14, h: 12, ang: AVM_ANG, R: 78, rad: 14, near: 7.2 },
 ];
 // needs: 100 = full, they go down while you are in the lobby
 function needs() { if (!profile.needs) profile.needs = { hunger: 100, sleep: 100 }; return profile.needs; }
@@ -4979,7 +4981,7 @@ function lbRebuildHomeOuter() {
 }
 function lbBuilding(p) {
   if (p.id === 'home') p = lbHomeStyle(p);
-  const g = new THREE.Group(), w = p.w || 9, d = p.d || 7, h = p.h || (p.id === 'hospital' ? 7.5 : 6), flat = ['hospital', 'market', 'police', 'fire', 'school'].includes(p.id) || !!(p.hz && p.hz.id === 'villa');
+  const g = new THREE.Group(), w = p.w || 9, d = p.d || 7, h = p.h || (p.id === 'hospital' ? 7.5 : 6), flat = ['hospital', 'market', 'police', 'fire', 'school', 'avm'].includes(p.id) || !!(p.hz && p.hz.id === 'villa');
   g.add(lbM(new THREE.BoxGeometry(w, h, d), toon(p.col), 0, h / 2, 0));
   g.add(lbM(new THREE.BoxGeometry(w + 0.3, 0.5, d + 0.3), toon(mix(p.col, '#000000', 0.12)), 0, 0.25, 0));
   // every kind of place has its own roof shape
@@ -5039,6 +5041,7 @@ function lbBuilding(p) {
   const top = new THREE.Group(); top.position.set(0, h + (flat ? 1.2 : p.id === 'icecream' ? 4.6 : p.id === 'cafe' ? 3.8 : p.id === 'flowers' ? d / 2 + 1 : 3.2), 0); g.add(top);
   if (p.id === 'icecream') { const cone = lbM(new THREE.ConeGeometry(0.6, 1.6, 16), toon('#e8b36a'), 0, 0.2, 0); cone.rotation.x = Math.PI; top.add(cone); top.add(lbM(new THREE.SphereGeometry(0.62, 16, 12), toon('#ff9ccf'), 0, 1.15, 0)); top.add(lbM(new THREE.SphereGeometry(0.5, 16, 12), toon('#fff4d6'), 0, 1.75, 0)); top.add(lbM(new THREE.SphereGeometry(0.14, 10, 8), toon('#e8434f'), 0, 2.25, 0)); }
   else if (p.id === 'cafe') { top.add(lbM(new THREE.CylinderGeometry(1, 1, 0.7, 24), toon('#f3d6a4'), 0, 0.35, 0)); top.add(lbM(new THREE.CylinderGeometry(1.02, 1.02, 0.18, 24), toon('#ff9ccf'), 0, 0.78, 0)); top.add(lbM(new THREE.SphereGeometry(0.2, 10, 8), toon('#e8434f'), 0, 1.0, 0)); }
+  else if (p.id === 'avm') { const sg = lbSignPlane('🏬 YV AVM', '#8b5cf6', 15, 2.6); sg.position.set(0, 2, d / 2 - 0.4); top.add(sg); for (const sx of [-1, 1]) { top.add(lbM(new THREE.CylinderGeometry(1.4, 1.4, 4.5, 18), toon('#ffd23f'), sx * (w / 2 - 2), 1.6, 0)); top.add(lbM(new THREE.SphereGeometry(1.5, 14, 10), toon('#ff5fa2'), sx * (w / 2 - 2), 4.2, 0)); } g.add(lbM(new THREE.BoxGeometry(7, 5, 0.3), new THREE.MeshToonMaterial({ color: '#bfe3ff', transparent: true, opacity: 0.6, gradientMap: lbGrad }), 0, 2.5, d / 2 + 0.2)); }
   else if (p.id === 'hospital') { const cm = toon('#e8434f'); top.add(lbM(new THREE.BoxGeometry(0.5, 1.6, 0.3), cm, 0, 0.6, 0)); top.add(lbM(new THREE.BoxGeometry(1.6, 0.5, 0.3), cm, 0, 0.6, 0)); }
   else if (p.id === 'flowers') for (let i = 0; i < 5; i++) { const a = i * 1.26; top.add(lbM(new THREE.SphereGeometry(0.45, 12, 10), toon(['#ff6fb5', '#ffd23f', '#b18cff', '#ff8a3d', '#ff4f8b'][i]), Math.cos(a) * 0.7, 0.4, Math.sin(a) * 0.7)); }
   else if (p.id === 'home') { g.add(lbM(new THREE.BoxGeometry(0.8, 2, 0.8), toon('#c98b5a'), 2.4, h + 1.8, -1)); }
@@ -5217,7 +5220,7 @@ function enterLobby() {
 function lbPlaceById(id) { return LB.places.find(p => p.id === id); }
 function lbEnter(p) {
   if (p.id === 'salon') { go('title'); newCustomer(served === 0); return; }
-  if (p.id === 'market' || p.id === 'hospital' || p.id === 'home' || p.id === 'school') return lbGoInside(p.id);
+  if (p.id === 'market' || p.id === 'hospital' || p.id === 'home' || p.id === 'school' || p.id === 'avm') return lbGoInside(p.id);
   if (p.id === 'police' || p.id === 'fire') return openStation(p.id);
   LB.place = p; scene = 'place'; fade = 0.6; sfx('pop');
 }
@@ -5301,7 +5304,7 @@ function lbUpdate(dt) {
     lbAnim(np.av, dt, s);
   }
   // near a door?
-  LB.near = scene === 'lobby' && LB.where === 'town' ? LB.places.find(pl => Math.hypot(pl.door.x - me.position.x, pl.door.z - me.position.z) < 3.2) || null : null;
+  LB.near = scene === 'lobby' && LB.where === 'town' ? LB.places.find(pl => Math.hypot(pl.door.x - me.position.x, pl.door.z - me.position.z) < (pl.near || 3.2)) || null : null;
   LB.nearSpot = scene === 'lobby' && LB.where !== 'town' && !LB.edit ? lbNearSpot() : null;
   for (const st of LB.staff || []) lbAnim(st, dt, 0);
   // camera follows from behind
@@ -6257,6 +6260,76 @@ function lbBuildInteriors() {
     spots.push({ x: O.x, z: O.z + 7.1, exit: 'hospital' });
     LB.rooms.hospital = { O, w: 22, d: 16, g, spots, obs, spawn: new THREE.Vector3(O.x, 0, O.z + 5.6) };
   }
+  // 🏬 mall: a big hall with six shops along the back wall, four kiosks in the middle and a fountain
+  {
+    const O = new THREE.Vector3(240, 0, 0), W = 44, D = 30, g = lbRoom(O, W, D, '#ffe6f2', '#ffffff', '#ffd6ea'), spots = [], obs = [];
+    const glass = new THREE.MeshToonMaterial({ color: '#cfe9ff', transparent: true, opacity: 0.55, gradientMap: lbGrad });
+    const glow = c => new THREE.MeshToonMaterial({ color: c, gradientMap: lbGrad, emissive: c, emissiveIntensity: 0.35 });
+    const person = (lx, lz, look, name) => { const a = lbAvatar(look, name, '#8b5cf6'); a.position.set(O.x + lx, 0, O.z + lz); LB.scene.add(a); return a; };
+    const s0 = lbSignPlane('🏬 YV AVM', '#8b5cf6', 12, 1.6); s0.position.set(0, 5.7, -14.7); g.add(s0);
+    const shop = t => () => openShop(t);
+    // six shops along the back wall: [x, colour, sign, what you can do there]
+    const SHOPS = [
+      [-18.5, '#ff5fa2', '👗 Moda Butiği', [['👗 Kıyafetler', shop('clothes'), '#ff5fa2'], ['🏷️ İndirimler', shop('sale'), '#e8434f'], ['🆕 Yeni gelenler', shop('new'), '#8b5cf6']]],
+      [-11.1, '#b18cff', '💇 Kuaför', [['💇 Saçımı değiştir', openDesigner, '#8b5cf6'], ['✂️ Salonda müşteri kes', () => { go('title'); newCustomer(served === 0); }, '#ff5fa2']]],
+      [-3.7, '#ff8fc0', '💄 Güzellik', [['💄 Makyaj', shop('makeup'), '#e0558a'], ['💅 Ojeler', shop('polish'), '#ff5fa2'], ['🧴 Kremler', shop('care'), '#2fa35a']]],
+      [3.7, '#ffd23f', '💍 Takı & Aletler', [['💍 Takılar', shop('jewels'), '#e0a000'], ['🧰 Aletler', shop('tools'), '#7d8aa6']]],
+      [11.1, '#5ac8ff', '🐾 Hayvan Dükkanı', [['🐾 Evcil hayvanlar', shop('pets'), '#2d7ff9'], ['🎒 Çantalar', shop('bags'), '#4a7fe0']]],
+      [18.5, '#f0b020', '👑 Özel Mağaza', [['👑 Özel ürünler', shop('special'), '#e0a000'], ['🛡️ Zırhlar', shop('armor'), '#7d8aa6']]],
+    ];
+    SHOPS.forEach(([lx, col, title, acts], i) => {
+      g.add(lbM(new THREE.BoxGeometry(6.8, 4.6, 0.3), toon(mix(col, '#ffffff', 0.6)), lx, 2.3, -14.6));
+      g.add(lbM(new THREE.BoxGeometry(7, 0.35, 0.6), toon(col), lx, 4.75, -14.5));
+      const sg = lbSignPlane(title, col, 5.8, 1.1); sg.position.set(lx, 3.9, -14.3); g.add(sg);
+      g.add(lbM(new THREE.BoxGeometry(5.4, 1.1, 1.4), toon(col), lx, 0.55, -12.4)); g.add(lbM(new THREE.BoxGeometry(5.5, 0.12, 1.5), toon('#ffffff'), lx, 1.16, -12.4));
+      for (const sx of [-3.55, 3.55]) g.add(lbM(new THREE.BoxGeometry(0.3, 4.6, 1.6), toon(mix(col, '#000000', 0.1)), lx + sx, 2.3, -13.8));
+      obs.push([lx - 2.8, lx + 2.8, -13.2, -11.6]);
+      spots.push({ x: O.x + lx, z: O.z - 10.2, acts });
+      if (i === 0) { // mannequins in fancy outfits
+        person(lx - 1.8, -13.7, { girl: true, outfit: 'galaxy', cloth: '#8b5cf6', hair: '#1c1c1c', hairdo: 'bob', len: 'mid' }, null);
+        person(lx + 1.8, -13.7, { girl: true, outfit: 'mermaid', cloth: '#1fc7c7', hair: '#ff6fb5', hairdo: 'pigtails', len: 'long' }, null);
+      } else if (i === 1) { // stylist and two mirrors
+        person(lx, -13.7, { girl: true, outfit: 'apron', cloth: '#b18cff', hair: '#ff6fb5', hairdo: 'buns', len: 'long' }, '💇 Stilist Defne');
+        for (const sx of [-2.5, 2.5]) g.add(lbM(new THREE.BoxGeometry(1.2, 2.4, 0.1), glow('#e6f7ff'), lx + sx, 2.4, -14.35));
+      } else if (i === 2) { // bottles on the counter
+        ['#e0245e', '#ff6fa5', '#9b1b4b', '#7a1fa2', '#ffb6c8', '#ff6a2a'].forEach((c, k) => g.add(lbM(new THREE.CylinderGeometry(0.2, 0.22, 0.5, 10), toon(c), lx - 2 + k * 0.8, 1.45, -12.4)));
+      } else if (i === 3) { // glass case with gems
+        g.add(lbM(new THREE.BoxGeometry(4.6, 0.8, 1.1), glass, lx, 1.6, -12.4));
+        ['#ff4f8b', '#5ac8ff', '#8be07e', '#ffd23f', '#b18cff', '#ff8a3d'].forEach((c, k) => g.add(lbM(new THREE.OctahedronGeometry(0.22), glow(c), lx - 1.8 + k * 0.72, 1.6, -12.4)));
+      } else if (i === 4) { // a cat and a dog for sale
+        for (const [k, sx] of [['cat', -1.3], ['dog', 1.3]]) { const pt = lbPet(k); pt.position.set(O.x + lx + sx, 1.22, O.z - 12.4); pt.scale.setScalar(0.8); LB.scene.add(pt); }
+      } else { // a golden crown
+        g.add(lbM(new THREE.CylinderGeometry(0.6, 0.7, 0.5, 12), glow('#ffd23f'), lx, 1.45, -12.4));
+        for (let k = 0; k < 5; k++) g.add(lbM(new THREE.ConeGeometry(0.15, 0.5, 6), glow('#ffd23f'), lx + Math.cos(k * 1.2566) * 0.5, 1.9, -12.4 + Math.sin(k * 1.2566) * 0.5));
+      }
+    });
+    // four kiosks in the middle row: food court and extras
+    const menu = list => list.map(m => [`${m[0]} ${m[1]} • ${m[2]} TL`, () => lbBuy(m), '#ff8a3d']);
+    const KIOSKS = [
+      [-15, '#ff8a3d', '🍰 Pastane', menu(CAFE_MENU.slice(0, 3))],
+      [-5, '#2dc4d6', '🍦 Dondurma', menu(ICE_MENU)],
+      [5, '#8b5cf6', '🪄 Süs & Evler', [['🪄 Süsler', shop('decor'), '#8b5cf6'], ['🏡 Evler', showHouses, '#e8434f']]],
+      [15, '#2fa35a', '🥤 İçecek Barı', [...menu(CAFE_MENU.slice(3)), ['🛵 Telefondan yemek söyle', () => { LB.app = 'order'; orderPage = 0; }, '#ff7a45']]],
+    ];
+    KIOSKS.forEach(([lx, col, title, acts]) => {
+      const lz = -2;
+      g.add(lbM(new THREE.CylinderGeometry(2.1, 2.3, 1.1, 20), toon(col), lx, 0.55, lz)); g.add(lbM(new THREE.CylinderGeometry(2.25, 2.25, 0.14, 20), toon('#ffffff'), lx, 1.17, lz));
+      g.add(lbM(new THREE.ConeGeometry(2.8, 1.2, 20), toon(col), lx, 4.3, lz));
+      for (let k = 0; k < 4; k++) g.add(lbM(new THREE.CylinderGeometry(0.07, 0.07, 3, 6), toon('#ffffff'), lx + Math.cos(k * Math.PI / 2) * 2.1, 2.6, lz + Math.sin(k * Math.PI / 2) * 2.1));
+      const sg = lbSignPlane(title, col, 4, 0.9); sg.position.set(lx, 3.1, lz + 2.35); g.add(sg);
+      obs.push([lx - 2.3, lx + 2.3, lz - 2.3, lz + 2.3]);
+      spots.push({ x: O.x + lx, z: O.z + lz + 3.3, acts });
+    });
+    // fountain in front, benches and plants
+    g.add(lbM(new THREE.CylinderGeometry(3, 3.2, 0.7, 28), toon('#ffffff'), 0, 0.35, 6));
+    g.add(lbM(new THREE.CylinderGeometry(2.7, 2.7, 0.1, 28), new THREE.MeshToonMaterial({ color: '#6fd0ff', gradientMap: lbGrad, emissive: '#2d9ad0', emissiveIntensity: 0.3 }), 0, 0.72, 6));
+    g.add(lbM(new THREE.CylinderGeometry(0.3, 0.4, 1.8, 10), toon('#ffd6ea'), 0, 1.2, 6)); g.add(lbM(new THREE.SphereGeometry(0.55, 14, 10), glow('#8fd8ff'), 0, 2.3, 6));
+    obs.push([-3.3, 3.3, 2.7, 9.3]);
+    for (const sx of [-9, 9]) { g.add(lbM(new THREE.BoxGeometry(3, 0.5, 1), toon('#c98b5a'), sx, 0.5, 8)); g.add(lbM(new THREE.BoxGeometry(3, 0.8, 0.15), toon('#c98b5a'), sx, 0.95, 7.5)); obs.push([sx - 1.6, sx + 1.6, 7.3, 8.7]); }
+    for (const [px, pz] of [[-20.6, -8], [20.6, -8], [-20.6, 4], [20.6, 4], [-20.6, 12.5], [20.6, 12.5]]) { g.add(lbM(new THREE.CylinderGeometry(0.5, 0.4, 0.8, 10), toon('#d9713f'), px, 0.4, pz)); g.add(lbM(new THREE.SphereGeometry(0.85, 12, 10), toon('#5fc46a'), px, 1.5, pz)); obs.push([px - 0.8, px + 0.8, pz - 0.8, pz + 0.8]); }
+    spots.push({ x: O.x, z: O.z + 14.1, exit: 'avm' });
+    LB.rooms.avm = { O, w: W, d: D, g, spots, obs, spawn: new THREE.Vector3(O.x, 0, O.z + 12.6) };
+  }
   // 🏫 school
   {
     const O = new THREE.Vector3(-240, 0, 0), g = lbRoom(O, 24, 18, '#fff1d6', '#d8c19a', '#c8ae84'), spots = [], obs = [];
@@ -6300,6 +6373,7 @@ function lbGoInside(id) {
   if (id === 'market') say('Raflardan istediğini sepete at, kasada öde 🛒');
   else if (id === 'school') say('🏫 Okula hoş geldin! Sıraya otur, derse gir 📚');
   else if (id === 'home') say('Evine hoş geldin! 🏠 Ocakta yemek pişir, yatakta uyu');
+  else if (id === 'avm') say('🏬 Alışveriş merkezine hoş geldin! Mağazalara bak, kuaföre uğra');
   else say('Hastaneye hoş geldin! Danışmaya uğra 🏥');
 }
 function lbGoOutside() {
@@ -6333,6 +6407,7 @@ function lbNearSpot() {
 }
 // what you can do at the spot you stand at: [label, action, colour]
 function spotActions(sp) {
+  if (sp.acts) return sp.acts; // mall shops list their own buttons
   if (sp.exit) return [['🚪 Dışarı çık', lbGoOutside, '#27b36a']];
   if (sp.seat) return [['🪑 Sıraya otur • derse gir', () => { const me = LB.me; me.position.set(sp.sx, 0, sp.sz); me.rotation.y = Math.PI; LB.target = null; lbAction(me, 'sit'); openSchool(); }, '#2d7ff9']];
   if (sp.school) return [['🎒 Derse gir', () => openSchool(), '#2d7ff9'], ['📋 Karnem', () => openSchool('card'), '#ff8a3d']];
@@ -6438,13 +6513,13 @@ function lbBeachExtras(sc) {
     for (let i = 0; i < 6; i++) { const st = lbM(new THREE.BoxGeometry(0.7, 0.05, 1.4), toon(i % 2 ? '#ffffff' : '#ff6f8f'), -1.75 + i * 0.7, 2.35, 1.9); st.rotation.x = -0.35; k.add(st); }
     k.add(lbM(new THREE.SphereGeometry(0.2, 8, 6), toon('#ffd23f'), -1, 1.35, 2.05)); k.add(lbM(new THREE.CylinderGeometry(0.16, 0.12, 0.4, 8), toon('#ff6f8f'), 0.2, 1.4, 2.05)); k.add(lbM(new THREE.CylinderGeometry(0.16, 0.12, 0.4, 8), toon('#5ac8ff'), 0.7, 1.4, 2.05));
     const ks = lbSignPlane('🍹 Plaj Büfe', '#ff8a3d', 3.2, 0.8); ks.position.set(0, 3.1, 1.6); k.add(ks);
-    k.position.set(14, 0, 40); k.rotation.y = Math.PI; sc.add(k); trees().push([14, 40, 2.6]);
-    for (const [sx, sc2] of [[19.3, '#ff5fa2'], [20.3, '#2dc4d6'], [21.2, '#ffd23f']]) { const sb = lbM(new THREE.SphereGeometry(0.4, 10, 8), toon(sc2), sx, 1.6, 40.6); sb.scale.set(0.6, 2.6, 0.18); sb.rotation.z = -0.12; sc.add(sb); } }
+    k.position.set(14, 0, 31); k.rotation.y = Math.PI; sc.add(k); trees().push([14, 31, 2.6]);
+    for (const [sx, sc2] of [[19.3, '#ff5fa2'], [20.3, '#2dc4d6'], [21.2, '#ffd23f']]) { const sb = lbM(new THREE.SphereGeometry(0.4, 10, 8), toon(sc2), sx, 1.6, 31.6); sb.scale.set(0.6, 2.6, 0.18); sb.rotation.z = -0.12; sc.add(sb); } }
   // lifeguard tower
   { const t = new THREE.Group(); for (const [dx, dz] of [[-0.9, -0.9], [0.9, -0.9], [-0.9, 0.9], [0.9, 0.9]]) t.add(lbM(new THREE.CylinderGeometry(0.1, 0.12, 2.6, 6), toon('#ffffff'), dx, 1.3, dz)); t.add(lbM(new THREE.BoxGeometry(2.4, 0.16, 2.4), toon('#a87444'), 0, 2.6, 0)); t.add(lbM(new THREE.BoxGeometry(1.8, 1.4, 1.8), toon('#ffffff'), 0, 3.4, 0)); t.add(lbM(new THREE.BoxGeometry(1.84, 0.4, 1.84), toon('#e8434f'), 0, 3.1, 0)); const rf = lbM(new THREE.ConeGeometry(1.7, 0.9, 4), toon('#e8434f'), 0, 4.55, 0); rf.rotation.y = Math.PI / 4; t.add(rf);
     for (let k = 0; k < 5; k++) { const st = lbM(new THREE.BoxGeometry(0.8, 0.07, 0.28), toon('#ffffff'), 0, 0.3 + k * 0.5, 1.9 - k * 0.32); st.rotation.x = 0.2; t.add(st); }
     t.add(lbM(new THREE.CylinderGeometry(0.03, 0.03, 1.4, 5), toon('#ffffff'), 1.1, 5.0, 1.0)); const fl = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.45), new THREE.MeshBasicMaterial({ color: '#e8434f', side: THREE.DoubleSide })); fl.position.set(1.45, 5.4, 1.0); t.add(fl);
-    const ts = lbSignPlane('🛟 Cankurtaran', '#e8434f', 2.8, 0.6); ts.position.set(0, 3.5, 0.95); t.add(ts); t.position.set(27, 0, 46); sc.add(t); trees().push([27, 46, 1.6]); }
+    const ts = lbSignPlane('🛟 Cankurtaran', '#e8434f', 2.8, 0.6); ts.position.set(0, 3.5, 0.95); t.add(ts); t.position.set(27, 0, 32.6); sc.add(t); trees().push([27, 32.6, 1.6]); }
   // rocks, shells, starfish and dune grass
   for (const [rx, rz, rs] of [[-36, 56, 1.4], [-34.4, 57.5, 0.9], [-37, 58, 0.7], [33, 57, 1.1], [34.5, 55.8, 0.7]]) { const r = lbM(new THREE.SphereGeometry(rs, 8, 6), toon('#9aa3b0'), rx, rs * 0.55, rz); r.scale.set(1.2, 0.8, 1); r.rotation.y = rnd() * 3; sc.add(r); trees().push([rx, rz, rs * 0.9]); }
   const star = new THREE.Shape(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr2 = i % 2 ? 0.1 : 0.3; i ? star.lineTo(Math.cos(a) * rr2, Math.sin(a) * rr2) : star.moveTo(Math.cos(a) * rr2, Math.sin(a) * rr2); } star.closePath();
@@ -7537,7 +7612,7 @@ function lbDisguise(av, kind) {
 
 // ================= 🗺️ a much bigger map: forest, meadow, pond, windmill, playground =================
 const ZONES = [[-55, -40, 12], [62, -42, 10], [-62, 22, 13], [70, -4, 27], [PK.x + 5, PK.z - 4, 28]]; // pond, windmill, playground, funfair
-const inZone = (x, z, pad = 0) => ZONES.some(q => Math.hypot(x - q[0], z - q[1]) < q[2] + pad);
+const inZone = (x, z, pad = 0) => ZONES.some(q => Math.hypot(x - q[0], z - q[1]) < q[2] + pad) || Math.hypot(x - AVM_SPOT[0], z - AVM_SPOT[1]) < 19 + pad;
 function lbBuildOuter() {
   const sc = LB.scene; let seed = 31; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   const free = (x, z) => !inZone(x, z, 3) && !(z > 24 && Math.abs(x) < 48) && Math.hypot(x, z) > 38;
@@ -8209,7 +8284,78 @@ function drawReviewsApp() {
   R.slice(LB.rv * per, LB.rv * per + per).forEach((r, i) => { const y = P.y + 214 + i * 104; ctx.fillStyle = 'rgba(255,255,255,.93)'; rr(P.x + 24, y, P.w - 48, 96, 16); ctx.fill(); text(r.n, P.x + 38, y + 24, 14, '#3a2340', 'left', 800); text('★'.repeat(r.s) + '☆'.repeat(5 - r.s), P.x + P.w - 38, y + 24, 14, '#e0a000', 'right', 800); wrapLines(r.t, P.w - 84, 13).slice(0, 3).forEach((ln, j) => text(ln, P.x + 38, y + 48 + j * 18, 13, '#4a3a5a', 'left', 700)); });
   if (pages > 1) { text((LB.rv + 1) + ' / ' + pages, P.x + P.w / 2, P.y + 546, 14, '#ffffff', 'center', 800); ctx.fillStyle = 'rgba(255,255,255,.2)'; rr(P.x + 40, P.y + 526, 50, 28, 14); ctx.fill(); rr(P.x + 220, P.y + 526, 50, 28, 14); ctx.fill(); text('◀', P.x + 65, P.y + 546, 14, '#ffffff', 'center', 800); text('▶', P.x + 245, P.y + 546, 14, '#ffffff', 'center', 800); btn(P.x + 40, P.y + 526, 50, 28, '', () => { LB.rv = (LB.rv + pages - 1) % pages; }, { hidden: true }); btn(P.x + 220, P.y + 526, 50, 28, '', () => { LB.rv = (LB.rv + 1) % pages; }, { hidden: true }); }
 }
-function drawPhoneApp() { const a = LB.app; if (a === 'memory') drawMemoryApp(); else if (a === 'weather') drawWeatherApp(); else if (a === 'paint') drawPaintApp(); else if (a === 'calc') drawCalcApp(); else if (a === 'gallery') drawGalleryApp(); else if (a === 'reviews') drawReviewsApp(); else LB.app = null; }
+// ---------- 🛵 food order app: pick food on the phone, pay a small delivery fee, a courier brings it to the bag
+const ORDER_FEE = 5, ORDER_SECS = 8, ORDER_CART_MAX = 12;
+let orderTab = 0, orderPage = 0;
+const orderPending = () => ((profile && profile.orders) || []).reduce((a, o) => a + o.items.length, 0);
+function orderAdd(k) {
+  LB.cart = LB.cart || [];
+  if (LB.cart.length >= ORDER_CART_MAX) { sfx('no'); return say('Sepet doldu! Önce sipariş ver 🛒'); }
+  LB.cart.push(k); sfx('pop');
+}
+function orderSend() {
+  const cart = LB.cart || [];
+  if (!cart.length) return say('Önce bir yemek seç 🍕');
+  const total = cart.reduce((a, k) => a + FOODS[k][2], 0) + ORDER_FEE;
+  if (!rich() && money < total) { sfx('no'); return say(`${total - money} TL daha lazım 💸 Sepetten bir şey çıkar`); }
+  const room = bagCap() - bagUsed() - orderPending();
+  if (cart.length > room) { sfx('no'); return say(`Çantana sığmıyor! 🎒 ${Math.max(0, room)} yer kaldı`); }
+  if (!rich()) money -= total;
+  profile.orders = profile.orders || [];
+  profile.orders.push({ items: cart.slice(), at: Date.now() + ORDER_SECS * 1000 }); // saved, so a closed game still delivers
+  LB.cart = []; save(); sfx('coin'); say('🛵 Siparişin yolda!');
+}
+function orderDeliver() {
+  try {
+    if (!profile || !profile.orders || !profile.orders.length) return;
+    const now = Date.now(), due = profile.orders.filter(o => o.at <= now); if (!due.length) return;
+    profile.orders = profile.orders.filter(o => o.at > now);
+    inv.food = inv.food || {};
+    for (const o of due) { for (const k of o.items) if (FOODS[k]) inv.food[k] = (inv.food[k] || 0) + 1; questEvent('market', o.items.length); }
+    save(); sfx('done'); say('🛵 Sipariş geldi! Yemekler 🎒 Çanta\'da');
+  } catch (e) { }
+}
+setInterval(orderDeliver, 1000);
+function drawOrderApp() {
+  const P = phoneShell('🛵 Yemek', '💰 ' + cash() + ' TL • kurye +' + ORDER_FEE + ' TL', '#3a1030', '#c4452a');
+  const cart = LB.cart = LB.cart || [], list = MARKET_CATS[orderTab][1], per = 6, pages = Math.ceil(list.length / per);
+  orderPage = Math.min(orderPage, pages - 1);
+  // category tabs (one emoji each)
+  MARKET_CATS.forEach((c, i) => {
+    const x = P.x + 19 + i * 46, y = P.y + 122;
+    ctx.fillStyle = i === orderTab ? '#ffffff' : 'rgba(255,255,255,.2)'; rr(x, y, 42, 34, 12); ctx.fill();
+    emoji(c[0].split(' ')[0], x + 21, y + 18, 20);
+    btn(x, y, 42, 34, '', () => { orderTab = i; orderPage = 0; sfx('pop'); }, { hidden: true });
+  });
+  // food rows: tap to add one to the cart
+  list.slice(orderPage * per, orderPage * per + per).forEach((k, i) => {
+    const f = FOODS[k], x = P.x + 22, y = P.y + 164 + i * 46, n = cart.filter(c => c === k).length;
+    ctx.fillStyle = 'rgba(255,255,255,.94)'; rr(x, y, P.w - 44, 42, 14); ctx.fill();
+    emoji(f[0], x + 24, y + 22, 24);
+    fitText(f[1] + (n ? ' ×' + n : ''), x + 46, y + 26, 14, 120, '#3a2340', 800);
+    text(f[2] + ' TL', x + P.w - 44 - 46, y + 26, 13, '#23884f', 'right', 800);
+    ctx.fillStyle = '#27b36a'; ctx.beginPath(); ctx.arc(x + P.w - 44 - 22, y + 21, 14, 0, Math.PI * 2); ctx.fill();
+    text('+', x + P.w - 44 - 22, y + 27, 20, '#ffffff', 'center', 800);
+    btn(x, y, P.w - 44, 42, '', () => orderAdd(k), { hidden: true });
+  });
+  if (pages > 1) {
+    ctx.fillStyle = 'rgba(255,255,255,.2)'; rr(P.x + 40, P.y + 446, 50, 26, 13); ctx.fill(); rr(P.x + 220, P.y + 446, 50, 26, 13); ctx.fill();
+    text('◀', P.x + 65, P.y + 465, 14, '#ffffff', 'center', 800); text('▶', P.x + 245, P.y + 465, 14, '#ffffff', 'center', 800);
+    text((orderPage + 1) + ' / ' + pages, P.x + P.w / 2, P.y + 465, 14, '#ffffff', 'center', 800);
+    btn(P.x + 40, P.y + 446, 50, 26, '', () => { orderPage = (orderPage + pages - 1) % pages; }, { hidden: true });
+    btn(P.x + 220, P.y + 446, 50, 26, '', () => { orderPage = (orderPage + 1) % pages; }, { hidden: true });
+  }
+  // cart line, or the courier status when an order is on its way
+  const pend = (profile.orders || []).map(o => o.at), tl = cart.reduce((a, k) => a + FOODS[k][2], 0);
+  if (pend.length) { const s = Math.max(1, Math.ceil((Math.min(...pend) - Date.now()) / 1000)); text('🛵 Kurye yolda… ' + s + ' sn', P.x + P.w / 2, P.y + 498, 15, '#ffe9a8', 'center', 800); }
+  else if (cart.length) text('🛒 ' + cart.length + ' ürün • ' + (rich() ? '∞' : (tl + ORDER_FEE) + ' TL'), P.x + 112, P.y + 498, 15, '#ffffff', 'center', 800);
+  else text('Yemek seç, kurye getirsin! 🍕', P.x + P.w / 2, P.y + 498, 14, 'rgba(255,255,255,.8)', 'center', 700);
+  if (cart.length) { ctx.fillStyle = 'rgba(255,255,255,.2)'; rr(P.x + 218, P.y + 476, 66, 30, 15); ctx.fill(); text('🗑️ Boşalt', P.x + 251, P.y + 496, 11, '#ffffff', 'center', 800); btn(P.x + 218, P.y + 476, 66, 30, '', () => { LB.cart = []; sfx('pop'); }, { hidden: true }); }
+  ctx.fillStyle = cart.length ? '#27b36a' : '#7d8aa6'; rr(P.x + 40, P.y + 514, P.w - 80, 44, 22); ctx.fill();
+  text('🛵 Sipariş ver', P.x + P.w / 2, P.y + 543, 19, '#ffffff', 'center', 800);
+  btn(P.x + 40, P.y + 514, P.w - 80, 44, '', orderSend, { hidden: true });
+}
+function drawPhoneApp() { const a = LB.app; if (a === 'order') drawOrderApp(); else if (a === 'memory') drawMemoryApp(); else if (a === 'weather') drawWeatherApp(); else if (a === 'paint') drawPaintApp(); else if (a === 'calc') drawCalcApp(); else if (a === 'gallery') drawGalleryApp(); else if (a === 'reviews') drawReviewsApp(); else LB.app = null; }
 function drawPhone() {
   if (scene !== 'lobby' || !LB.me || LB.ride || LB.edit || CK || FG || SCH || LB.sleepT > 0) { LB.phone = false; LB.piano = false; LB.app = null; return; }
   if (LB.piano) { drawPianoApp(); return; }
@@ -8250,6 +8396,7 @@ function drawPhone() {
     ['🧮', 'Hesap', () => { LB.app = 'calc'; }, '#ffb347', '#e0662f', true],
     ['🖼️', 'Galeri', () => { LB.app = 'gallery'; galLoad(); }, '#8fd3fe', '#4a8cff', true],
     ['⭐', 'Yorumlar', () => { LB.app = 'reviews'; LB.rv = 0; }, '#ffd23f', '#ff9f1c', true],
+    ['🛵', 'Yemek', () => { LB.app = 'order'; orderPage = 0; }, '#ff7a45', '#d63a2a', true],
     ['🎒', 'Çanta', () => { LB.bag = !LB.bag; }, '#7ab8ff', '#4a7fe0', true],
     ['👭', 'Arkadaş', showFriends, '#ff8fb8', '#e0558a', true],
     ['⚙️', 'Ayarlar', showSettings, '#b8c0d0', '#7d8aa6', true],
@@ -8257,7 +8404,7 @@ function drawPhone() {
     ['🚪', 'Ana menü', () => { save(); go('title'); }, '#ff6b6b', '#d63a4a', true]
   ].filter(a => a[5]);
   apps.forEach((a, i) => {
-    const col = i % 4, row = Math.floor(i / 4), x = px + 24 + col * 66, y = py + 204 + row * 92;
+    const col = i % 4, row = Math.floor(i / 4), x = px + 24 + col * 66, y = py + 204 + row * (apps.length > 16 ? 80 : 92);
     ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.3)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
     const tg = ctx.createLinearGradient(x, y, x, y + 58); tg.addColorStop(0, a[3]); tg.addColorStop(1, a[4]); ctx.fillStyle = tg; phoneRoundRect(x, y, 58, 58, 16); ctx.fill(); ctx.restore();
     ctx.fillStyle = 'rgba(255,255,255,.22)'; ctx.beginPath(); ctx.ellipse(x + 29, y + 11, 22, 7, 0, 0, Math.PI * 2); ctx.fill();
