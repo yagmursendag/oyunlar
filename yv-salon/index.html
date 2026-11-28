@@ -1771,7 +1771,7 @@ function drawBody(c, walk, mood) {
     lava: { shape: c.girl ? 'gown' : 'coat', long: 1, sleeve: '#3a1a1a', legs: '#ff5a1f', lava: 1 },
     poseidon: { shape: c.girl ? 'gown' : 'coat', long: 1, sleeve: '#1fa7c9', legs: '#0f6f9a', poseidon: 1 },
     fox: { shape: 'coat', long: 1, sleeve: '#ff8a2a', legs: '#6a3a1a', nf: 'fox' },
-    panda: { shape: 'coat', long: 1, sleeve: '#f4f4f4', legs: '#2a2a33', nf: 'panda' },
+    panda: { shape: 'coat', long: 1, sleeve: '#2a2a33', legs: '#2a2a33', nf: 'panda' },
     frog: { shape: 'coat', long: 1, sleeve: '#5fcf5a', legs: '#3f9a3a', nf: 'frog' },
     orangedog: { shape: 'coat', long: 1, sleeve: '#ee8f4e', legs: '#f7dfb0', nf: 'orangedog' },
     navydog: { shape: 'coat', long: 1, sleeve: '#3f6fa8', legs: '#d9c9a0', nf: 'navydog' },
@@ -1815,6 +1815,26 @@ function drawBody(c, walk, mood) {
     ctx.fillStyle = capeCol; ctx.strokeStyle = mix(capeCol, '#000000', 0.3); ctx.lineWidth = 4;
     ctx.beginPath(); ctx.moveTo(-70, 150); ctx.lineTo(70, 150); ctx.quadraticCurveTo(130, 330, 150 + wv, 520); ctx.quadraticCurveTo(75, 500, 0, 530 - wv); ctx.quadraticCurveTo(-75, 500, -150 + wv, 520); ctx.quadraticCurveTo(-130, 330, -70, 150); ctx.closePath(); ctx.fill(); ctx.stroke();
   }
+  // 🐾 animal suits (2D): tails, wings and shells peek out behind the body
+  {
+    const wag = Math.sin(T * 3.2) * 0.14;
+    const tail = (c1, c2, len, th, ang) => { ctx.save(); ctx.translate(bx - 26, by - 78); ctx.rotate(ang + wag); ctx.fillStyle = c1; ctx.strokeStyle = mix(c1, '#000000', 0.35); ctx.lineWidth = 4; ell(len * 0.5, 0, len * 0.5, th); ctx.stroke(); if (c2) { ctx.fillStyle = c2; ctx.beginPath(); ctx.ellipse(len * 0.86, 0, len * 0.17, th * 0.8, 0, 0, Math.PI * 2); ctx.fill(); } ctx.restore(); };
+    if (outfit === 'fox') tail('#ff8a2a', '#ffffff', 156, 38, -0.45);
+    else if (['bluedog', 'orangedog', 'navydog', 'tandog', 'toonarmor'].includes(outfit)) { const N = NFD[outfit]; tail(N.c1, N.c2, 104, 16, -0.6); }
+    else if (outfit === 'tiger') tail('#ff9a2a', '#3a2a1a', 124, 18, -0.55);
+    else if (outfit === 'dino') { tail('#4fbf6a', '#8be07e', 132, 24, -0.4); ctx.fillStyle = '#3f9a55'; for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.moveTo(-34 + k * 24, 150 + k * 6); ctx.lineTo(-22 + k * 24, 118 + k * 6); ctx.lineTo(-10 + k * 24, 150 + k * 6); ctx.closePath(); ctx.fill(); } }
+    else if (outfit === 'panda') { ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#c8c8d2'; ctx.lineWidth = 4; circle(bx - 4, by - 70, 27); ctx.stroke(); }
+    else if (outfit === 'bee') {
+      for (const sd of [-1, 1]) for (const [ox, oy, rx, ry, a] of [[0, -70, 30, 74, 0], [sd * 26, -26, 20, 46, sd * 0.5]]) {
+        ctx.save(); ctx.translate(sd * 44, 196); ctx.rotate(sd * (0.75 + Math.sin(T * 13) * 0.1)); ctx.fillStyle = 'rgba(220,243,255,.82)'; ctx.strokeStyle = 'rgba(110,170,215,.95)'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.ellipse(ox, oy, rx, ry, a, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.strokeStyle = 'rgba(110,170,215,.55)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(ox, oy - ry * 0.9); ctx.lineTo(ox, oy + ry * 0.9); ctx.stroke(); ctx.restore();
+      }
+      ctx.fillStyle = '#2a2a33'; ctx.beginPath(); ctx.moveTo(-14, by - 8); ctx.lineTo(14, by - 8); ctx.lineTo(0, by + 40); ctx.closePath(); ctx.fill();
+    }
+    else if (outfit === 'ladybug') {
+      for (const sd of [-1, 1]) { ctx.save(); ctx.translate(sd * 104, by - 120); ctx.rotate(sd * 0.1); ctx.fillStyle = '#e8434f'; ctx.strokeStyle = '#7a1620'; ctx.lineWidth = 4; ell(0, 0, 48, 150); ctx.stroke(); ctx.fillStyle = '#2a2a33'; circle(sd * 8, -70, 10); circle(sd * -6, -10, 12); circle(sd * 10, 60, 9); ctx.fillStyle = 'rgba(255,255,255,.3)'; ell(sd * -14, -90, 10, 36, 0.2); ctx.restore(); }
+    }
+  }
   // legs
   for (const [s, a] of [[-1, sw], [1, -sw]]) {
     ctx.save(); ctx.translate(s * 30, 400); ctx.rotate(a);
@@ -1822,6 +1842,7 @@ function drawBody(c, walk, mood) {
     ctx.beginPath(); ctx.moveTo(-19, 0); ctx.lineTo(19, 0); ctx.quadraticCurveTo(18, 110, 14, 192); ctx.lineTo(-14, 192); ctx.quadraticCurveTo(-18, 110, -19, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
     if (REAL) { ctx.save(); ctx.clip(); const lg = ctx.createLinearGradient(-19, 0, 19, 0); lg.addColorStop(0, 'rgba(255,255,255,.22)'); lg.addColorStop(0.5, 'rgba(255,255,255,0)'); lg.addColorStop(1, 'rgba(60,20,20,.26)'); ctx.fillStyle = lg; ctx.fillRect(-22, 0, 44, 195); ctx.fillStyle = 'rgba(255,255,255,.14)'; ell(-6, 130, 5, 32); ctx.strokeStyle = 'rgba(0,0,0,.14)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-13, 100); ctx.quadraticCurveTo(0, 108, 13, 100); ctx.stroke(); ctx.fillStyle = 'rgba(0,0,0,.1)'; ell(0, 186, 14, 6); ctx.restore(); }
     if (outfit === 'tracksuit') { ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.fillRect(s * 12 - 2, 10, 4, 170); }
+    if (/^atl_/.test(outfit) && !ATL[outfit][1]) { const A0 = ATL[outfit][0]; if (outfit === 'atl_spor') { ctx.fillStyle = '#ffffff'; ctx.fillRect(s * 13 - 2.5, 4, 5, 166); } else if (outfit === 'atl_tayt') { ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.lineWidth = 3; line(s * 12, 6, s * 10, 168); } else if (outfit === 'atl_kamuf') { ctx.save(); ctx.beginPath(); ctx.rect(-18, 0, 36, 190); ctx.clip(); const cf = ['#4a5a30', '#8a9a5a', '#3a3a28']; for (let k = 0; k < 7; k++) { ctx.fillStyle = cf[k % 3]; ell(-8 + (k * 13) % 20, 14 + k * 24, 11, 8, k); } ctx.restore(); } else if (outfit === 'atl_kot') { ctx.fillStyle = 'rgba(255,255,255,.16)'; ell(0, 96, 12, 20); ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.lineWidth = 2; ctx.setLineDash([4, 4]); line(s * 15, 6, s * 12, 170); ctx.setLineDash([]); } ctx.fillStyle = mix(A0, '#000000', 0.22); ctx.fillRect(-15, 168, 30, 8); }
     if (legCol === c.skin) { ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#e6d5e0'; ctx.lineWidth = 2; rr(-16, 170, 32, 22, 8); ctx.fill(); ctx.stroke(); }
     ctx.fillStyle = 'rgba(0,0,0,.07)'; ell(0, 100, 15, 9); ctx.strokeStyle = 'rgba(0,0,0,.13)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 98, 11, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
     if (legCol === c.skin) { ctx.fillStyle = c.shoe; ctx.globalAlpha = 0.55; ctx.fillRect(-16, 176, 32, 3); ctx.globalAlpha = 1; }
@@ -1839,7 +1860,8 @@ function drawBody(c, walk, mood) {
     ctx.fillStyle = O.long ? sleeveCol : c.skin; ctx.strokeStyle = O.long ? mix(sleeveCol, '#000000', 0.25) : skinOl; ctx.lineWidth = 4;
     ctx.beginPath(); ctx.moveTo(-17, 10); ctx.lineTo(17, 10); ctx.quadraticCurveTo(16, 110, 12, 206); ctx.lineTo(-12, 206); ctx.quadraticCurveTo(-16, 110, -17, 10); ctx.closePath(); ctx.fill(); ctx.stroke();
     if (REAL) { ctx.save(); ctx.clip(); const ag = ctx.createLinearGradient(-17, 0, 17, 0); ag.addColorStop(0, 'rgba(255,255,255,.24)'); ag.addColorStop(0.5, 'rgba(255,255,255,0)'); ag.addColorStop(1, 'rgba(40,20,40,.28)'); ctx.fillStyle = ag; ctx.fillRect(-20, 0, 40, 210); ctx.strokeStyle = 'rgba(0,0,0,.16)'; ctx.lineWidth = 2; for (const yy of [64, 118, 164]) { ctx.beginPath(); ctx.moveTo(-14, yy); ctx.quadraticCurveTo(0, yy + 7, 14, yy); ctx.stroke(); } ctx.fillStyle = 'rgba(255,255,255,.18)'; ell(-6, 100, 3.5, 36); ctx.restore(); }
-    ctx.fillStyle = c.skin; ctx.strokeStyle = skinOl;
+    const pawC = { fox: '#5a3014', panda: '#2a2a33', frog: '#7ed957', bluedog: '#f2d9a8', orangedog: '#f7dfb0', navydog: '#d9c9a0', tandog: '#f3e2bd', toonarmor: '#f3e2bd', bee: '#2a2a33', ladybug: '#2a2a33', tiger: '#fff1d4', bunny: '#ffffff', dino: '#8be07e' }[outfit];
+    ctx.fillStyle = pawC || c.skin; ctx.strokeStyle = pawC ? mix(pawC, '#000000', 0.3) : skinOl;
     const fl = [15, 19, 18, 13];
     for (let k = 0; k < 4; k++) { const fx = -10.5 + k * 7; rr(fx - 3.5, 222, 7, fl[k] + 6, 3.5); ctx.fill(); ctx.stroke(); }
     ctx.beginPath(); ctx.ellipse(-s * 14, 216, 6, 12, -s * 0.55, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -2171,6 +2193,32 @@ function drawBody(c, walk, mood) {
     else if (N.deco === 'labcoat') { ctx.fillStyle = 'rgba(0,0,0,.1)'; ctx.beginPath(); ctx.moveTo(-14, y0 + 6); ctx.lineTo(0, ym + 20); ctx.lineTo(14, y0 + 6); ctx.closePath(); ctx.fill(); ctx.strokeStyle = '#c9d6e6'; ctx.lineWidth = 3; line(-20, y0 + 6, 0, ym + 30); line(20, y0 + 6, 0, ym + 30); ctx.fillStyle = N.c2; rr(-62, ym + 4, 34, 30, 5); ctx.fill(); ctx.fillStyle = '#e8434f'; rr(-52, ym - 4, 5, 14, 2); ctx.fill(); ctx.fillStyle = '#5ac8ff'; circle(10, ym + 18, 3); circle(10, ym + 42, 3); }
     ctx.restore();
   }
+  // 🐾 animal suits (2D): fur, markings, a fluffy collar and a furry hem on top of the plain coat
+  if (['fox', 'panda', 'frog', 'bluedog', 'orangedog', 'navydog', 'tandog', 'toonarmor', 'bee', 'ladybug', 'tiger', 'bunny', 'dino'].includes(outfit)) {
+    const N = NFD[outfit] || (outfit === 'tiger' ? { c1: '#ff9a2a', c2: '#fff1d4' } : { c1: '#ffffff', c2: '#ffd6e6' }), fur = mix(N.c1, '#000000', 0.2), lite = mix(N.c1, '#ffffff', 0.4), ym2 = (140 + by) / 2;
+    ctx.save(); torso(); ctx.clip(); ctx.lineCap = 'round';
+    if (!['tiger', 'bee', 'ladybug', 'dino'].includes(outfit)) for (let k = 0; k < 16; k++) { // short fur strokes near the sides
+      const sd = k % 2 ? 1 : -1, y = 168 + (k >> 1) * ((by - 190) / 8), xx = sd * (64 + (k * 7) % 22);
+      ctx.strokeStyle = k % 3 ? fur : lite; ctx.globalAlpha = 0.55; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(xx, y); ctx.lineTo(xx - sd * 14, y + 12); ctx.moveTo(xx - sd * 6, y + 5); ctx.lineTo(xx - sd * 18, y + 22); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    if (outfit === 'fox') { ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.moveTo(-44, 142); ctx.lineTo(44, 142); ctx.quadraticCurveTo(24, ym2 + 20, 0, ym2 + 76); ctx.quadraticCurveTo(-24, ym2 + 20, -44, 142); ctx.closePath(); ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,.08)'; ctx.lineWidth = 2; ctx.stroke(); }
+    else if (outfit === 'panda') { ctx.fillStyle = '#2a2a33'; for (const sd of [-1, 1]) ell(sd * 72, 178, 22, 38, sd * -0.3); ctx.fillStyle = 'rgba(255,255,255,.18)'; ell(-30, ym2, 14, 50, 0.1); }
+    else if (outfit === 'frog') {
+      for (const [x, y, r] of [[-54, 196, 14], [50, 226, 11], [-42, 300, 12], [58, 330, 15], [-10, by - 40, 10]]) { ctx.fillStyle = '#3f9a3a'; circle(x, y, r); ctx.fillStyle = 'rgba(255,255,255,.28)'; circle(x - r * 0.3, y - r * 0.3, r * 0.35); }
+      ctx.strokeStyle = 'rgba(80,150,60,.45)'; ctx.lineWidth = 2.5; for (let k = 0; k < 5; k++) { ctx.beginPath(); ctx.arc(0, ym2 - 40 + k * 30, 40, 0.2, Math.PI - 0.2); ctx.stroke(); }
+    }
+    else if (['bluedog', 'orangedog', 'navydog', 'tandog', 'toonarmor'].includes(outfit)) { ctx.fillStyle = fur; ctx.globalAlpha = 0.35; ell(-62, ym2 - 30, 26, 70, 0.2); ell(62, ym2 + 10, 22, 54, -0.2); ctx.globalAlpha = 1; ctx.fillStyle = N.c2; for (let k = -2; k <= 2; k++) { ctx.beginPath(); ctx.moveTo(k * 16 - 9, ym2 - 26); ctx.lineTo(k * 16, ym2 - 6); ctx.lineTo(k * 16 + 9, ym2 - 26); ctx.closePath(); ctx.fill(); } }
+    else if (outfit === 'ladybug') { ctx.fillStyle = 'rgba(255,255,255,.34)'; ell(-50, 200, 14, 36, 0.3); ctx.fillStyle = '#2a2a33'; ctx.fillRect(-3, 160, 6, by - 160); }
+    else if (outfit === 'bee') { ctx.fillStyle = 'rgba(255,255,255,.32)'; ell(-50, 196, 14, 34, 0.3); ctx.fillStyle = '#fff3b0'; for (let k = 0; k < 14; k++) circle(-78 + (k * 37) % 156, 164 + (k * 53) % (by - 190), 3.5); }
+    else if (outfit === 'dino') { ctx.strokeStyle = 'rgba(30,110,60,.55)'; ctx.lineWidth = 2.5; for (let r = 0; r < 6; r++) for (let k = -3; k <= 3; k++) { ctx.beginPath(); ctx.arc(k * 26 + (r % 2) * 13, 176 + r * 40, 12, 0.1, Math.PI - 0.1); ctx.stroke(); } }
+    ctx.restore();
+    // fluffy collar around the neck and a furry hem (the smooth bee and ladybug only get the collar)
+    const cc = { panda: '#2a2a33', bee: '#fff3b0', ladybug: '#2a2a33', tiger: '#fff1d4', bunny: '#ffffff' }[outfit] || N.c2;
+    ctx.fillStyle = cc; ctx.strokeStyle = mix(cc, '#000000', 0.28); ctx.lineWidth = 2.5;
+    for (let k = -4; k <= 4; k++) { ctx.beginPath(); ctx.arc(k * 11.5, 148 + Math.abs(k) * 1.6, 11, Math.PI, 0); ctx.fill(); ctx.stroke(); }
+    if (outfit !== 'bee' && outfit !== 'ladybug') for (let k = -5; k <= 5; k++) { ctx.beginPath(); ctx.arc(k * (bx * 2 / 11), by + 1, 12, 0, Math.PI); ctx.fill(); ctx.stroke(); }
+  }
   if (O.football) {
     ctx.save(); torso(); ctx.clip(); ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fillRect(-170, 300, 340, 10); ctx.restore();
     ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.moveTo(-32, 141); ctx.lineTo(0, 176); ctx.lineTo(32, 141); ctx.lineTo(22, 141); ctx.lineTo(0, 162); ctx.lineTo(-22, 141); ctx.closePath(); ctx.fill();
@@ -2234,6 +2282,21 @@ function drawBody(c, walk, mood) {
       ctx.globalAlpha = 1; ctx.fillStyle = mix(c.cloth, '#ffffff', 0.3); for (const sd of [-1, 1]) ell(sd * 14, 360, 14, 9, sd * 0.4); circle(0, 360, 6);
     } else if (skirt) { ctx.fillStyle = mix(c.cloth, '#000000', 0.3); ctx.beginPath(); ctx.moveTo(-86, 356); ctx.lineTo(86, 356); ctx.lineTo(112, 440); ctx.quadraticCurveTo(0, 452, -112, 440); ctx.closePath(); ctx.fill(); }
     else { ctx.fillStyle = O.bottom || pants; rr(-86, 360, 172, 60, 14); ctx.fill(); ctx.fillStyle = 'rgba(0,0,0,.12)'; ctx.fillRect(-2, 372, 4, 48); }
+  }
+  // 🎽 athlete outfits (2D): trimmed tank top with a badge, waistband, drawstring, pockets and stitching
+  if (/^atl_/.test(outfit)) {
+    const A = ATL[outfit], bc = A[0], dk2 = mix(bc, '#000000', 0.3), lt = mix(bc, '#ffffff', 0.45);
+    ctx.save(); torso(); ctx.clip(); ctx.fillStyle = 'rgba(255,255,255,.65)'; ctx.fillRect(-90, 196, 6, 166); ctx.fillRect(84, 196, 6, 166); ctx.restore(); // side stripes
+    ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-36, 143); ctx.quadraticCurveTo(0, 178, 36, 143); ctx.stroke();
+    for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(sd * 64, 152); ctx.quadraticCurveTo(sd * 86, 196, sd * 87, 252); ctx.stroke(); }
+    ctx.fillStyle = '#ffffff'; circle(0, 238, 25); ctx.fillStyle = mix(c.cloth, '#000000', 0.15); circle(0, 238, 21); ctx.fillStyle = '#ffffff'; star4(0, 238, 15);
+    // waistband and drawstring
+    ctx.fillStyle = dk2; rr(-86, 358, 172, 14, 6); ctx.fill();
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-8, 366); ctx.quadraticCurveTo(-20, 392, -13, 404); ctx.moveTo(8, 366); ctx.quadraticCurveTo(21, 390, 14, 406); ctx.stroke(); ctx.fillStyle = '#ffffff'; circle(-13, 405, 3.5); circle(14, 407, 3.5);
+    if (outfit === 'atl_kot') { ctx.strokeStyle = lt; ctx.lineWidth = 2; ctx.setLineDash([5, 4]); for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(sd * 30, 376); ctx.lineTo(sd * 74, 376); ctx.lineTo(sd * 68, 412); ctx.quadraticCurveTo(sd * 52, 420, sd * 30, 404); ctx.stroke(); } ctx.setLineDash([]); ctx.fillStyle = '#ffd23f'; for (const sd of [-1, 1]) circle(sd * 74, 377, 3); }
+    else if (outfit === 'atl_kamuf') { ctx.save(); rr(-86, 360, 172, 60, 14); ctx.clip(); const cf = ['#4a5a30', '#8a9a5a', '#3a3a28']; for (let k = 0; k < 11; k++) { ctx.fillStyle = cf[k % 3]; ell(-70 + (k * 41) % 150, 372 + (k * 17) % 40, 14 + k % 3 * 4, 8 + k % 2 * 4, k * 0.7); } ctx.restore(); }
+    else if (outfit === 'atl_spor' || outfit === 'atl_tayt') { ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect(-86, 386, 172, 4); }
+    else { ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-82, 412); ctx.lineTo(82, 412); ctx.stroke(); }
   }
   // outfit details
   if (outfit === 'overalls') {
