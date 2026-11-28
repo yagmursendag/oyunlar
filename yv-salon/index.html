@@ -5116,7 +5116,7 @@ function lbInit() {
   lbResize();
   toon('#ffffff'); // builds the toon gradient
   const sc = LB.scene = new THREE.Scene();
-  sc.fog = new THREE.Fog(SEA.fog, 100, 270);
+  sc.fog = new THREE.Fog(SEA.fog, LITE ? 140 : 190, LITE ? 320 : 400); // thin fog: far buildings stay clear
   sc.add(LB.sky = new THREE.Mesh(new THREE.SphereGeometry(260, 32, 16), new THREE.MeshBasicMaterial({ side: THREE.BackSide, fog: false, map: lbTex(4, 256, (g, w, h) => { const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, SEA.sky[0]); gr.addColorStop(0.45, SEA.sky[1]); gr.addColorStop(0.85, SEA.sky[2]); gr.addColorStop(1, SEA.sky[3]); g.fillStyle = gr; g.fillRect(0, 0, w, h); }) })));
   LB.cam = new THREE.PerspectiveCamera(50, W / H, 0.1, 600);
   sc.add(LB.hemi = new THREE.HemisphereLight('#ffffff', '#9fd89a', 0.6));
@@ -6555,7 +6555,7 @@ function lbCullUpdate(dt) {
   if (!LB.cull) { lbCullSetup(); LB.cullT = 0; }
   LB.cullT -= dt; if (LB.cullT > 0) return; LB.cullT = 0.3;
   const m = LB.me.position, town = LB.where === 'town';
-  for (const zn of LB.cull) { const vis = !town ? true : Math.hypot(m.x - zn.x, m.z - zn.z) < zn.vis; if (zn.on !== vis) { zn.on = vis; for (const o of zn.objs) o.visible = vis; } }
+  for (const zn of LB.cull) { const vis = !town ? true : Math.hypot(m.x - zn.x, m.z - zn.z) < zn.vis * (LITE ? 2.5 : 5); if (zn.on !== vis) { zn.on = vis; for (const o of zn.objs) o.visible = vis; } }
 }
 function lbBuildBeach() {
   const sc = LB.scene;
