@@ -4974,8 +4974,9 @@ function lbRandomLook() {
 
 // ---------- building the town ----------
 // the town house looks like the house you bought
-function lbHomeStyle(p) {
-  const hz = houseCur(), two = hz.floors === 2;
+function lbHomeStyle(p) { return lbHouseStyle(p, houseCur()); }
+function lbHouseStyle(p, hz) {
+  const two = hz.floors === 2;
   const W = { small: 8, cottage: 8.5, garden: 9.5, beach: 10, villa: 12, two1: 9, two2: 11, two3: 11 }[hz.id] || 8;
   const R = { small: '#8b5cf6', cottage: '#e0609f', garden: '#2fa35a', beach: '#1fa7c9', villa: '#7e57c2', two1: '#c9784a', two2: '#3b5bd6', two3: '#ff5fa2' }[hz.id] || '#8b5cf6';
   return { ...p, hz, w: W, h: two ? 9.5 : 5.5, col: hz.id === 'small' ? p.col : hz.wall, roof: R };
@@ -4985,7 +4986,7 @@ function lbRebuildHomeOuter() {
   const old = pl.bg, nb = lbBuilding(pl); nb.position.copy(old.position); nb.rotation.copy(old.rotation); LB.scene.remove(old); LB.scene.add(nb); pl.bg = nb;
 }
 function lbBuilding(p) {
-  if (p.id === 'home') p = lbHomeStyle(p);
+  if (p.id === 'home' && !p.guest) p = lbHomeStyle(p);
   const g = new THREE.Group(), w = p.w || 9, d = p.d || 7, h = p.h || (p.id === 'hospital' ? 7.5 : 6), flat = ['hospital', 'market', 'police', 'fire', 'school', 'avm'].includes(p.id) || !!(p.hz && p.hz.id === 'villa');
   g.add(lbM(new THREE.BoxGeometry(w, h, d), toon(p.col), 0, h / 2, 0));
   g.add(lbM(new THREE.BoxGeometry(w + 0.3, 0.5, d + 0.3), toon(mix(p.col, '#000000', 0.12)), 0, 0.25, 0));
@@ -7320,7 +7321,7 @@ function mpLeave(keep) {
 }
 function mpPayload() {
   const me = LB.me, p = me.position, num = (v, a, b) => clamp(Number.isFinite(v) ? Math.round(v * 100) / 100 : 0, a, b);
-  return { n: String(profile.name || 'Oyuncu').slice(0, 20), l: JSON.stringify([...encodeLook(profile.look), Math.min(myLevel(), 9999), myTitle() ? TITLE_KEYS.indexOf(profile.job || 'student') + 1 : 0, myToonIdx() + 1]).slice(0, 300), x: num(p.x, -499, 499), z: num(p.z, -499, 499), r: num(Math.atan2(Math.sin(me.rotation.y), Math.cos(me.rotation.y)) + 8 * headIdx(), -1000, 1000), y: num(p.y, 0, 9.9), e: clamp(MP.e | 0, 0, 29), m: MP.m, h: !MP.host, t: MP.fb.database.ServerValue.TIMESTAMP };
+  return { n: String(profile.name || 'Oyuncu').slice(0, 20), l: (() => { const la = [...encodeLook(profile.look), Math.min(myLevel(), 9999), myTitle() ? TITLE_KEYS.indexOf(profile.job || 'student') + 1 : 0, myToonIdx() + 1], withHouse = JSON.stringify([...la, HOUSES.findIndex(h => h.id === houseCur().id) + 1]); return (withHouse.length <= 300 ? withHouse : JSON.stringify(la)).slice(0, 300); })(), x: num(p.x, -499, 499), z: num(p.z, -499, 499), r: num(Math.atan2(Math.sin(me.rotation.y), Math.cos(me.rotation.y)) + 8 * headIdx(), -1000, 1000), y: num(p.y, 0, 9.9), e: clamp(MP.e | 0, 0, 29), m: MP.m, h: !MP.host, t: MP.fb.database.ServerValue.TIMESTAMP };
 }
 function mpEmote(i) {
   if (i < 0 || !MP_SAY[i]) return; if (i < 19) questEvent('emote');
@@ -7336,12 +7337,13 @@ function mpPeer(key, v) {
   const lookStr = typeof v.l === 'string' ? v.l : '', name = String(v.n || 'Oyuncu').slice(0, 20);
   if (!pe || pe.l !== lookStr || pe.n !== name) {
     const first = !pe; if (pe) { LB.scene.remove(pe.av); if (pe.pet) LB.scene.remove(pe.pet); }
-    let look = null, lvl = 1, title = ''; try { const la = JSON.parse(lookStr); look = decodeLook(la); lvl = Math.max(1, Math.min(9999, Math.floor(+la[25]) || 1)); title = TITLE_TXT[TITLE_KEYS[(Math.floor(+la[26]) || 0) - 1]] || ''; const tf = Math.floor(+la[27]) || 0; if (look && tf > 0 && tf <= 4) look = { ...look, toon: tf - 1 }; } catch (e) { }
+    let look = null, lvl = 1, title = '', hsi = 0; try { const la = JSON.parse(lookStr); hsi = Math.floor(+la[28]) || 0; look = decodeLook(la); lvl = Math.max(1, Math.min(9999, Math.floor(+la[25]) || 1)); title = TITLE_TXT[TITLE_KEYS[(Math.floor(+la[26]) || 0) - 1]] || ''; const tf = Math.floor(+la[27]) || 0; if (look && tf > 0 && tf <= 4) look = { ...look, toon: tf - 1 }; } catch (e) { }
     look = look || normLook({}); MP.arts = MP.arts || {}; if (MP.arts[key]) look = normLook({ ...look, art: MP.arts[key] });
     if (MP.arts[key] === undefined) { MP.arts[key] = ''; try { Promise.resolve(MP.db.ref('arts/' + key).once('value')).then(sn => { const a = sn.val(); if (artOk(a)) { MP.arts[key] = a; const q = MP.peers[key]; if (q) q.l = null; } }).catch(() => { }); } catch (e) { } }
     const av = lbAvatar(look, '🌐 ' + (lvl > 1 ? '⭐' + lvl + ' ' : '') + name + (title ? ' · ' + title : ''), '#8b5cf6');
     av.position.set(+v.x || 0, 0, +v.z || 0); av.rotation.y = +v.r || 0; LB.scene.add(av);
     av.userData.info = { kind: 'online', name, look, id: '—', lvl, title, uid: key };
+    try { guestHouseAdd(key, name, hsi); } catch (e) { }
     pe = MP.peers[key] = { av, l: lookStr, n: name, m: v.m, tx: 0, tz: 0, tr: 0, ty: 0, seen: 0, host: false };
     if (look.pet && look.pet !== 'none') { const pt = lbPet(look.pet); if (look.pet === 'dragon') pt.scale.setScalar(1.4); pt.position.set(av.position.x + 1, 0, av.position.z); LB.scene.add(pt); pe.pet = pt; }
     if (first) say(`🌐 ${name} lobiye geldi!`);
@@ -7351,7 +7353,24 @@ function mpPeer(key, v) {
   if (v.m !== pe.m) { pe.m = v.m; if (v.e < 19 || v.e >= 25) lbUndisguise(pe.av.userData.A);
     if (v.e >= 19) lbDisguise(pe.av, HIDE_KINDS[v.e - 19]); else if (v.e >= 11) lbAction(pe.av, MP_ACTS[v.e - 11]); else { const s = MP_SAY[v.e]; if (s) lbSay(pe.av, s); } }
 }
-function mpDrop(key) { const pe = MP.peers[key]; if (!pe) return; if (LB.scene) { LB.scene.remove(pe.av); if (pe.pet) LB.scene.remove(pe.pet); } if (LB.prof && LB.prof.av === pe.av) LB.prof = null; delete MP.peers[key]; }
+// ---------- friends' houses: a player who is in the lobby gets their house next to mine (two free spots)
+const GUEST_SLOTS = [[14, 4], [-14, 2]]; // [along the street, outward] relative to my house
+function guestHouseDel(key) {
+  const gh = LB.guest && LB.guest[key]; if (!gh) return;
+  LB.scene.remove(gh.b); const i = (LB.trees || []).indexOf(gh.col); if (i >= 0) LB.trees.splice(i, 1); delete LB.guest[key];
+}
+function guestHouseAdd(key, name, hsi) {
+  if (!LB.scene || !LB.places) return; LB.guest = LB.guest || {};
+  const old = LB.guest[key], hz = HOUSES[hsi - 1]; let slot = old ? old.slot : -1;
+  guestHouseDel(key);
+  if (!hz) return; // older game versions do not send a house
+  const used = Object.values(LB.guest).map(g => g.slot); if (slot < 0) slot = GUEST_SLOTS.findIndex((_, i) => !used.includes(i)); if (slot < 0) return;
+  const home = lbPlaceById('home'), a = home.a, [tt, rr] = GUEST_SLOTS[slot], x = home.pos.x + Math.cos(a) * tt + Math.sin(a) * rr, z = home.pos.z + Math.sin(a) * tt - Math.cos(a) * rr;
+  const b = lbBuilding(lbHouseStyle({ id: 'home', guest: true, name: String(name).slice(0, 12) + "'in Evi", icon: '🏡', col: '#fff3b0', d: 7 }, hz));
+  b.position.set(x, 0, z); b.rotation.y = -a; LB.scene.add(b);
+  const col = [x, z, 6.2]; (LB.trees = LB.trees || []).push(col); LB.guest[key] = { b, slot, col };
+}
+function mpDrop(key) { try { guestHouseDel(key); } catch (e) { } const pe = MP.peers[key]; if (!pe) return; if (LB.scene) { LB.scene.remove(pe.av); if (pe.pet) LB.scene.remove(pe.pet); } if (LB.prof && LB.prof.av === pe.av) LB.prof = null; delete MP.peers[key]; }
 // every frame: join / leave, send my state (5 a second while moving, every 2 s otherwise), move the others smoothly
 function mpTick(dt) {
   const inLobby = ['lobby', 'place', 'job'].includes(scene) && LB.ok && LB.me;
