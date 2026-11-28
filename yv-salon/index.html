@@ -358,7 +358,7 @@ const SHOP = [
   { tab: 'clothes', kind: 'outfit', id: 'orangedog', name: 'Bingo Kıyafeti', price: 2500, desc: 'Turuncu tüylü Bingo köpeği' },
   { tab: 'clothes', kind: 'outfit', id: 'navydog', name: 'Bandit Kıyafeti', price: 2500, desc: 'Koyu mavi tüylü Bandit baba köpek' },
   { tab: 'clothes', kind: 'outfit', id: 'tandog', name: 'Chilli Kıyafeti', price: 2500, desc: 'Bal rengi tüylü Chilli anne köpek' },
-  { tab: 'clothes', kind: 'outfit', id: 'toonarmor', name: 'Çizgi Film Zırhı', price: 35500, desc: 'Giyince Bluey ailesi gibi renkten renge döner' },
+  { tab: 'armor', kind: 'outfit', id: 'toonarmor', name: 'Çizgi Film Zırhı', price: 35500, desc: 'Giyince Bluey ailesi gibi renkten renge döner' },
   { tab: 'sale', kind: 'outfit', id: 'frog', name: 'Kurbağa Kıyafeti', price: 3500, old: 7000, desc: 'Kocaman kurbağa gözleri' },
   { tab: 'clothes', kind: 'outfit', id: 'bee', name: 'Arı Kıyafeti', price: 3000, desc: 'Çizgili, antenli' },
   { tab: 'clothes', kind: 'outfit', id: 'ladybug', name: 'Uğur Böceği Kıyafeti', price: 3000, desc: 'Benekli, siyah antenler' },
@@ -3461,7 +3461,7 @@ function drawShop() {
   if (shopTab === 'special') drawSpecial();
   if (shopTab === 'sale') drawSale();
   if (shopTab === 'new') drawNewTab();
-  if (shopTab === 'armor') drawArmorSoon();
+  if (shopTab === 'armor' && !SHOP.some(it => it.tab === 'armor')) drawArmorSoon(); // armors appear here once they are for sale
   if (shopTab === 'houses') drawHousesTab();
   const list = shopTab === 'special' || shopTab === 'sale' || shopTab === 'new' || shopTab === 'houses' ? [] : SHOP.filter(it => it.tab === shopTab), pages = shopTab === 'houses' ? Math.ceil(HOUSES.length / 4) : shopTab === 'sale' ? Math.ceil(SHOP.filter(it => it.tab === 'sale').length / 4) : Math.ceil(list.length / 12);
   if (shopPage >= pages) shopPage = 0;
@@ -3514,15 +3514,20 @@ const BLUEY_IDS = ['bluedog', 'orangedog', 'navydog', 'tandog', 'toonarmor'];
 function eventOn() { const t0 = new Date(); t0.setHours(0, 0, 0, 0); return t0 >= EVENT_DAY; }
 if (!eventOn()) for (let i = SHOP.length - 1; i >= 0; i--) if (SHOP[i].kind === 'outfit' && BLUEY_IDS.includes(SHOP[i].id)) SHOP.splice(i, 1);
 setInterval(() => { try { if (!eventOn() && profile && profile.look && BLUEY_IDS.includes(profile.look.outfit)) { profile.look.outfit = 'dress'; profile.toonForm = -1; save(); } } catch (e) { } }, 2000);
+// the Stitch event comes 8 days after the Bluey event
+const STITCH_DAY = new Date(EVENT_DAY.getFullYear(), EVENT_DAY.getMonth(), EVENT_DAY.getDate() + 8);
 function drawEventBanner() {
-  const t0 = new Date(); t0.setHours(0, 0, 0, 0); const days = Math.round((EVENT_DAY - t0) / 86400000);
-  if (days < -3) return;
-  const today = days === 0, past = days < 0, pulse = 0.5 + 0.5 * Math.sin(T * 3);
-  const msg = today ? '🎉 Bugün Bluey çizgi filmi etkinliği günü! 🎉' : past ? '🐶 Bluey etkinliği devam ediyor! 🐶' : `🐶 Bluey çizgi filmi etkinliği 7 Aralık 2026'da! ⏳ ${days} gün kaldı`;
-  const g = ctx.createLinearGradient(240, 0, 1040, 0); g.addColorStop(0, '#5ac8ff'); g.addColorStop(1, '#ffb347');
+  const t0 = new Date(); t0.setHours(0, 0, 0, 0);
+  const bd = Math.round((EVENT_DAY - t0) / 86400000), sd = Math.round((STITCH_DAY - t0) / 86400000);
+  const msgs = [];
+  if (bd >= -3) msgs.push({ c0: '#5ac8ff', c1: '#ffb347', txt: bd === 0 ? '🎉 Bugün Bluey çizgi filmi etkinliği günü! 🎉' : bd < 0 ? '🐶 Bluey etkinliği devam ediyor! 🐶' : `🐶 Bluey çizgi filmi etkinliği 7 Aralık 2026'da! ⏳ ${bd} gün kaldı` });
+  if (sd >= -3) msgs.push({ c0: '#3b82f6', c1: '#c084fc', txt: sd === 0 ? '🎉 Bugün Stitch etkinliği günü! 🎉' : sd < 0 ? '💙 Stitch etkinliği devam ediyor! 💙' : `💙 Bluey etkinliğinden 8 gün sonra Stitch etkinliği geliyor! 15 Aralık 2026 ⏳ ${sd} gün kaldı` });
+  if (!msgs.length) return;
+  const m = msgs[Math.floor(T / 4) % msgs.length], pulse = 0.5 + 0.5 * Math.sin(T * 3);
+  const g = ctx.createLinearGradient(240, 0, 1040, 0); g.addColorStop(0, m.c0); g.addColorStop(1, m.c1);
   ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.25)'; ctx.shadowBlur = 14; ctx.fillStyle = g; rr(240, 600, 800, 60, 30); ctx.fill(); ctx.restore();
   ctx.strokeStyle = 'rgba(255,255,255,' + (0.6 + 0.4 * pulse).toFixed(2) + ')'; ctx.lineWidth = 4; rr(240, 600, 800, 60, 30); ctx.stroke();
-  fitCenter(msg, 640, 631, 24, 740, '#ffffff'); ctx.fillStyle = '#ffffff'; star4(262, 612, 5 + pulse * 2); star4(1018, 648, 5 + pulse * 2);
+  fitCenter(m.txt, 640, 631, 24, 740, '#ffffff'); ctx.fillStyle = '#ffffff'; star4(262, 612, 5 + pulse * 2); star4(1018, 648, 5 + pulse * 2);
 }
 function drawTitle() {
   drawSalonBg();
