@@ -4490,7 +4490,7 @@ function lbAvatar(look, name, tagCol) {
   const skin = toon(mix(L.skin, '#ff9a85', 0.15), { emissive: mix(L.skin, '#ff6a55', 0.5), emissiveIntensity: 0.3 }), cloth = sp2 ? toon(sp2) : sp ? new THREE.MeshToonMaterial({ gradientMap: lbGrad, map: spTex }) : galaxy ? new THREE.MeshToonMaterial({ color: '#3b2a7a', gradientMap: lbGrad, emissive: '#5b2aa0', emissiveIntensity: 0.45 }) : toon(L.cloth), hairM = toon(L.hair, { side: THREE.DoubleSide }), shoe = toon(L.shoe);
   const dark = toon(mix(L.cloth, '#000000', 0.25)), pants = toon('#3b5b8f'), denim = toon('#4a6fa5');
   const o = sp2 ? { swim: 'tshirt', chef: 'raincoat', cowgirl: 'tshirt', astronaut: 'raincoat', football: 'tshirt', suit: 'sweater', police: 'sweater', firefighter: 'raincoat', pirate: 'sweater', ninja: 'sweater', royal: 'raincoat', knight: 'raincoat', wizard: 'gown', vampire: 'raincoat', samurai: 'raincoat', angel: 'gown', diamond: 'gown', cosmic: 'raincoat', dragonarmor: 'raincoat', whitedeer: 'gown', cloud: 'gown', farmer: 'sweater', doctor: 'raincoat', bunny: 'raincoat', tiger: 'raincoat', witch: 'dress', ball: 'gown', sunking: 'gown', icequeen: 'gown', elf: 'dress', robotsuit: 'raincoat', pharaoh: 'gown', unicornsuit: 'gown', snowman: 'raincoat', pumpkin: 'dress', candy: 'dress', crystal: 'gown', lava: 'gown', poseidon: 'gown', fox: 'raincoat', panda: 'raincoat', frog: 'raincoat', bluedog: 'raincoat', toonarmor: 'raincoat', tandog: 'raincoat', navydog: 'raincoat', orangedog: 'raincoat', bee: 'dress', ladybug: 'dress', rocker: 'raincoat', ballet: 'gown', scientist: 'raincoat', racer: 'raincoat', dino: 'raincoat', kimono: 'gown', sailor: 'raincoat' }[L.outfit] : galaxy ? (L.girl ? 'gown' : 'hero') : sp === 'fairy' ? 'dress' : sp === 'winter' ? 'raincoat' : sp ? (L.girl || sp === 'mermaid' ? 'gown' : 'tshirt') : L.outfit, dressy = ['dress', 'gown'].includes(o) || (o === 'apron' && L.girl), longSl = ['tracksuit', 'pajamas', 'raincoat', 'jacket', 'sweater'].includes(o);
-  const boyLeg = { suit: '#2a2f45', police: '#1f2f55', firefighter: '#3a3a46', pirate: '#3a2a20', ninja: '#2a2a38', royal: '#7a1f2b', knight: '#8d97a6', vampire: '#1a1424', samurai: '#3a2a20', cosmic: '#14122e', dragonarmor: '#2a0a0e', farmer: '#4a6fa5', tiger: '#ff9a2a', bunny: '#ffffff', doctor: '#5aa9ff' }[L.outfit];
+  const boyLeg = { suit: '#2a2f45', police: '#1f2f55', firefighter: '#3a3a46', pirate: '#3a2a20', ninja: '#2a2a38', royal: '#7a1f2b', knight: '#8d97a6', vampire: '#1a1424', samurai: '#3a2a20', cosmic: '#14122e', dragonarmor: '#2a0a0e', farmer: '#4a6fa5', tiger: '#ff9a2a', bunny: '#ffffff', doctor: '#5aa9ff', fox: '#7a3d12', panda: '#2a2a33', frog: '#3f9a3a', bluedog: '#3f7fc0', tandog: '#b8854a', navydog: '#2f527f', orangedog: '#c06a2e', bee: '#2a2a33', ladybug: '#2a2a33' }[L.outfit];
   const legM = ATL[L.outfit] ? (ATL[L.outfit][1] ? skin : toon(ATL[L.outfit][0])) : boyLeg ? toon(boyLeg) : L.outfit === 'football' ? skin : L.outfit === 'astronaut' ? cloth : L.outfit === 'swim' ? skin : o === 'overalls' ? denim : ['tracksuit', 'hero'].includes(o) ? dark : o === 'pajamas' ? cloth : o === 'tutu' ? toon('#fff0f6') : dressy || L.girl ? skin : pants;
   const body = new THREE.Group(); g.add(body); A.body = body;
   // legs pivot at the hip
@@ -4700,6 +4700,24 @@ function lbAvatar(look, name, tagCol) {
     else if (dc === 'checker') for (let k = -3; k <= 2; k++) body.add(lbM(new THREE.BoxGeometry(0.1, 0.1, 0.02), toon(k % 2 ? N.c2 : '#2a2a33'), k * 0.1 + 0.05, 1.1, 0.31));
     else if (dc === 'sakura') { for (let k = 0; k < 6; k++) body.add(lbM(new THREE.SphereGeometry(0.03, 6, 5), m2, -0.15 + (k * 0.11) % 0.3, 1.25 - (k % 3) * 0.1, 0.315)); const ob = lbM(new THREE.TorusGeometry(0.3, 0.06, 6, 22), toon('#ffd23f'), 0, 0.98, 0); ob.rotation.x = Math.PI / 2; body.add(ob); body.add(lbM(new THREE.SphereGeometry(0.06, 8, 6), toon('#e8434f'), 0, 0.98, 0.3)); }
     else if (dc === 'labcoat') { for (const s of [-1, 1]) { const l = lbM(new THREE.BoxGeometry(0.04, 0.3, 0.02), toon('#c9d6e6'), s * 0.09, 1.2, 0.31); l.rotation.z = s * 0.35; body.add(l); } body.add(lbM(new THREE.BoxGeometry(0.1, 0.1, 0.02), m2, -0.16, 0.95, 0.31)); }
+  }
+  // 🐾 animal suits: tails, wings, shell and spots so they really look like the animal
+  if (['fox', 'panda', 'frog', 'bluedog', 'orangedog', 'navydog', 'tandog', 'toonarmor', 'bee', 'ladybug'].includes(L.outfit) && NFD[L.outfit]) {
+    const N = NFD[L.outfit], f1 = toon(N.c1), f2 = toon(N.c2), dk = toon('#2a2a33'), sph = (r, m, x, y, z, sx = 1, sy = 1, sz = 1) => { const s = lbM(new THREE.SphereGeometry(r, 12, 10), m, x, y, z); s.scale.set(sx, sy, sz); body.add(s); return s; };
+    if (L.outfit === 'fox') { [[0.15, f1, 0.62, -0.38], [0.22, f1, 0.74, -0.58], [0.23, f1, 0.9, -0.76], [0.15, f2, 1.06, -0.9]].forEach(([r, m, y, z]) => sph(r, m, 0, y, z)); }
+    else if (L.outfit === 'panda') { sph(0.19, f1, 0, 0.66, -0.42); }
+    else if (L.outfit === 'frog') { [[-0.14, 1.15], [0.12, 1.05], [-0.06, 0.88], [0.15, 0.82]].forEach(([x, y]) => sph(0.07, toon('#3f9a3a'), x, y, -0.3, 1, 1, 0.35)); }
+    else if (L.outfit === 'bee') {
+      const wm = new THREE.MeshToonMaterial({ color: '#d8f3ff', gradientMap: lbGrad, transparent: true, opacity: 0.75, side: THREE.DoubleSide, emissive: '#9ad8ff', emissiveIntensity: 0.25 });
+      for (const s of [-1, 1]) { const w = new THREE.Mesh(new THREE.CircleGeometry(0.3, 14), wm); w.scale.set(0.7, 1.2, 1); w.position.set(s * 0.26, 1.18, -0.34); w.rotation.set(0.1, s * 0.5, s * 0.5); body.add(w); }
+      const st = lbM(new THREE.ConeGeometry(0.07, 0.24, 8), dk, 0, 0.55, -0.42); st.rotation.x = -1.4; body.add(st);
+    }
+    else if (L.outfit === 'ladybug') {
+      const sh = lbM(new THREE.SphereGeometry(0.34, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.5), f1, 0, 0.95, -0.12); sh.rotation.x = -Math.PI / 2; sh.scale.set(1, 1, 0.5); body.add(sh);
+      body.add(lbM(new THREE.BoxGeometry(0.02, 0.5, 0.02), dk, 0, 1.0, -0.4));
+      [[-0.14, 1.12], [0.14, 1.12], [-0.16, 0.9], [0.16, 0.9], [-0.1, 0.72], [0.1, 0.72]].forEach(([x, y]) => sph(0.06, dk, x, y, -0.36, 1, 1, 0.3));
+    }
+    else { const tl = lbM(new THREE.CylinderGeometry(0.07, 0.11, 0.85, 8), f1, 0, 0.82, -0.62); tl.rotation.x = -0.55; body.add(tl); sph(0.11, f2, 0, 1.2, -0.84); } // the dogs: a wagging-style tail with a light tip
   }
   if (L.outfit === 'football') body.add(lbM(new THREE.IcosahedronGeometry(0.16, 1), toon('#ffffff'), 0.38, 0.16, 0.28));
   if (L.outfit === 'suit') { body.add(lbM(new THREE.BoxGeometry(0.14, 0.42, 0.03), toon('#ffffff'), 0, 1.2, 0.29)); for (const s of [-1, 1]) { const bt = lbM(new THREE.ConeGeometry(0.06, 0.1, 8), toon('#e8434f'), s * 0.05, 1.38, 0.31); bt.rotation.z = s * Math.PI / 2; body.add(bt); } }
